@@ -14,6 +14,7 @@ type ProductRepository interface {
 	FindAll(ctx context.Context, limit, offset int) ([]models.Product, error)
 	FindByType(ctx context.Context, productType string, limit, offset int) ([]models.Product, error)
 	Count(ctx context.Context) (int64, error)
+	CountByType(ctx context.Context, productType string) (int64, error)
 
 	// Write operations
 	Create(ctx context.Context, product *models.Product) error
@@ -58,13 +59,19 @@ func (r *gormProductRepository) FindAll(ctx context.Context, limit, offset int) 
 
 func (r *gormProductRepository) FindByType(ctx context.Context, productType string, limit, offset int) ([]models.Product, error) {
 	var products []models.Product
-	err := r.db.WithContext(ctx).Where("type = ?", productType).Limit(limit).Offset(offset).Order("created_at desc").Find(&products).Error
+	err := r.db.WithContext(ctx).Where("product_type = ?", productType).Limit(limit).Offset(offset).Order("created_at desc").Find(&products).Error
 	return products, err
 }
 
 func (r *gormProductRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&models.Product{}).Count(&count).Error
+	return count, err
+}
+
+func (r *gormProductRepository) CountByType(ctx context.Context, productType string) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&models.Product{}).Where("product_type = ?", productType).Count(&count).Error
 	return count, err
 }
 

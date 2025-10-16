@@ -12,7 +12,7 @@ type Product struct {
 	Name             string    `json:"name"`
 	Description      string    `gorm:"size:512" json:"description"`
 	Price            float32   `json:"price"`
-	Image            string    `json:"image"` //Cloudinary secure URL
+	ImageUrl         string    `json:"image"` //Cloudinary secure URL
 	Amount           int       `json:"amount"`
 	ProductType      string    `gorm:"size:50;column:product_type" json:"product_type"`
 	ShippingRequired bool      `json:"shipping_required"`
