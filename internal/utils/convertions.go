@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"vitainmove.com/product-service-go/internal/models"
 	productpb "vitainmove.com/product-service-go/proto/product/v0"
+	trainingsessionpb "vitainmove.com/product-service-go/proto/training_session/v0"
 )
 
 func ConvertToProtobufProduct(product *models.Product) *productpb.Product {
@@ -37,4 +38,16 @@ func ConvertToProtobufProduct(product *models.Product) *productpb.Product {
 		ShippingRequired: product.ShippingRequired,
 	}
 	return pbProduct
+}
+
+func ConvertToProtobufTrainingSession(ts *models.TrainingSession) *trainingsessionpb.TrainingSession {
+	pbTs := &trainingsessionpb.TrainingSession{
+		Id:              ts.ID,
+		CreatedAt:       timestamppb.New(ts.CreatedAt),
+		UpdatedAt:       timestamppb.New(ts.UpdatedAt),
+		DurationMinutes: int32(ts.DurationMinutes),
+		Format:          ts.Format,
+		Product:         ConvertToProtobufProduct(ts.Product),
+	}
+	return pbTs
 }

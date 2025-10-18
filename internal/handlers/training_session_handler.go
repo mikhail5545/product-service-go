@@ -15,34 +15,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package routers
+package handlers
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"vitainmove.com/product-service-go/internal/handlers"
 	"vitainmove.com/product-service-go/internal/services"
 )
 
-func SetupRouter(e *echo.Echo, productService *services.ProductService, tsService *services.TrainingSessionService) {
-	e.HTTPErrorHandler = handlers.HTTPErrorHandler
+type TrainingSessionHandler struct {
+	tsService *services.TrainingSessionService
+}
 
-	api := e.Group("/api")
-	ver := api.Group("/v0")
+func NewTrainingSessionHandler(tsService *services.TrainingSessionService) *TrainingSessionHandler {
+	return &TrainingSessionHandler{tsService: tsService}
+}
 
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
-	productHandler := handlers.NewProductHandler(productService)
-	tsHandler := handlers.NewTrainingSessionHandler(tsService)
-
-	products := ver.Group("/products")
-	{
-		products.GET("", productHandler.GetProducts)
+func (h *TrainingSessionHandler) GetTrainingSession(c echo.Context) error {
+	id := c.Param("id")
+	ts, err := h.tsService.GetTrainingSession(c.Request().Context(), id)
+	if err != nil {
+		return err
 	}
 
-	trainingSesssions := ver.Group("/training-sessions")
-	{
-		trainingSesssions.GET("/:id", tsHandler.GetTrainingSession)
-	}
+	return c.JSON(http.StatusOK, ts)
 }

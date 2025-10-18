@@ -61,9 +61,11 @@ func main() {
 
 	// Create an instance of required repositories
 	productRepo := database.NewProductRepository(db)
+	trainingSessionRepo := database.NewTrainingSessionRepository(db)
 
 	// Create an instance of required services
 	productService := services.NewProductService(productRepo)
+	trainingSessionService := services.NewTrainingSessionService(trainingSessionRepo)
 
 	// --- Start gRPC server ---
 	go func() {
@@ -84,7 +86,7 @@ func main() {
 
 	// Register HTTP handlers
 
-	routers.SetupRouter(e, productService)
+	routers.SetupRouter(e, productService, trainingSessionService)
 	httpListenAddr := fmt.Sprintf(":%d", httpPort)
 	if err := e.Start(httpListenAddr); err != nil {
 		log.Fatalf("Failed to start HTTP server: %v", err)
