@@ -31,7 +31,8 @@ import (
 )
 
 type TrainingSessionService struct {
-	Repo database.TrainingSessionRepository
+	TrainingSessionRepo database.TrainingSessionRepository
+	ProductRepo         database.ProductRepository
 }
 
 type TrainingSessionServiceError struct {
@@ -52,12 +53,15 @@ func (e *TrainingSessionServiceError) GetCode() int {
 	return e.Code
 }
 
-func NewTrainingSessionService(tsr database.TrainingSessionRepository) *TrainingSessionService {
-	return &TrainingSessionService{Repo: tsr}
+func NewTrainingSessionService(tsr database.TrainingSessionRepository, pr database.ProductRepository) *TrainingSessionService {
+	return &TrainingSessionService{
+		TrainingSessionRepo: tsr,
+		ProductRepo:         pr,
+	}
 }
 
 func (s *TrainingSessionService) GetTrainingSession(ctx context.Context, id string) (*models.TrainingSession, error) {
-	trainingSession, err := s.Repo.Find(ctx, id)
+	trainingSession, err := s.TrainingSessionRepo.Find(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, &TrainingSessionServiceError{
@@ -77,7 +81,7 @@ func (s *TrainingSessionService) GetTrainingSession(ctx context.Context, id stri
 }
 
 func (s *TrainingSessionService) GetTrainingSessions(ctx context.Context, limit, offset int) ([]models.TrainingSession, int64, error) {
-	trainingSessions, err := s.Repo.FindAll(ctx, limit, offset)
+	trainingSessions, err := s.TrainingSessionRepo.FindAll(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, &TrainingSessionServiceError{
 			Msg:  "Failed to get training sessions",
@@ -86,7 +90,7 @@ func (s *TrainingSessionService) GetTrainingSessions(ctx context.Context, limit,
 		}
 	}
 
-	total, err := s.Repo.Count(ctx)
+	total, err := s.TrainingSessionRepo.Count(ctx)
 	if err != nil {
 		return nil, 0, &TrainingSessionServiceError{
 			Msg:  "Failed to count training sessions",
@@ -98,33 +102,30 @@ func (s *TrainingSessionService) GetTrainingSessions(ctx context.Context, limit,
 	return trainingSessions, total, nil
 }
 
-func (s *TrainingSessionService) CreateTrainingSession(ctx context.Context, req *models.AddTrainingSessionRequest) (*models.TrainingSession, error) {
-	var ts *models.TrainingSession
+func (s *TrainingSessionService) CreateTrainingSession(ctx context.Context, ts *models.TrainingSession) (*models.TrainingSession, error) {
+	err := s.TrainingSessionRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txTSRepo := s.TrainingSessionRepo.WithTx(tx)
+		txProductRepo := s.ProductRepo.WithTx(tx)
 
-	err := s.Repo.DB().Transaction(func(tx *gorm.DB) error {
-		txRepo := s.Repo.WithTx(tx)
+		ts.Product.ID = uuid.New().String()
+		ts.Product.CreatedAt = time.Now()
+		ts.Product.UpdatedAt = time.Now()
+		ts.Product.ProductType = "training_session"
 
-		ts = &models.TrainingSession{
-			ID: uuid.New().String(),
-			Product: &models.Product{
-				ID:               uuid.New().String(),
-				Name:             req.Product.Name,
-				Description:      req.Product.Description,
-				Price:            req.Product.Price,
-				Amount:           0, // Training sessions are not stock-limited this way
-				ShippingRequired: false,
-				ProductType:      "training_session",
-				CreatedAt:        time.Now(),
-				UpdatedAt:        time.Now(),
-			},
-			DurationMinutes: req.DurationMinutes,
-			Format:          req.Format,
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+		if err := txProductRepo.Create(ctx, ts.Product); err != nil {
+			return &TrainingSessionServiceError{
+				Msg:  "Failed to create underlying product for training session",
+				Err:  err,
+				Code: http.StatusInternalServerError,
+			}
 		}
-		ts.ProductID = ts.Product.ID
 
-		if err := txRepo.Create(ctx, ts); err != nil {
+		ts.ProductID = ts.Product.ID
+		ts.CreatedAt = time.Now()
+		ts.UpdatedAt = time.Now()
+		ts.ID = uuid.New().String()
+
+		if err := txTSRepo.Create(ctx, ts); err != nil {
 			return &TrainingSessionServiceError{
 				Msg:  "Failed to create training session",
 				Err:  err,
@@ -142,7 +143,7 @@ func (s *TrainingSessionService) CreateTrainingSession(ctx context.Context, req 
 	return ts, nil
 }
 
-func (s *TrainingSessionService) UpdateTrainingSession(ctx context.Context, req *models.EditTrainingSessionRequest, id string) (*models.TrainingSession, error) {
+func (s *TrainingSessionService) UpdateTrainingSession(ctx context.Context, ts *models.TrainingSession, id string) (*models.TrainingSession, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, &TrainingSessionServiceError{
 			Msg:  "Invalid training session id",
@@ -152,11 +153,11 @@ func (s *TrainingSessionService) UpdateTrainingSession(ctx context.Context, req 
 	}
 
 	var updatedTs *models.TrainingSession
-	err := s.Repo.DB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		txRepo := s.Repo.WithTx(tx)
+	err := s.TrainingSessionRepo.DB().WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txTSRepo := s.TrainingSessionRepo.WithTx(tx)
+		txProductRepo := s.ProductRepo.WithTx(tx)
 
-		var ts *models.TrainingSession
-		ts, findErr := txRepo.Find(ctx, id)
+		tsToUpdate, findErr := txTSRepo.Find(ctx, id)
 		if findErr != nil {
 			if errors.Is(findErr, gorm.ErrRecordNotFound) {
 				return &TrainingSessionServiceError{
@@ -175,42 +176,41 @@ func (s *TrainingSessionService) UpdateTrainingSession(ctx context.Context, req 
 		var tsUpdated bool
 		var tsProductUpdated bool
 
-		if ts.DurationMinutes != req.DurationMinutes && req.DurationMinutes >= 30 {
-			ts.DurationMinutes = req.DurationMinutes
+		if tsToUpdate.DurationMinutes != ts.DurationMinutes && ts.DurationMinutes >= 30 {
+			tsToUpdate.DurationMinutes = ts.DurationMinutes
 			tsUpdated = true
 		}
-		if req.Format != "" && ts.Format != req.Format {
-			ts.Format = req.Format
+		if ts.Format != "" && tsToUpdate.Format != ts.Format {
+			tsToUpdate.Format = ts.Format
 			tsUpdated = true
 		}
-		if req.Name != "" && ts.Product.Name != req.Name {
-			ts.Product.Name = req.Name
+		if ts.Product.Name != "" && tsToUpdate.Product.Name != ts.Product.Name {
+			tsToUpdate.Product.Name = ts.Product.Name
 			tsProductUpdated = true
 		}
-		if req.Description != "" && ts.Product.Description != req.Description {
-			ts.Product.Description = req.Description
+		if ts.Product.Description != "" && tsToUpdate.Product.Description != ts.Product.Description {
+			tsToUpdate.Product.Description = ts.Product.Description
 			tsProductUpdated = true
 		}
-		if ts.Product.Price != req.Price && req.Price >= 0 {
-			ts.Product.Price = req.Price
+		if tsToUpdate.Product.Price != ts.Product.Price && ts.Product.Price >= 0 {
+			tsToUpdate.Product.Price = ts.Product.Price
 			tsProductUpdated = true
 		}
 
 		if tsProductUpdated {
-			ts.UpdatedAt = time.Now()
-			ts.Product.UpdatedAt = time.Now()
-			if err := txRepo.UpdateProduct(ctx, ts.Product); err != nil {
+			if err := txProductRepo.Update(ctx, ts.Product); err != nil {
 				return &TrainingSessionServiceError{
 					Msg:  "Failed to update training session product",
 					Err:  err,
 					Code: http.StatusInternalServerError,
 				}
 			}
+			ts.Product.UpdatedAt = time.Now()
 		}
 
-		if tsUpdated {
+		if tsUpdated || tsProductUpdated {
 			ts.UpdatedAt = time.Now()
-			if err := txRepo.Update(ctx, ts); err != nil {
+			if err := txTSRepo.Update(ctx, ts); err != nil {
 				return &TrainingSessionServiceError{
 					Msg:  "Failed to update training session",
 					Err:  err,
@@ -218,7 +218,7 @@ func (s *TrainingSessionService) UpdateTrainingSession(ctx context.Context, req 
 				}
 			}
 		}
-		updatedTs = ts
+		updatedTs = tsToUpdate
 		return nil
 	})
 
@@ -238,5 +238,5 @@ func (s *TrainingSessionService) DeleteTrainingSession(ctx context.Context, id s
 		}
 	}
 
-	return s.Repo.Delete(ctx, id)
+	return s.TrainingSessionRepo.Delete(ctx, id)
 }

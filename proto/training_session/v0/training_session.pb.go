@@ -26,6 +26,7 @@ package trainingsesssionpb
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -132,6 +133,74 @@ func (x *TrainingSession) GetFormat() string {
 	return ""
 }
 
+type TrainingSessionProductInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Price         float32                `protobuf:"fixed32,1,opt,name=price,proto3" json:"price,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,4,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TrainingSessionProductInfo) Reset() {
+	*x = TrainingSessionProductInfo{}
+	mi := &file_training_session_v0_training_session_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TrainingSessionProductInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TrainingSessionProductInfo) ProtoMessage() {}
+
+func (x *TrainingSessionProductInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_training_session_v0_training_session_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TrainingSessionProductInfo.ProtoReflect.Descriptor instead.
+func (*TrainingSessionProductInfo) Descriptor() ([]byte, []int) {
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TrainingSessionProductInfo) GetPrice() float32 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *TrainingSessionProductInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TrainingSessionProductInfo) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *TrainingSessionProductInfo) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
+}
+
 type GetTrainingSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -141,7 +210,7 @@ type GetTrainingSessionRequest struct {
 
 func (x *GetTrainingSessionRequest) Reset() {
 	*x = GetTrainingSessionRequest{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[1]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -153,7 +222,7 @@ func (x *GetTrainingSessionRequest) String() string {
 func (*GetTrainingSessionRequest) ProtoMessage() {}
 
 func (x *GetTrainingSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[1]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +235,7 @@ func (x *GetTrainingSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrainingSessionRequest.ProtoReflect.Descriptor instead.
 func (*GetTrainingSessionRequest) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{1}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetTrainingSessionRequest) GetId() string {
@@ -185,7 +254,7 @@ type GetTrainingSessionResponse struct {
 
 func (x *GetTrainingSessionResponse) Reset() {
 	*x = GetTrainingSessionResponse{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[2]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -197,7 +266,7 @@ func (x *GetTrainingSessionResponse) String() string {
 func (*GetTrainingSessionResponse) ProtoMessage() {}
 
 func (x *GetTrainingSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[2]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -210,7 +279,7 @@ func (x *GetTrainingSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTrainingSessionResponse.ProtoReflect.Descriptor instead.
 func (*GetTrainingSessionResponse) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{2}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetTrainingSessionResponse) GetTrainingSession() *TrainingSession {
@@ -230,7 +299,7 @@ type ListTrainingSessionsRequest struct {
 
 func (x *ListTrainingSessionsRequest) Reset() {
 	*x = ListTrainingSessionsRequest{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[3]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -242,7 +311,7 @@ func (x *ListTrainingSessionsRequest) String() string {
 func (*ListTrainingSessionsRequest) ProtoMessage() {}
 
 func (x *ListTrainingSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[3]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -255,7 +324,7 @@ func (x *ListTrainingSessionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrainingSessionsRequest.ProtoReflect.Descriptor instead.
 func (*ListTrainingSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{3}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListTrainingSessionsRequest) GetLimit() int32 {
@@ -282,7 +351,7 @@ type ListTrainingSessionsResponse struct {
 
 func (x *ListTrainingSessionsResponse) Reset() {
 	*x = ListTrainingSessionsResponse{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[4]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -294,7 +363,7 @@ func (x *ListTrainingSessionsResponse) String() string {
 func (*ListTrainingSessionsResponse) ProtoMessage() {}
 
 func (x *ListTrainingSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[4]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -307,7 +376,7 @@ func (x *ListTrainingSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTrainingSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListTrainingSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{4}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListTrainingSessionsResponse) GetTrainingSessions() []*TrainingSession {
@@ -325,21 +394,17 @@ func (x *ListTrainingSessionsResponse) GetTotal() int64 {
 }
 
 type CreateTrainingSessionRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	DurationMinutes  int32                  `protobuf:"varint,1,opt,name=duration_minutes,json=durationMinutes,proto3" json:"duration_minutes,omitempty"`
-	Format           string                 `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"`
-	Name             string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description      string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Price            float32                `protobuf:"fixed32,5,opt,name=price,proto3" json:"price,omitempty"`
-	Amount           int32                  `protobuf:"varint,6,opt,name=amount,proto3" json:"amount,omitempty"`
-	ShippingRequired bool                   `protobuf:"varint,7,opt,name=shipping_required,json=shippingRequired,proto3" json:"shipping_required,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state           protoimpl.MessageState      `protogen:"open.v1"`
+	DurationMinutes int32                       `protobuf:"varint,1,opt,name=duration_minutes,json=durationMinutes,proto3" json:"duration_minutes,omitempty"`
+	Format          string                      `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"`
+	ProductInfo     *TrainingSessionProductInfo `protobuf:"bytes,3,opt,name=product_info,json=productInfo,proto3" json:"product_info,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CreateTrainingSessionRequest) Reset() {
 	*x = CreateTrainingSessionRequest{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[5]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -351,7 +416,7 @@ func (x *CreateTrainingSessionRequest) String() string {
 func (*CreateTrainingSessionRequest) ProtoMessage() {}
 
 func (x *CreateTrainingSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[5]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -364,7 +429,7 @@ func (x *CreateTrainingSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTrainingSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreateTrainingSessionRequest) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{5}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateTrainingSessionRequest) GetDurationMinutes() int32 {
@@ -381,39 +446,11 @@ func (x *CreateTrainingSessionRequest) GetFormat() string {
 	return ""
 }
 
-func (x *CreateTrainingSessionRequest) GetName() string {
+func (x *CreateTrainingSessionRequest) GetProductInfo() *TrainingSessionProductInfo {
 	if x != nil {
-		return x.Name
+		return x.ProductInfo
 	}
-	return ""
-}
-
-func (x *CreateTrainingSessionRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *CreateTrainingSessionRequest) GetPrice() float32 {
-	if x != nil {
-		return x.Price
-	}
-	return 0
-}
-
-func (x *CreateTrainingSessionRequest) GetAmount() int32 {
-	if x != nil {
-		return x.Amount
-	}
-	return 0
-}
-
-func (x *CreateTrainingSessionRequest) GetShippingRequired() bool {
-	if x != nil {
-		return x.ShippingRequired
-	}
-	return false
+	return nil
 }
 
 type CreateTrainingSessionResponse struct {
@@ -425,7 +462,7 @@ type CreateTrainingSessionResponse struct {
 
 func (x *CreateTrainingSessionResponse) Reset() {
 	*x = CreateTrainingSessionResponse{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[6]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -437,7 +474,7 @@ func (x *CreateTrainingSessionResponse) String() string {
 func (*CreateTrainingSessionResponse) ProtoMessage() {}
 
 func (x *CreateTrainingSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[6]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -450,7 +487,7 @@ func (x *CreateTrainingSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTrainingSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateTrainingSessionResponse) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{6}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateTrainingSessionResponse) GetTrainingSession() *TrainingSession {
@@ -461,20 +498,19 @@ func (x *CreateTrainingSessionResponse) GetTrainingSession() *TrainingSession {
 }
 
 type UpdateTrainingSessionRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	DurationMinutes int32                  `protobuf:"varint,2,opt,name=duration_minutes,json=durationMinutes,proto3" json:"duration_minutes,omitempty"`
-	Format          string                 `protobuf:"bytes,3,opt,name=format,proto3" json:"format,omitempty"`
-	Name            string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	Description     string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	Price           float32                `protobuf:"fixed32,6,opt,name=price,proto3" json:"price,omitempty"`
+	state           protoimpl.MessageState      `protogen:"open.v1"`
+	Id              string                      `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	DurationMinutes *int32                      `protobuf:"varint,2,opt,name=duration_minutes,json=durationMinutes,proto3,oneof" json:"duration_minutes,omitempty"`
+	Format          *string                     `protobuf:"bytes,3,opt,name=format,proto3,oneof" json:"format,omitempty"`
+	ProductInfo     *TrainingSessionProductInfo `protobuf:"bytes,4,opt,name=product_info,json=productInfo,proto3,oneof" json:"product_info,omitempty"`
+	UpdateMask      *fieldmaskpb.FieldMask      `protobuf:"bytes,5,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *UpdateTrainingSessionRequest) Reset() {
 	*x = UpdateTrainingSessionRequest{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[7]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -486,7 +522,7 @@ func (x *UpdateTrainingSessionRequest) String() string {
 func (*UpdateTrainingSessionRequest) ProtoMessage() {}
 
 func (x *UpdateTrainingSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[7]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -499,7 +535,7 @@ func (x *UpdateTrainingSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateTrainingSessionRequest.ProtoReflect.Descriptor instead.
 func (*UpdateTrainingSessionRequest) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{7}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateTrainingSessionRequest) GetId() string {
@@ -510,38 +546,31 @@ func (x *UpdateTrainingSessionRequest) GetId() string {
 }
 
 func (x *UpdateTrainingSessionRequest) GetDurationMinutes() int32 {
-	if x != nil {
-		return x.DurationMinutes
+	if x != nil && x.DurationMinutes != nil {
+		return *x.DurationMinutes
 	}
 	return 0
 }
 
 func (x *UpdateTrainingSessionRequest) GetFormat() string {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return ""
 }
 
-func (x *UpdateTrainingSessionRequest) GetName() string {
+func (x *UpdateTrainingSessionRequest) GetProductInfo() *TrainingSessionProductInfo {
 	if x != nil {
-		return x.Name
+		return x.ProductInfo
 	}
-	return ""
+	return nil
 }
 
-func (x *UpdateTrainingSessionRequest) GetDescription() string {
+func (x *UpdateTrainingSessionRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 	if x != nil {
-		return x.Description
+		return x.UpdateMask
 	}
-	return ""
-}
-
-func (x *UpdateTrainingSessionRequest) GetPrice() float32 {
-	if x != nil {
-		return x.Price
-	}
-	return 0
+	return nil
 }
 
 type UpdateTrainingSessionResponse struct {
@@ -553,7 +582,7 @@ type UpdateTrainingSessionResponse struct {
 
 func (x *UpdateTrainingSessionResponse) Reset() {
 	*x = UpdateTrainingSessionResponse{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[8]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -565,7 +594,7 @@ func (x *UpdateTrainingSessionResponse) String() string {
 func (*UpdateTrainingSessionResponse) ProtoMessage() {}
 
 func (x *UpdateTrainingSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[8]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -578,7 +607,7 @@ func (x *UpdateTrainingSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateTrainingSessionResponse.ProtoReflect.Descriptor instead.
 func (*UpdateTrainingSessionResponse) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{8}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpdateTrainingSessionResponse) GetTrainingSession() *TrainingSession {
@@ -597,7 +626,7 @@ type DeleteTrainingSessionRequest struct {
 
 func (x *DeleteTrainingSessionRequest) Reset() {
 	*x = DeleteTrainingSessionRequest{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[9]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -609,7 +638,7 @@ func (x *DeleteTrainingSessionRequest) String() string {
 func (*DeleteTrainingSessionRequest) ProtoMessage() {}
 
 func (x *DeleteTrainingSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[9]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -622,7 +651,7 @@ func (x *DeleteTrainingSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTrainingSessionRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTrainingSessionRequest) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{9}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DeleteTrainingSessionRequest) GetId() string {
@@ -641,7 +670,7 @@ type DeleteTrainingSessionResponse struct {
 
 func (x *DeleteTrainingSessionResponse) Reset() {
 	*x = DeleteTrainingSessionResponse{}
-	mi := &file_training_session_v0_training_session_proto_msgTypes[10]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -653,7 +682,7 @@ func (x *DeleteTrainingSessionResponse) String() string {
 func (*DeleteTrainingSessionResponse) ProtoMessage() {}
 
 func (x *DeleteTrainingSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_training_session_v0_training_session_proto_msgTypes[10]
+	mi := &file_training_session_v0_training_session_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -666,7 +695,7 @@ func (x *DeleteTrainingSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTrainingSessionResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTrainingSessionResponse) Descriptor() ([]byte, []int) {
-	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{10}
+	return file_training_session_v0_training_session_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DeleteTrainingSessionResponse) GetId() string {
@@ -680,7 +709,7 @@ var File_training_session_v0_training_session_proto protoreflect.FileDescriptor
 
 const file_training_session_v0_training_session_proto_rawDesc = "" +
 	"\n" +
-	"*training_session/v0/training_session.proto\x12\x13training_session.v0\x1a\x18product/v0/product.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa8\x02\n" +
+	"*training_session/v0/training_session.proto\x12\x13training_session.v0\x1a\x18product/v0/product.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a google/protobuf/field_mask.proto\"\xa8\x02\n" +
 	"\x0fTrainingSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x129\n" +
 	"\n" +
@@ -691,7 +720,12 @@ const file_training_session_v0_training_session_proto_rawDesc = "" +
 	"product_id\x18\x04 \x01(\tR\tproductId\x12-\n" +
 	"\aproduct\x18\x05 \x01(\v2\x13.product.v0.ProductR\aproduct\x12)\n" +
 	"\x10duration_minutes\x18\x06 \x01(\x05R\x0fdurationMinutes\x12\x16\n" +
-	"\x06format\x18\a \x01(\tR\x06format\"+\n" +
+	"\x06format\x18\a \x01(\tR\x06format\"\x85\x01\n" +
+	"\x1aTrainingSessionProductInfo\x12\x14\n" +
+	"\x05price\x18\x01 \x01(\x02R\x05price\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1b\n" +
+	"\timage_url\x18\x04 \x01(\tR\bimageUrl\"+\n" +
 	"\x19GetTrainingSessionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"m\n" +
 	"\x1aGetTrainingSessionResponse\x12O\n" +
@@ -701,24 +735,23 @@ const file_training_session_v0_training_session_proto_rawDesc = "" +
 	"\x06offset\x18\x02 \x01(\x05R\x06offset\"\x87\x01\n" +
 	"\x1cListTrainingSessionsResponse\x12Q\n" +
 	"\x11training_sessions\x18\x01 \x03(\v2$.training_session.v0.TrainingSessionR\x10trainingSessions\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x03R\x05total\"\xf2\x01\n" +
+	"\x05total\x18\x02 \x01(\x03R\x05total\"\xb5\x01\n" +
 	"\x1cCreateTrainingSessionRequest\x12)\n" +
 	"\x10duration_minutes\x18\x01 \x01(\x05R\x0fdurationMinutes\x12\x16\n" +
-	"\x06format\x18\x02 \x01(\tR\x06format\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05price\x18\x05 \x01(\x02R\x05price\x12\x16\n" +
-	"\x06amount\x18\x06 \x01(\x05R\x06amount\x12+\n" +
-	"\x11shipping_required\x18\a \x01(\bR\x10shippingRequired\"p\n" +
+	"\x06format\x18\x02 \x01(\tR\x06format\x12R\n" +
+	"\fproduct_info\x18\x03 \x01(\v2/.training_session.v0.TrainingSessionProductInfoR\vproductInfo\"p\n" +
 	"\x1dCreateTrainingSessionResponse\x12O\n" +
-	"\x10training_session\x18\x01 \x01(\v2$.training_session.v0.TrainingSessionR\x0ftrainingSession\"\xbd\x01\n" +
+	"\x10training_session\x18\x01 \x01(\v2$.training_session.v0.TrainingSessionR\x0ftrainingSession\"\xc2\x02\n" +
 	"\x1cUpdateTrainingSessionRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12)\n" +
-	"\x10duration_minutes\x18\x02 \x01(\x05R\x0fdurationMinutes\x12\x16\n" +
-	"\x06format\x18\x03 \x01(\tR\x06format\x12\x12\n" +
-	"\x04name\x18\x04 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x05 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05price\x18\x06 \x01(\x02R\x05price\"p\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12.\n" +
+	"\x10duration_minutes\x18\x02 \x01(\x05H\x00R\x0fdurationMinutes\x88\x01\x01\x12\x1b\n" +
+	"\x06format\x18\x03 \x01(\tH\x01R\x06format\x88\x01\x01\x12W\n" +
+	"\fproduct_info\x18\x04 \x01(\v2/.training_session.v0.TrainingSessionProductInfoH\x02R\vproductInfo\x88\x01\x01\x12;\n" +
+	"\vupdate_mask\x18\x05 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
+	"updateMaskB\x13\n" +
+	"\x11_duration_minutesB\t\n" +
+	"\a_formatB\x0f\n" +
+	"\r_product_info\"p\n" +
 	"\x1dUpdateTrainingSessionResponse\x12O\n" +
 	"\x10training_session\x18\x01 \x01(\v2$.training_session.v0.TrainingSessionR\x0ftrainingSession\".\n" +
 	"\x1cDeleteTrainingSessionRequest\x12\x0e\n" +
@@ -744,45 +777,50 @@ func file_training_session_v0_training_session_proto_rawDescGZIP() []byte {
 	return file_training_session_v0_training_session_proto_rawDescData
 }
 
-var file_training_session_v0_training_session_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_training_session_v0_training_session_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_training_session_v0_training_session_proto_goTypes = []any{
 	(*TrainingSession)(nil),               // 0: training_session.v0.TrainingSession
-	(*GetTrainingSessionRequest)(nil),     // 1: training_session.v0.GetTrainingSessionRequest
-	(*GetTrainingSessionResponse)(nil),    // 2: training_session.v0.GetTrainingSessionResponse
-	(*ListTrainingSessionsRequest)(nil),   // 3: training_session.v0.ListTrainingSessionsRequest
-	(*ListTrainingSessionsResponse)(nil),  // 4: training_session.v0.ListTrainingSessionsResponse
-	(*CreateTrainingSessionRequest)(nil),  // 5: training_session.v0.CreateTrainingSessionRequest
-	(*CreateTrainingSessionResponse)(nil), // 6: training_session.v0.CreateTrainingSessionResponse
-	(*UpdateTrainingSessionRequest)(nil),  // 7: training_session.v0.UpdateTrainingSessionRequest
-	(*UpdateTrainingSessionResponse)(nil), // 8: training_session.v0.UpdateTrainingSessionResponse
-	(*DeleteTrainingSessionRequest)(nil),  // 9: training_session.v0.DeleteTrainingSessionRequest
-	(*DeleteTrainingSessionResponse)(nil), // 10: training_session.v0.DeleteTrainingSessionResponse
-	(*timestamppb.Timestamp)(nil),         // 11: google.protobuf.Timestamp
-	(*v0.Product)(nil),                    // 12: product.v0.Product
+	(*TrainingSessionProductInfo)(nil),    // 1: training_session.v0.TrainingSessionProductInfo
+	(*GetTrainingSessionRequest)(nil),     // 2: training_session.v0.GetTrainingSessionRequest
+	(*GetTrainingSessionResponse)(nil),    // 3: training_session.v0.GetTrainingSessionResponse
+	(*ListTrainingSessionsRequest)(nil),   // 4: training_session.v0.ListTrainingSessionsRequest
+	(*ListTrainingSessionsResponse)(nil),  // 5: training_session.v0.ListTrainingSessionsResponse
+	(*CreateTrainingSessionRequest)(nil),  // 6: training_session.v0.CreateTrainingSessionRequest
+	(*CreateTrainingSessionResponse)(nil), // 7: training_session.v0.CreateTrainingSessionResponse
+	(*UpdateTrainingSessionRequest)(nil),  // 8: training_session.v0.UpdateTrainingSessionRequest
+	(*UpdateTrainingSessionResponse)(nil), // 9: training_session.v0.UpdateTrainingSessionResponse
+	(*DeleteTrainingSessionRequest)(nil),  // 10: training_session.v0.DeleteTrainingSessionRequest
+	(*DeleteTrainingSessionResponse)(nil), // 11: training_session.v0.DeleteTrainingSessionResponse
+	(*timestamppb.Timestamp)(nil),         // 12: google.protobuf.Timestamp
+	(*v0.Product)(nil),                    // 13: product.v0.Product
+	(*fieldmaskpb.FieldMask)(nil),         // 14: google.protobuf.FieldMask
 }
 var file_training_session_v0_training_session_proto_depIdxs = []int32{
-	11, // 0: training_session.v0.TrainingSession.created_at:type_name -> google.protobuf.Timestamp
-	11, // 1: training_session.v0.TrainingSession.updated_at:type_name -> google.protobuf.Timestamp
-	12, // 2: training_session.v0.TrainingSession.product:type_name -> product.v0.Product
+	12, // 0: training_session.v0.TrainingSession.created_at:type_name -> google.protobuf.Timestamp
+	12, // 1: training_session.v0.TrainingSession.updated_at:type_name -> google.protobuf.Timestamp
+	13, // 2: training_session.v0.TrainingSession.product:type_name -> product.v0.Product
 	0,  // 3: training_session.v0.GetTrainingSessionResponse.training_session:type_name -> training_session.v0.TrainingSession
 	0,  // 4: training_session.v0.ListTrainingSessionsResponse.training_sessions:type_name -> training_session.v0.TrainingSession
-	0,  // 5: training_session.v0.CreateTrainingSessionResponse.training_session:type_name -> training_session.v0.TrainingSession
-	0,  // 6: training_session.v0.UpdateTrainingSessionResponse.training_session:type_name -> training_session.v0.TrainingSession
-	1,  // 7: training_session.v0.TrainingSessionService.GetTrainingSession:input_type -> training_session.v0.GetTrainingSessionRequest
-	3,  // 8: training_session.v0.TrainingSessionService.ListTrainingSessions:input_type -> training_session.v0.ListTrainingSessionsRequest
-	5,  // 9: training_session.v0.TrainingSessionService.CreateTrainingSession:input_type -> training_session.v0.CreateTrainingSessionRequest
-	7,  // 10: training_session.v0.TrainingSessionService.UpdateTrainingSession:input_type -> training_session.v0.UpdateTrainingSessionRequest
-	9,  // 11: training_session.v0.TrainingSessionService.DeleteTrainingSession:input_type -> training_session.v0.DeleteTrainingSessionRequest
-	2,  // 12: training_session.v0.TrainingSessionService.GetTrainingSession:output_type -> training_session.v0.GetTrainingSessionResponse
-	4,  // 13: training_session.v0.TrainingSessionService.ListTrainingSessions:output_type -> training_session.v0.ListTrainingSessionsResponse
-	6,  // 14: training_session.v0.TrainingSessionService.CreateTrainingSession:output_type -> training_session.v0.CreateTrainingSessionResponse
-	8,  // 15: training_session.v0.TrainingSessionService.UpdateTrainingSession:output_type -> training_session.v0.UpdateTrainingSessionResponse
-	10, // 16: training_session.v0.TrainingSessionService.DeleteTrainingSession:output_type -> training_session.v0.DeleteTrainingSessionResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	1,  // 5: training_session.v0.CreateTrainingSessionRequest.product_info:type_name -> training_session.v0.TrainingSessionProductInfo
+	0,  // 6: training_session.v0.CreateTrainingSessionResponse.training_session:type_name -> training_session.v0.TrainingSession
+	1,  // 7: training_session.v0.UpdateTrainingSessionRequest.product_info:type_name -> training_session.v0.TrainingSessionProductInfo
+	14, // 8: training_session.v0.UpdateTrainingSessionRequest.update_mask:type_name -> google.protobuf.FieldMask
+	0,  // 9: training_session.v0.UpdateTrainingSessionResponse.training_session:type_name -> training_session.v0.TrainingSession
+	2,  // 10: training_session.v0.TrainingSessionService.GetTrainingSession:input_type -> training_session.v0.GetTrainingSessionRequest
+	4,  // 11: training_session.v0.TrainingSessionService.ListTrainingSessions:input_type -> training_session.v0.ListTrainingSessionsRequest
+	6,  // 12: training_session.v0.TrainingSessionService.CreateTrainingSession:input_type -> training_session.v0.CreateTrainingSessionRequest
+	8,  // 13: training_session.v0.TrainingSessionService.UpdateTrainingSession:input_type -> training_session.v0.UpdateTrainingSessionRequest
+	10, // 14: training_session.v0.TrainingSessionService.DeleteTrainingSession:input_type -> training_session.v0.DeleteTrainingSessionRequest
+	3,  // 15: training_session.v0.TrainingSessionService.GetTrainingSession:output_type -> training_session.v0.GetTrainingSessionResponse
+	5,  // 16: training_session.v0.TrainingSessionService.ListTrainingSessions:output_type -> training_session.v0.ListTrainingSessionsResponse
+	7,  // 17: training_session.v0.TrainingSessionService.CreateTrainingSession:output_type -> training_session.v0.CreateTrainingSessionResponse
+	9,  // 18: training_session.v0.TrainingSessionService.UpdateTrainingSession:output_type -> training_session.v0.UpdateTrainingSessionResponse
+	11, // 19: training_session.v0.TrainingSessionService.DeleteTrainingSession:output_type -> training_session.v0.DeleteTrainingSessionResponse
+	15, // [15:20] is the sub-list for method output_type
+	10, // [10:15] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_training_session_v0_training_session_proto_init() }
@@ -790,13 +828,14 @@ func file_training_session_v0_training_session_proto_init() {
 	if File_training_session_v0_training_session_proto != nil {
 		return
 	}
+	file_training_session_v0_training_session_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_training_session_v0_training_session_proto_rawDesc), len(file_training_session_v0_training_session_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

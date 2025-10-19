@@ -34,7 +34,6 @@ type TrainingSessionRepository interface {
 	Create(ctx context.Context, trainingSession *models.TrainingSession) error
 	Update(ctx context.Context, trainingSession *models.TrainingSession) error
 	Delete(ctx context.Context, id string) error
-	UpdateProduct(ctx context.Context, product *models.Product) error
 
 	DB() *gorm.DB
 	WithTx(tx *gorm.DB) TrainingSessionRepository
@@ -87,8 +86,4 @@ func (r *gormTrainingSessionRepository) Update(ctx context.Context, trainingSess
 
 func (r *gormTrainingSessionRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&models.TrainingSession{}, id).Error
-}
-
-func (r *gormTrainingSessionRepository) UpdateProduct(ctx context.Context, product *models.Product) error {
-	return r.db.WithContext(ctx).Save(product).Error
 }

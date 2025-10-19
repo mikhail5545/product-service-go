@@ -58,16 +58,16 @@ func (s *TrainingSessionServer) ListTrainingSessions(ctx context.Context, req *t
 }
 
 func (s *TrainingSessionServer) CreateTrainingSession(ctx context.Context, req *trainingsessionpb.CreateTrainingSessionRequest) (*trainingsessionpb.CreateTrainingSessionResponse, error) {
-	createReq := &models.AddTrainingSessionRequest{
+	ts := &models.TrainingSession{
 		DurationMinutes: int(req.GetDurationMinutes()),
 		Format:          req.GetFormat(),
-		Product: models.AddProductRequest{
-			Name:        req.GetName(),
-			Description: req.GetDescription(),
-			Price:       req.GetPrice(),
+		Product: &models.Product{
+			Name:        req.GetProductInfo().GetName(),
+			Description: req.GetProductInfo().GetDescription(),
+			Price:       req.GetProductInfo().GetPrice(),
 		},
 	}
-	ts, err := s.trainingSessionService.CreateTrainingSession(ctx, createReq)
+	ts, err := s.trainingSessionService.CreateTrainingSession(ctx, ts)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -76,14 +76,16 @@ func (s *TrainingSessionServer) CreateTrainingSession(ctx context.Context, req *
 }
 
 func (s *TrainingSessionServer) UpdateTrainingSession(ctx context.Context, req *trainingsessionpb.UpdateTrainingSessionRequest) (*trainingsessionpb.UpdateTrainingSessionResponse, error) {
-	updateReq := &models.EditTrainingSessionRequest{
+	ts := &models.TrainingSession{
 		DurationMinutes: int(req.GetDurationMinutes()),
 		Format:          req.GetFormat(),
-		Name:            req.GetName(),
-		Description:     req.GetDescription(),
-		Price:           req.GetPrice(),
+		Product: &models.Product{
+			Name:        req.GetProductInfo().GetName(),
+			Description: req.GetProductInfo().GetDescription(),
+			Price:       req.GetProductInfo().GetPrice(),
+		},
 	}
-	ts, err := s.trainingSessionService.UpdateTrainingSession(ctx, updateReq, req.GetId())
+	ts, err := s.trainingSessionService.UpdateTrainingSession(ctx, ts, req.GetId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
