@@ -21,10 +21,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"vitainmove.com/product-service-go/internal/handlers"
+	adminhandlers "vitainmove.com/product-service-go/internal/handlers/admin"
+	publichandlers "vitainmove.com/product-service-go/internal/handlers/public"
 	"vitainmove.com/product-service-go/internal/services"
 )
 
-func SetupRouter(e *echo.Echo, productService *services.ProductService, tsService *services.TrainingSessionService) {
+func SetupRouter(e *echo.Echo, productService *services.ProductService, tsService *services.TrainingSessionService, courseService *services.CourseService) {
 	e.HTTPErrorHandler = handlers.HTTPErrorHandler
 
 	api := e.Group("/api")
@@ -33,16 +35,49 @@ func SetupRouter(e *echo.Echo, productService *services.ProductService, tsServic
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	productHandler := handlers.NewProductHandler(productService)
-	tsHandler := handlers.NewTrainingSessionHandler(tsService)
+	// --- Public handlers ---
+	productHandler := publichandlers.NewProductHandler(productService)
+	tsHandler := publichandlers.NewTrainingSessionHandler(tsService)
+	courseHandler := publichandlers.NewCourseHandler(courseService)
+
+	// --- Admin handlers ---
+	adminProductHandler := adminhandlers.NewProductHandler(productService)
+	adminTrainingSessionHandler := adminhandlers.NewTrainingSessionHandler(tsService)
 
 	products := ver.Group("/products")
 	{
 		products.GET("", productHandler.GetProducts)
+		products.GET("/:id", productHandler.GetProduct)
 	}
 
 	trainingSesssions := ver.Group("/training-sessions")
 	{
+		trainingSesssions.GET("", tsHandler.GetTrainingSessions)
 		trainingSesssions.GET("/:id", tsHandler.GetTrainingSession)
+	}
+
+	courses := ver.Group("/courses")
+	{
+		courses.GET("/:id", courseHandler.GetCourse)
+	}
+
+	admin := ver.Group("/admin")
+	{
+		adminProducts := admin.Group("/products")
+		{
+			adminProducts.GET("", adminProductHandler.GetProducts)
+			adminProducts.GET("/:id", adminProductHandler.GetProduct)
+			adminProducts.POST("", adminProductHandler.CreateProduct)
+			adminProducts.PUT("/:id", adminProductHandler.UpdateProduct)
+			adminProducts.DELETE("/:id", adminProductHandler.DeleteProduct)
+		}
+		adminTrainingSessions := admin.Group("/training-sessions")
+		{
+			adminTrainingSessions.GET("", adminTrainingSessionHandler.GetTrainingSessions)
+			adminTrainingSessions.GET("/:id", adminTrainingSessionHandler.GetTrainingSession)
+			adminTrainingSessions.POST("", adminTrainingSessionHandler.CreateTrainingSession)
+			adminTrainingSessions.PUT("/:id", adminTrainingSessionHandler.UpdateTrainingSession)
+			adminTrainingSessions.DELETE("/:id", adminTrainingSessionHandler.DeleteTrainingSession)
+		}
 	}
 }

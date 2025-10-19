@@ -20,7 +20,9 @@ package utils
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"vitainmove.com/product-service-go/internal/models"
+	coursepb "vitainmove.com/product-service-go/proto/course/v0"
 	productpb "vitainmove.com/product-service-go/proto/product/v0"
+	seminarpb "vitainmove.com/product-service-go/proto/seminar/v0"
 	trainingsessionpb "vitainmove.com/product-service-go/proto/training_session/v0"
 )
 
@@ -50,4 +52,74 @@ func ConvertToProtobufTrainingSession(ts *models.TrainingSession) *trainingsessi
 		Product:         ConvertToProtobufProduct(ts.Product),
 	}
 	return pbTs
+}
+
+func ConvertToProtobufCourse(course *models.Course) *coursepb.Course {
+	pbCourse := &coursepb.Course{
+		Id:             course.ID,
+		Name:           course.Name,
+		Description:    course.Description,
+		Topic:          course.Topic,
+		ProductId:      course.ProductID,
+		AccessDuration: int32(course.AccessDuration),
+		Product:        ConvertToProtobufProduct(course.Product),
+	}
+	for _, part := range course.CourseParts {
+		pbCourse.CourseParts = append(pbCourse.CourseParts, ConvertToProtobufCoursePartInternal(part))
+	}
+	return pbCourse
+}
+
+func ConvertToProtobufListCourseItem(course *models.Course) *coursepb.CourseListItem {
+	pbCourseListItem := &coursepb.CourseListItem{
+		Id:          course.ID,
+		Name:        course.Name,
+		Description: course.Description,
+		Topic:       course.Topic,
+		ProductId:   course.ProductID,
+		Product:     ConvertToProtobufProduct(course.Product),
+	}
+	return pbCourseListItem
+}
+
+func ConvertToProtobufCoursePartInternal(part *models.CoursePart) *coursepb.CoursePartInternal {
+	return &coursepb.CoursePartInternal{
+		Id:          part.ID,
+		Name:        part.Name,
+		Description: part.Description,
+		Number:      int32(part.Number),
+		CourseId:    part.CourseID,
+		MuxVideoId:  part.MUXVideoID,
+		MuxVideo:    ConvertToProtobufMUXUpload(part.MUXVideo),
+	}
+}
+
+func ConvertToProtobufMUXUpload(muxUpload *models.MUXUpload) *coursepb.MUXUpload {
+	return &coursepb.MUXUpload{
+		Id:                    muxUpload.ID,
+		MuxUploadId:           muxUpload.MUXUploadID,
+		MuxAssetId:            muxUpload.MUXUploadID,
+		MuxPlaybackId:         muxUpload.MUXUploadID,
+		VideoProcessingStatus: muxUpload.VideoProcessingStatus,
+	}
+}
+
+func ConvertToProtobufSeminar(seminar *models.Seminar) *seminarpb.Seminar {
+	pbSeminar := &seminarpb.Seminar{
+		Id:                    seminar.ID,
+		CreatedAt:             timestamppb.New(seminar.CreatedAt),
+		UpdatedAt:             timestamppb.New(seminar.UpdatedAt),
+		Name:                  seminar.Name,
+		Description:           seminar.Description,
+		Place:                 seminar.Place,
+		Date:                  timestamppb.New(seminar.Date),
+		EndingDate:            timestamppb.New(seminar.EndingDate),
+		Details:               seminar.Details,
+		ReservationProduct:    ConvertToProtobufProduct(seminar.ReservationProduct),
+		EarlyProduct:          ConvertToProtobufProduct(seminar.EarlyProduct),
+		LateProduct:           ConvertToProtobufProduct(seminar.LateProduct),
+		EarlySurchargeProduct: ConvertToProtobufProduct(seminar.EarlySurchargeProduct),
+		LateSurchargeProduct:  ConvertToProtobufProduct(seminar.LateSurchargeProduct),
+	}
+	return pbSeminar
 }

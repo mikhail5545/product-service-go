@@ -31,7 +31,7 @@ func NewPostgresDB(ctx context.Context, dsn string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&models.Product{})
+	err = db.AutoMigrate(&models.Product{}, &models.TrainingSession{}, &models.CoursePart{}, &models.Course{})
 	if err != nil {
 		sqlDB, _ := db.DB()
 		sqlDB.Close()
