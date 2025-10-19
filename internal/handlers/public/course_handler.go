@@ -15,41 +15,31 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package handlers
+package public
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"vitainmove.com/product-service-go/internal/services"
 )
 
-type ProductHandler struct {
-	productService *services.ProductService
+type CourseHandler struct {
+	courseService *services.CourseService
 }
 
-func NewProductHandler(productService *services.ProductService) *ProductHandler {
-	return &ProductHandler{productService: productService}
+func NewCourseHandler(courseService *services.CourseService) *CourseHandler {
+	return &CourseHandler{courseService: courseService}
 }
 
-func (h *ProductHandler) GetProducts(c echo.Context) error {
-	limit, _ := strconv.Atoi(c.QueryParam("limit"))
-	if limit <= 0 {
-		limit = 10
+func (h *CourseHandler) GetCourse(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid course ID"})
 	}
-	offset, _ := strconv.Atoi(c.QueryParam("offset"))
-	if offset < 0 {
-		offset = 0
-	}
-
-	products, total, err := h.productService.GetProducts(c.Request().Context(), limit, offset)
+	course, err := h.courseService.GetCourse(c.Request().Context(), id)
 	if err != nil {
 		return err
 	}
-
-	return c.JSON(http.StatusOK, map[string]any{
-		"products": products,
-		"total":    total,
-	})
+	return c.JSON(http.StatusOK, course)
 }

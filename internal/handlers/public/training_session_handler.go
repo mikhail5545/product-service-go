@@ -15,10 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package handlers
+package public
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"vitainmove.com/product-service-go/internal/services"
@@ -40,4 +41,25 @@ func (h *TrainingSessionHandler) GetTrainingSession(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, ts)
+}
+
+func (h *TrainingSessionHandler) GetTrainingSessions(c echo.Context) error {
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
+	sessions, total, err := h.tsService.GetTrainingSessions(c.Request().Context(), limit, offset)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"training_sessions": sessions,
+		"total":             total,
+	})
 }
