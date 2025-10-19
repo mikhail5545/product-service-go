@@ -20,6 +20,7 @@ syntax = "proto3";
 package product.v0;
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/field_mask.proto";
 
 option go_package = "vitainmove.com/product-service-go/proto/product/v0;productpb";
 
@@ -69,9 +70,7 @@ message CreateProductRequest{
     string name = 1;
     string description = 2;
     float price = 3;
-    string image_url = 4;
     int32 amount = 5;
-    string product_type = 6;
     bool shipping_required = 7;
 }
 
@@ -86,8 +85,8 @@ message UpdateProductRequest{
     float price = 4;
     string image_url = 5;
     int32 amount = 6;
-    string product_type = 7;
     bool shipping_required = 8;
+    google.protobuf.FieldMask update_mask = 9;
 }
 
 message UpdateProductResponse{

@@ -71,7 +71,7 @@ func (s *ProductServer) ListProductsByType(ctx context.Context, req *productpb.L
 }
 
 func (s *ProductServer) CreateProduct(ctx context.Context, req *productpb.CreateProductRequest) (*productpb.CreateProductResponse, error) {
-	createReq := &models.AddProductRequest{
+	product := &models.Product{
 		Name:             req.GetName(),
 		Description:      req.GetDescription(),
 		Price:            req.GetPrice(),
@@ -79,7 +79,7 @@ func (s *ProductServer) CreateProduct(ctx context.Context, req *productpb.Create
 		ShippingRequired: req.GetShippingRequired(),
 	}
 
-	product, err := s.productService.CreateProduct(ctx, createReq)
+	product, err := s.productService.CreateProduct(ctx, product)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -88,14 +88,14 @@ func (s *ProductServer) CreateProduct(ctx context.Context, req *productpb.Create
 }
 
 func (s *ProductServer) UpdateProduct(ctx context.Context, req *productpb.UpdateProductRequest) (*productpb.UpdateProductResponse, error) {
-	updateReq := &models.EditProductRequest{
+	product := &models.Product{
 		Name:        req.GetName(),
 		Description: req.GetDescription(),
 		Price:       req.GetPrice(),
 		Amount:      int(req.GetAmount()),
 	}
 
-	product, err := s.productService.UpdateProduct(ctx, updateReq, req.GetId())
+	product, err := s.productService.UpdateProduct(ctx, product, req.GetId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

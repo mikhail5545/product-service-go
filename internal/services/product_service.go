@@ -78,6 +78,14 @@ func (s *ProductService) GetProducts(ctx context.Context, limit, offset int) ([]
 }
 
 func (s *ProductService) GetProduct(ctx context.Context, id string) (*models.Product, error) {
+	if _, err := uuid.Parse(id); err != nil {
+		return nil, &ProductServiceError{
+			Msg:  "Invalid product id",
+			Err:  err,
+			Code: http.StatusBadRequest,
+		}
+	}
+
 	product, err := s.Repo.Find(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -116,34 +124,27 @@ func (s *ProductService) GetProductByType(ctx context.Context, productType strin
 	return products, total, nil
 }
 
-func (s *ProductService) CreateProduct(ctx context.Context, req *models.AddProductRequest) (*models.Product, error) {
-	var product *models.Product
-
+func (s *ProductService) CreateProduct(ctx context.Context, product *models.Product) (*models.Product, error) {
 	err := s.Repo.DB().Transaction(func(tx *gorm.DB) error {
 		txRepo := s.Repo.WithTx(tx)
 
-		if req.Name == "" {
+		if product.Name == "" {
 			return &ProductServiceError{Msg: "product name cannot be empty", Err: nil, Code: http.StatusBadRequest}
 		}
-		if req.Description == "" {
+		if product.Description == "" {
 			return &ProductServiceError{Msg: "product description cannot be empty", Err: nil, Code: http.StatusBadRequest}
 		}
-		if req.Amount < 0 {
+		if product.Amount < 0 {
 			return &ProductServiceError{Msg: "amount cannot be negative", Err: nil, Code: http.StatusBadRequest}
 		}
-		if req.Price <= 0 {
+		if product.Price <= 0 {
 			return &ProductServiceError{Msg: "price cannot be negative or null", Err: nil, Code: http.StatusBadRequest}
 		}
 
-		product = &models.Product{
-			ID:               uuid.New().String(),
-			Name:             req.Name,
-			Description:      req.Description,
-			Price:            req.Price,
-			Amount:           req.Amount,
-			ShippingRequired: req.ShippingRequired,
-			ProductType:      "physical",
-		}
+		product.ID = uuid.New().String()
+		product.CreatedAt = time.Now()
+		product.UpdatedAt = time.Now()
+		product.ProductType = "physical"
 
 		if err := txRepo.Create(ctx, product); err != nil {
 			return &ProductServiceError{Msg: "failed to create product", Err: err, Code: http.StatusInternalServerError}
@@ -158,18 +159,17 @@ func (s *ProductService) CreateProduct(ctx context.Context, req *models.AddProdu
 	return product, nil
 }
 
-func (s *ProductService) UpdateProduct(ctx context.Context, req *models.EditProductRequest, id string) (*models.Product, error) {
+func (s *ProductService) UpdateProduct(ctx context.Context, product *models.Product, id string) (*models.Product, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, &ProductServiceError{Msg: "invalid product id", Err: err, Code: http.StatusBadRequest}
 	}
 
-	var product *models.Product
-
+	var productToUpdate *models.Product
 	err := s.Repo.DB().Transaction(func(tx *gorm.DB) error {
 		txRepo := s.Repo.WithTx(tx)
 
 		var findErr error
-		product, findErr = txRepo.Find(ctx, id)
+		productToUpdate, findErr = txRepo.Find(ctx, id)
 		if findErr != nil {
 			if errors.Is(findErr, gorm.ErrRecordNotFound) {
 				return &ProductServiceError{Msg: "product not found", Err: findErr, Code: http.StatusNotFound}
@@ -178,22 +178,22 @@ func (s *ProductService) UpdateProduct(ctx context.Context, req *models.EditProd
 		}
 
 		var updated bool
-		if req.Name != "" && req.Name != product.Name {
-			product.Name = req.Name
+		if product.Name != "" && product.Name != productToUpdate.Name {
+			productToUpdate.Name = product.Name
 			updated = true
 		}
-		if req.Price != 0 && req.Price != product.Price {
-			product.Price = req.Price
+		if product.Price != 0 && product.Price != productToUpdate.Price {
+			productToUpdate.Price = product.Price
 			updated = true
 		}
-		if req.Amount >= 0 && req.Amount != product.Amount { // amount can be null
-			product.Amount = req.Amount
+		if product.Amount >= 0 && product.Amount != productToUpdate.Amount { // amount can be null
+			productToUpdate.Amount = product.Amount
 			updated = true
 		}
 		// Only update if a field has changed to avoid unnecessary DB calls.
 		if updated {
-			product.UpdatedAt = time.Now()
-			if err := txRepo.Update(ctx, product); err != nil {
+			productToUpdate.UpdatedAt = time.Now()
+			if err := txRepo.Update(ctx, productToUpdate); err != nil {
 				return &ProductServiceError{Msg: "failed to update product", Err: err, Code: http.StatusInternalServerError}
 			}
 		}
@@ -203,5 +203,12 @@ func (s *ProductService) UpdateProduct(ctx context.Context, req *models.EditProd
 	if err != nil {
 		return nil, err
 	}
-	return product, nil
+	return productToUpdate, nil
+}
+
+func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
+	if _, err := uuid.Parse(id); err != nil {
+		return &ProductServiceError{Msg: "invalid product id", Err: err, Code: http.StatusBadRequest}
+	}
+	return s.Repo.Delete(ctx, id)
 }

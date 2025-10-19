@@ -36,7 +36,7 @@ type ProductRepository interface {
 	// Write operations
 	Create(ctx context.Context, product *models.Product) error
 	Update(ctx context.Context, product *models.Product) error
-	Delete(ctx context.Context, id int64) error
+	Delete(ctx context.Context, id string) error
 
 	DB() *gorm.DB
 	WithTx(tx *gorm.DB) ProductRepository
@@ -100,6 +100,6 @@ func (r *gormProductRepository) Update(ctx context.Context, product *models.Prod
 	return r.db.WithContext(ctx).Save(product).Error
 }
 
-func (r *gormProductRepository) Delete(ctx context.Context, id int64) error {
+func (r *gormProductRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&models.Product{}, id).Error
 }
