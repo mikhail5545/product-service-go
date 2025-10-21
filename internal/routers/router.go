@@ -1,4 +1,4 @@
-// vitainmove.com/product-service-go
+// github.com/mikhail5545/product-service-go
 // microservice for vitianmove project family
 // Copyright (C) 2025  Mikhail Kulik
 
@@ -20,10 +20,10 @@ package routers
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"vitainmove.com/product-service-go/internal/handlers"
-	adminhandlers "vitainmove.com/product-service-go/internal/handlers/admin"
-	publichandlers "vitainmove.com/product-service-go/internal/handlers/public"
-	"vitainmove.com/product-service-go/internal/services"
+	"github.com/mikhail5545/product-service-go/internal/handlers"
+	adminhandlers "github.com/mikhail5545/product-service-go/internal/handlers/admin"
+	publichandlers "github.com/mikhail5545/product-service-go/internal/handlers/public"
+	"github.com/mikhail5545/product-service-go/internal/services"
 )
 
 func SetupRouter(

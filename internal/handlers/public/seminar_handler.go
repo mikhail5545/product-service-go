@@ -1,4 +1,4 @@
-// vitainmove.com/product-service-go
+// github.com/mikhail5545/product-service-go
 // microservice for vitianmove project family
 // Copyright (C) 2025  Mikhail Kulik
 
@@ -22,7 +22,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
-	"vitainmove.com/product-service-go/internal/services"
+	"github.com/mikhail5545/product-service-go/internal/services"
 )
 
 type SeminarHandler struct {

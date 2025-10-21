@@ -1,4 +1,4 @@
-// vitainmove.com/product-service-go
+// github.com/mikhail5545/product-service-go
 // microservice for vitianmove project family
 // Copyright (C) 2025  Mikhail Kulik
 
@@ -21,9 +21,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/mikhail5545/product-service-go/internal/services"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"vitainmove.com/product-service-go/internal/services"
 )
 
 // toGRPCError converts a service layer error into a gRPC status error.

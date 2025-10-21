@@ -1,4 +1,4 @@
-// vitainmove.com/product-service-go
+// github.com/mikhail5545/product-service-go
 // microservice for vitianmove project family
 // Copyright (C) 2025  Mikhail Kulik
 
@@ -18,12 +18,12 @@
 package utils
 
 import (
+	"github.com/mikhail5545/product-service-go/internal/models"
+	coursepb "github.com/mikhail5545/proto-go/proto/course/v0"
+	productpb "github.com/mikhail5545/proto-go/proto/product/v0"
+	seminarpb "github.com/mikhail5545/proto-go/proto/seminar/v0"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"vitainmove.com/product-service-go/internal/models"
-	coursepb "vitainmove.com/product-service-go/proto/course/v0"
-	productpb "vitainmove.com/product-service-go/proto/product/v0"
-	seminarpb "vitainmove.com/product-service-go/proto/seminar/v0"
-	trainingsessionpb "vitainmove.com/product-service-go/proto/training_session/v0"
 )
 
 func ConvertToProtobufProduct(product *models.Product) *productpb.Product {

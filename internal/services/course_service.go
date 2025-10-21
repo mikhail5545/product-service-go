@@ -1,4 +1,4 @@
-// vitainmove.com/product-service-go
+// github.com/mikhail5545/product-service-go
 // microservice for vitianmove project family
 // Copyright (C) 2025  Mikhail Kulik
 
@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mikhail5545/product-service-go/internal/database"
+	"github.com/mikhail5545/product-service-go/internal/models"
 	"gorm.io/gorm"
-	"vitainmove.com/product-service-go/internal/database"
-	"vitainmove.com/product-service-go/internal/models"
 )
 
 type CourseService struct {

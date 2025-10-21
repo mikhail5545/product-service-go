@@ -1,4 +1,4 @@
-// vitainmove.com/product-service-go
+// github.com/mikhail5545/product-service-go
 // microservice for vitianmove project family
 // Copyright (C) 2025  Mikhail Kulik
 
@@ -20,10 +20,10 @@ package server
 import (
 	"context"
 
-	"vitainmove.com/product-service-go/internal/models"
-	"vitainmove.com/product-service-go/internal/services"
-	"vitainmove.com/product-service-go/internal/utils"
-	trainingsessionpb "vitainmove.com/product-service-go/proto/training_session/v0"
+	"github.com/mikhail5545/product-service-go/internal/models"
+	"github.com/mikhail5545/product-service-go/internal/services"
+	"github.com/mikhail5545/product-service-go/internal/utils"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
 )
 
 type TrainingSessionServer struct {

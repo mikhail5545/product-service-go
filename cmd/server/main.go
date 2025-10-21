@@ -1,4 +1,4 @@
-// vitainmove.com/product-service-go
+// github.com/mikhail5545/product-service-go
 // microservice for vitianmove project family
 // Copyright (C) 2025  Mikhail Kulik
 
@@ -26,15 +26,15 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/mikhail5545/product-service-go/internal/database"
+	"github.com/mikhail5545/product-service-go/internal/routers"
+	"github.com/mikhail5545/product-service-go/internal/server"
+	"github.com/mikhail5545/product-service-go/internal/services"
+	coursepb "github.com/mikhail5545/proto-go/proto/course/v0"
+	productpb "github.com/mikhail5545/proto-go/proto/product/v0"
+	seminarpb "github.com/mikhail5545/proto-go/proto/seminar/v0"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
 	"google.golang.org/grpc"
-	"vitainmove.com/product-service-go/internal/database"
-	"vitainmove.com/product-service-go/internal/routers"
-	"vitainmove.com/product-service-go/internal/server"
-	"vitainmove.com/product-service-go/internal/services"
-	coursepb "vitainmove.com/product-service-go/proto/course/v0"
-	productpb "vitainmove.com/product-service-go/proto/product/v0"
-	seminarpb "vitainmove.com/product-service-go/proto/seminar/v0"
-	trainingsessionpb "vitainmove.com/product-service-go/proto/training_session/v0"
 )
 
 func main() {
