@@ -42,5 +42,35 @@ func toGRPCError(err error) error {
 		}
 	}
 
+	var tsServiceErr *services.TrainingSessionServiceError
+	if errors.As(err, &tsServiceErr) {
+		switch tsServiceErr.GetCode() {
+		case http.StatusBadRequest:
+			return status.Errorf(codes.InvalidArgument, tsServiceErr.Error())
+		case http.StatusNotFound:
+			return status.Errorf(codes.NotFound, tsServiceErr.Error())
+		}
+	}
+
+	var courseServiceErr *services.CourseServiceError
+	if errors.As(err, &courseServiceErr) {
+		switch courseServiceErr.GetCode() {
+		case http.StatusBadRequest:
+			return status.Errorf(codes.InvalidArgument, courseServiceErr.Error())
+		case http.StatusNotFound:
+			return status.Errorf(codes.NotFound, courseServiceErr.Error())
+		}
+	}
+
+	var seminarServiceErr *services.SeminarServiceError
+	if errors.As(err, &seminarServiceErr) {
+		switch seminarServiceErr.GetCode() {
+		case http.StatusBadRequest:
+			return status.Errorf(codes.InvalidArgument, seminarServiceErr.Error())
+		case http.StatusNotFound:
+			return status.Errorf(codes.NotFound, seminarServiceErr.Error())
+		}
+	}
+
 	return status.Errorf(codes.Internal, "an internal error occurred: %v", err)
 }
