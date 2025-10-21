@@ -26,7 +26,12 @@ import (
 	"vitainmove.com/product-service-go/internal/services"
 )
 
-func SetupRouter(e *echo.Echo, productService *services.ProductService, tsService *services.TrainingSessionService, courseService *services.CourseService) {
+func SetupRouter(
+	e *echo.Echo, productService *services.ProductService,
+	tsService *services.TrainingSessionService,
+	courseService *services.CourseService,
+	seminarService *services.SeminarService,
+) {
 	e.HTTPErrorHandler = handlers.HTTPErrorHandler
 
 	api := e.Group("/api")
@@ -39,26 +44,32 @@ func SetupRouter(e *echo.Echo, productService *services.ProductService, tsServic
 	productHandler := publichandlers.NewProductHandler(productService)
 	tsHandler := publichandlers.NewTrainingSessionHandler(tsService)
 	courseHandler := publichandlers.NewCourseHandler(courseService)
+	seminarHandler := publichandlers.NewSeminarHandler(seminarService)
 
 	// --- Admin handlers ---
 	adminProductHandler := adminhandlers.NewProductHandler(productService)
 	adminTrainingSessionHandler := adminhandlers.NewTrainingSessionHandler(tsService)
+	adminCourseHandler := adminhandlers.NewCourseHandler(courseService)
+	adminSeminarHandler := adminhandlers.NewSeminarService(seminarService)
 
 	products := ver.Group("/products")
 	{
 		products.GET("", productHandler.GetProducts)
 		products.GET("/:id", productHandler.GetProduct)
 	}
-
 	trainingSesssions := ver.Group("/training-sessions")
 	{
 		trainingSesssions.GET("", tsHandler.GetTrainingSessions)
 		trainingSesssions.GET("/:id", tsHandler.GetTrainingSession)
 	}
-
 	courses := ver.Group("/courses")
 	{
 		courses.GET("/:id", courseHandler.GetCourse)
+	}
+	seminars := ver.Group("/seminars")
+	{
+		seminars.GET("", seminarHandler.GetSeminars)
+		seminars.GET("/:id", seminarHandler.GetSeminar)
 	}
 
 	admin := ver.Group("/admin")
@@ -78,6 +89,21 @@ func SetupRouter(e *echo.Echo, productService *services.ProductService, tsServic
 			adminTrainingSessions.POST("", adminTrainingSessionHandler.CreateTrainingSession)
 			adminTrainingSessions.PUT("/:id", adminTrainingSessionHandler.UpdateTrainingSession)
 			adminTrainingSessions.DELETE("/:id", adminTrainingSessionHandler.DeleteTrainingSession)
+		}
+		adminCourses := admin.Group("/courses")
+		{
+			adminCourses.GET("", adminCourseHandler.GetCourses)
+			adminCourses.GET("/:id", adminCourseHandler.GetCourse)
+			adminCourses.POST("", adminCourseHandler.CreateCourse)
+			adminCourses.PUT("/:id", adminCourseHandler.UpdateCourse)
+		}
+		adminSeminars := admin.Group("/seminars")
+		{
+			adminSeminars.GET("", adminSeminarHandler.GetSeminars)
+			adminSeminars.GET("/:id", adminSeminarHandler.GetSeminar)
+			adminSeminars.POST("", adminSeminarHandler.CreateSeminar)
+			adminSeminars.PUT("/:id", adminSeminarHandler.UpdateSeminar)
+			adminSeminars.DELETE("/:id", adminSeminarHandler.DeleteSeminar)
 		}
 	}
 }

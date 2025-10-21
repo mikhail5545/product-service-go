@@ -33,6 +33,7 @@ import (
 	"vitainmove.com/product-service-go/internal/services"
 	coursepb "vitainmove.com/product-service-go/proto/course/v0"
 	productpb "vitainmove.com/product-service-go/proto/product/v0"
+	seminarpb "vitainmove.com/product-service-go/proto/seminar/v0"
 	trainingsessionpb "vitainmove.com/product-service-go/proto/training_session/v0"
 )
 
@@ -65,11 +66,13 @@ func main() {
 	productRepo := database.NewProductRepository(db)
 	trainingSessionRepo := database.NewTrainingSessionRepository(db)
 	courseRepo := database.NewCourseRepository(db)
+	seminarRepo := database.NewSeminarRepository(db)
 
 	// Create an instance of required services
 	productService := services.NewProductService(productRepo)
 	trainingSessionService := services.NewTrainingSessionService(trainingSessionRepo, productRepo)
 	courseService := services.NewCourseService(courseRepo, productRepo)
+	seminarService := services.NewSeminarService(seminarRepo, productRepo)
 
 	// --- Start gRPC server ---
 	go func() {
@@ -78,7 +81,7 @@ func main() {
 			log.Fatalf("Failed to listen on %s: %v", grpcListenAddr, err)
 		}
 
-		grpcServer := startGRPCServer(productService, trainingSessionService, courseService, lis)
+		grpcServer := startGRPCServer(productService, trainingSessionService, courseService, seminarService, lis)
 		log.Printf("gRPC server listening on %s", grpcListenAddr)
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve gRPC server: %v", err)
@@ -90,25 +93,33 @@ func main() {
 
 	// Register HTTP handlers
 
-	routers.SetupRouter(e, productService, trainingSessionService, courseService)
+	routers.SetupRouter(e, productService, trainingSessionService, courseService, seminarService)
 	httpListenAddr := fmt.Sprintf(":%d", httpPort)
 	if err := e.Start(httpListenAddr); err != nil {
 		log.Fatalf("Failed to start HTTP server: %v", err)
 	}
 }
 
-func startGRPCServer(productService *services.ProductService, tsService *services.TrainingSessionService, courseService *services.CourseService, lis net.Listener) *grpc.Server {
+func startGRPCServer(
+	productService *services.ProductService,
+	tsService *services.TrainingSessionService,
+	courseService *services.CourseService,
+	seminarService *services.SeminarService,
+	lis net.Listener,
+) *grpc.Server {
 	grpcServer := grpc.NewServer()
 
 	// Create instances of required gRPC server implementations
 	productServer := server.NewProductServer(productService)
 	trainingSessionServer := server.NewTrainingSessionServer(tsService)
 	courseServer := server.NewCourseServer(courseService)
+	seminarServer := server.NewSeminarServer(seminarService)
 
 	// Register gRPC services with the server
 	productpb.RegisterProductServiceServer(grpcServer, productServer)
 	trainingsessionpb.RegisterTrainingSessionServiceServer(grpcServer, trainingSessionServer)
 	coursepb.RegisterCourseServiceServer(grpcServer, courseServer)
+	seminarpb.RegisterSeminarServiceServer(grpcServer, seminarServer)
 
 	return grpcServer
 }

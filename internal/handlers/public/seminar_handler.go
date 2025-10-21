@@ -25,25 +25,25 @@ import (
 	"vitainmove.com/product-service-go/internal/services"
 )
 
-type ProductHandler struct {
-	productService *services.ProductService
+type SeminarHandler struct {
+	seminarService *services.SeminarService
 }
 
-func NewProductHandler(productService *services.ProductService) *ProductHandler {
-	return &ProductHandler{productService: productService}
+func NewSeminarHandler(seminarService *services.SeminarService) *SeminarHandler {
+	return &SeminarHandler{seminarService: seminarService}
 }
 
-func (h *ProductHandler) GetProduct(c echo.Context) error {
+func (h *SeminarHandler) GetSeminar(c echo.Context) error {
 	id := c.Param("id")
-	product, err := h.productService.GetProduct(c.Request().Context(), id)
+	seminar, err := h.seminarService.GetSeminar(c.Request().Context(), id)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, product)
+	return c.JSON(http.StatusOK, seminar)
 }
 
-func (h *ProductHandler) GetProducts(c echo.Context) error {
+func (h *SeminarHandler) GetSeminars(c echo.Context) error {
 	limit, err := strconv.Atoi(c.QueryParam("limit"))
 	if err != nil || limit <= 0 {
 		limit = 10
@@ -53,13 +53,13 @@ func (h *ProductHandler) GetProducts(c echo.Context) error {
 		offset = 0
 	}
 
-	products, total, err := h.productService.GetProducts(c.Request().Context(), limit, offset)
+	seminars, total, err := h.seminarService.GetSeminars(c.Request().Context(), limit, offset)
 	if err != nil {
 		return err
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"products": products,
+		"seminars": seminars,
 		"total":    total,
 	})
 }
