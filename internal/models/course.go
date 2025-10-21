@@ -60,22 +60,25 @@ type Attachment struct {
 }
 
 // DTO models
-// --- Server to Client models ---
+type CourseProductInfo struct {
+	Price float32 `json:"price" validate:"required,gt=0"`
+}
+
 type AddCourseRequest struct {
 	Name           string            `json:"name" validate:"required"`
-	Description    string            `json:"description"`
-	Topic          string            `json:"topic"`
+	Description    string            `json:"description" validate:"required"`
+	Topic          string            `json:"topic" validate:"required"`
 	Price          float32           `json:"price" validate:"required,gt=0"`
 	AccessDuration int               `json:"access_duration"  validate:"required,gt=0"`
-	CourseProduct  AddProductRequest `json:"product"`
+	Product        CourseProductInfo `json:"product" validate:"required"`
 }
 
 type EditCourseRequest struct {
-	Name           string  `json:"name"`
-	Description    string  `json:"description"`
-	Topic          string  `json:"topic"`
-	Price          float32 `json:"price"`
-	AccessDuration int     `json:"access_duration"`
+	Name           *string            `json:"name"`
+	Description    *string            `json:"description"`
+	Topic          *string            `json:"topic"`
+	AccessDuration *int               `json:"access_duration"`
+	Product        *CourseProductInfo `json:"product"`
 }
 
 type AddCoursePartRequest struct {
@@ -96,26 +99,4 @@ type PublicCoursePart struct {
 type GetCoursesResponse struct {
 	Courses []Course `json:"courses"`
 	Total   int64    `json:"total"`
-}
-
-// --- Server to Server models ---
-type CourseInternal struct {
-	ID             string                `json:"id"`
-	Name           string                `json:"name"`
-	Topic          string                `json:"topic"`
-	Description    string                `json:"description"`
-	ProductID      string                `json:"product_id"`
-	Product        *Product              `json:"product"`
-	AccessDuration int                   `json:"access_duration"`
-	CourseParts    []*CoursePartInternal `json:"course_parts"`
-}
-
-type CoursePartInternal struct {
-	ID          string    `json:"id"`
-	Number      int       `json:"number"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	MUXVideoID  *string   `json:"mux_upload_id,omitempty"`
-	MUXVideo    *MUXVideo `json:"mux_video,omitempty"`
-	CourseID    string    `json:"course_id"`
 }

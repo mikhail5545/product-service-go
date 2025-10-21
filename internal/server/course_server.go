@@ -91,7 +91,7 @@ func (s *CourseServer) UpdateCourse(ctx context.Context, req *coursepb.UpdateCou
 		},
 	}
 
-	course, err := s.courseService.UpdateCourse(ctx, course)
+	course, err := s.courseService.UpdateCourse(ctx, course, req.GetId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

@@ -55,3 +55,40 @@ func (seminar *Seminar) GetPrice() (float32, string) {
 		return seminar.LateProduct.Price, seminar.LateProduct.ID
 	}
 }
+
+// DTO Models
+type SeminarProductInfo struct {
+	Price       float32 `json:"price" validate:"required,gt=0"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+}
+
+type AddSeminarRequest struct {
+	Name                  string              `json:"name" validate:"required"`
+	Description           string              `json:"description" validate:"required"`
+	Date                  time.Time           `json:"date" validate:"required"`
+	EndingDate            time.Time           `json:"ending_date" validate:"required"`
+	Place                 string              `json:"place" validate:"required"`
+	LatePaymentDate       time.Time           `json:"late_payment_date" validate:"required"`
+	Details               string              `json:"details"`
+	ReservationProduct    SeminarProductInfo  `json:"reservation_product" validate:"required"`
+	EarlyProduct          SeminarProductInfo  `json:"early_product" validate:"required"`
+	LateProduct           SeminarProductInfo  `json:"late_product" validate:"required"`
+	EarlySurchargeProduct *SeminarProductInfo `json:"early_surcharge_product"`
+	LateSurchargeProduct  *SeminarProductInfo `json:"late_surcharge_product"`
+}
+
+type UpdateSeminarRequest struct {
+	Name                  *string             `json:"name"`
+	Description           *string             `json:"description"`
+	Date                  *time.Time          `json:"date"`
+	EndingDate            *time.Time          `json:"ending_date"`
+	Place                 *string             `json:"place"`
+	LatePaymentDate       *time.Time          `json:"late_payment_date"`
+	Details               *string             `json:"details"`
+	ReservationProduct    *SeminarProductInfo `json:"reservation_product"`
+	EarlyProduct          *SeminarProductInfo `json:"early_product"`
+	LateProduct           *SeminarProductInfo `json:"late_product"`
+	EarlySurchargeProduct *SeminarProductInfo `json:"early_surcharge_product"`
+	LateSurchargeProduct  *SeminarProductInfo `json:"late_surcharge_product"`
+}

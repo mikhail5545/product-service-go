@@ -147,14 +147,14 @@ func (s *CourseService) CreateCourse(ctx context.Context, course *models.Course)
 	return course, nil
 }
 
-func (s *CourseService) UpdateCourse(ctx context.Context, course *models.Course) (*models.Course, error) {
+func (s *CourseService) UpdateCourse(ctx context.Context, course *models.Course, id string) (*models.Course, error) {
 	var courseToUpdate *models.Course
 	err := s.CourseRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txCourseRepo := s.CourseRepo.WithTx(tx)
 		txProductRepo := s.ProductRepo.WithTx(tx)
 
 		var findErr error
-		courseToUpdate, findErr = txCourseRepo.Find(ctx, course.ID)
+		courseToUpdate, findErr = txCourseRepo.Find(ctx, id)
 		if findErr != nil {
 			if errors.Is(findErr, gorm.ErrRecordNotFound) {
 				return &CourseServiceError{
