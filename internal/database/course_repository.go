@@ -31,6 +31,7 @@ type CourseRepository interface {
 	FindAll(ctx context.Context, limit, offset int) ([]models.Course, error)
 	Count(ctx context.Context) (int64, error)
 	// TODO: Create all CRUD functions for course_part
+	FindCoursePart(ctx context.Context, id string) (*models.CoursePart, error)
 
 	// Write operations
 	Create(ctx context.Context, course *models.Course) error
@@ -94,4 +95,10 @@ func (r *gormCourseRepository) Update(ctx context.Context, course *models.Course
 
 func (r *gormCourseRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Delete(&models.Course{}, id).Error
+}
+
+func (r *gormCourseRepository) FindCoursePart(ctx context.Context, id string) (*models.CoursePart, error) {
+	var coursePart models.CoursePart
+	err := r.db.WithContext(ctx).First(&coursePart, "id = ?", id).Error
+	return &coursePart, err
 }

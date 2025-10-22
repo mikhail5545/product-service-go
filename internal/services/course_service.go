@@ -25,14 +25,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	mediaclient "github.com/mikhail5545/product-service-go/internal/clients/mediaservice"
 	"github.com/mikhail5545/product-service-go/internal/database"
 	"github.com/mikhail5545/product-service-go/internal/models"
+	muxpb "github.com/mikhail5545/proto-go/proto/mux_upload/v0"
 	"gorm.io/gorm"
 )
 
 type CourseService struct {
 	CourseRepo  database.CourseRepository
 	ProductRepo database.ProductRepository
+	MediaClient *mediaclient.Client
 }
 
 type CourseServiceError struct {
@@ -53,10 +56,15 @@ func (e *CourseServiceError) GetCode() int {
 	return e.Code
 }
 
-func NewCourseService(cr database.CourseRepository, pr database.ProductRepository) *CourseService {
+func NewCourseService(
+	cr database.CourseRepository,
+	pr database.ProductRepository,
+	mc *mediaclient.Client,
+) *CourseService {
 	return &CourseService{
 		CourseRepo:  cr,
 		ProductRepo: pr,
+		MediaClient: mc,
 	}
 }
 
@@ -222,4 +230,64 @@ func (s *CourseService) UpdateCourse(ctx context.Context, course *models.Course,
 		return nil, err
 	}
 	return courseToUpdate, nil
+}
+
+func (s *CourseService) GetCoursePart(ctx context.Context, id string) (*models.CoursePart, error) {
+	if _, err := uuid.Parse(id); err != nil {
+		return nil, &CourseServiceError{
+			Msg:  "Invalid course part ID",
+			Err:  err,
+			Code: http.StatusBadRequest,
+		}
+	}
+
+	part, err := s.CourseRepo.FindCoursePart(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &CourseServiceError{
+				Msg:  "Course part not found",
+				Err:  err,
+				Code: http.StatusNotFound,
+			}
+		}
+		return nil, &CourseServiceError{
+			Msg:  "Failed to get course part",
+			Err:  err,
+			Code: http.StatusInternalServerError,
+		}
+	}
+
+	// call media-service-go to get details of MUXUpload related to part
+	if part.MUXVideoID != nil {
+		response, err := s.MediaClient.GetMuxUpload(ctx, &muxpb.GetMuxUploadRequest{Id: *part.MUXVideoID})
+		if err != nil {
+			return nil, &CourseServiceError{
+				Msg:  "Failed to get mux upload from media service",
+				Err:  err,
+				Code: http.StatusServiceUnavailable,
+			}
+		}
+		part.MUXVideo = &models.MUXUpload{
+			ID:                    response.MuxUpload.GetId(),
+			CreatedAt:             response.MuxUpload.CreatedAt.AsTime(),
+			UpdatedAt:             response.MuxUpload.UpdatedAt.AsTime(),
+			MUXUploadID:           response.MuxUpload.MuxUploadId,
+			MUXAssetID:            response.MuxUpload.MuxAssetId,
+			MUXPlaybackID:         response.MuxUpload.MuxPlaybackId,
+			VideoProcessingStatus: response.MuxUpload.VideoProcessingStatus,
+			AspectRatio:           response.MuxUpload.AspectRatio,
+		}
+
+		duration := float64(response.MuxUpload.GetDuration())
+		mw := int(response.MuxUpload.GetWidth())
+		mh := int(response.MuxUpload.GetHeight())
+		asset_created_at := response.MuxUpload.GetAssetCreatedAt().AsTime()
+
+		part.MUXVideo.Duration = &duration
+		part.MUXVideo.MaxWidth = &mw
+		part.MUXVideo.MaxHeight = &mh
+		part.MUXVideo.AssetCreatedAt = &asset_created_at
+	}
+
+	return part, nil
 }
