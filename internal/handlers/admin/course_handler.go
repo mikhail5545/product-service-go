@@ -113,3 +113,15 @@ func (h *CourseHandler) UpdateCourse(c echo.Context) error {
 
 	return c.NoContent(http.StatusAccepted)
 }
+
+func (h *CourseHandler) GetCoursePart(c echo.Context) error {
+	id := c.Param(":part_id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid course ID"})
+	}
+	part, err := h.courseService.GetCoursePart(c.Request().Context(), id)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, part)
+}

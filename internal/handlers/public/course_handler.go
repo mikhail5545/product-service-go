@@ -19,6 +19,7 @@ package public
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/mikhail5545/product-service-go/internal/services"
@@ -42,4 +43,35 @@ func (h *CourseHandler) GetCourse(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, course)
+}
+
+func (h *CourseHandler) GetCourses(c echo.Context) error {
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil || offset <= -1 {
+		offset = 0
+	}
+	courses, total, err := h.courseService.GetCourses(c.Request().Context(), limit, offset)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]any{
+		"courses": courses,
+		"total":   total,
+	})
+}
+
+func (h *CourseHandler) GetCoursePart(c echo.Context) error {
+	id := c.Param(":part_id")
+	if id == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid course ID"})
+	}
+	part, err := h.courseService.GetCoursePart(c.Request().Context(), id)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, part)
 }

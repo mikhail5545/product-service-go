@@ -64,7 +64,9 @@ func SetupRouter(
 	}
 	courses := ver.Group("/courses")
 	{
+		courses.GET("", courseHandler.GetCourses)
 		courses.GET("/:id", courseHandler.GetCourse)
+		courses.GET("/:id/parts/:part_id", courseHandler.GetCoursePart)
 	}
 	seminars := ver.Group("/seminars")
 	{
@@ -96,6 +98,7 @@ func SetupRouter(
 			adminCourses.GET("/:id", adminCourseHandler.GetCourse)
 			adminCourses.POST("", adminCourseHandler.CreateCourse)
 			adminCourses.PUT("/:id", adminCourseHandler.UpdateCourse)
+			adminCourses.GET("/:id/parts/:part_id", adminCourseHandler.GetCoursePart)
 		}
 		adminSeminars := admin.Group("/seminars")
 		{
