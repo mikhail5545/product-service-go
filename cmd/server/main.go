@@ -26,6 +26,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	mediaclient "github.com/mikhail5545/product-service-go/internal/clients/mediaservice"
 	"github.com/mikhail5545/product-service-go/internal/database"
 	"github.com/mikhail5545/product-service-go/internal/routers"
 	"github.com/mikhail5545/product-service-go/internal/server"
@@ -53,6 +54,8 @@ func main() {
 	DBPassword := os.Getenv("POSTGRES_PASSWORD")
 	DBName := os.Getenv("POSTGRES_DB")
 
+	mediaServiceAddr := os.Getenv("MEDIA_SERVICE_ADDR")
+
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", DBHost, DBPort, DBUser, DBPassword, DBName)
 
 	db, err := database.NewPostgresDB(context.Background(), dsn)
@@ -61,6 +64,13 @@ func main() {
 	}
 
 	log.Println("Database connection established.")
+
+	// --- Create gRPC Clients ---
+	mediaSvcClient, err := mediaclient.NewClient(context.Background(), mediaServiceAddr)
+	if err != nil {
+		log.Fatalf("Failed to create media service client: %v", err)
+	}
+	defer mediaSvcClient.Close()
 
 	// Create an instance of required repositories
 	productRepo := database.NewProductRepository(db)
@@ -71,7 +81,7 @@ func main() {
 	// Create an instance of required services
 	productService := services.NewProductService(productRepo)
 	trainingSessionService := services.NewTrainingSessionService(trainingSessionRepo, productRepo)
-	courseService := services.NewCourseService(courseRepo, productRepo)
+	courseService := services.NewCourseService(courseRepo, productRepo, mediaSvcClient)
 	seminarService := services.NewSeminarService(seminarRepo, productRepo)
 
 	// --- Start gRPC server ---
