@@ -20,19 +20,33 @@ package routers
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/mikhail5545/product-service-go/internal/handlers"
-	adminhandlers "github.com/mikhail5545/product-service-go/internal/handlers/admin"
-	publichandlers "github.com/mikhail5545/product-service-go/internal/handlers/public"
-	"github.com/mikhail5545/product-service-go/internal/services"
+	admincourse "github.com/mikhail5545/product-service-go/internal/handlers/admin/course"
+	admincp "github.com/mikhail5545/product-service-go/internal/handlers/admin/course_part"
+	adminproduct "github.com/mikhail5545/product-service-go/internal/handlers/admin/product"
+	adminseminar "github.com/mikhail5545/product-service-go/internal/handlers/admin/seminar"
+	admints "github.com/mikhail5545/product-service-go/internal/handlers/admin/training_session"
+	publiccourse "github.com/mikhail5545/product-service-go/internal/handlers/public/course"
+	publiccp "github.com/mikhail5545/product-service-go/internal/handlers/public/course_part"
+	publicproduct "github.com/mikhail5545/product-service-go/internal/handlers/public/product"
+	publicseminar "github.com/mikhail5545/product-service-go/internal/handlers/public/seminar"
+	publicts "github.com/mikhail5545/product-service-go/internal/handlers/public/training_session"
+	"github.com/mikhail5545/product-service-go/internal/services/course"
+	coursepart "github.com/mikhail5545/product-service-go/internal/services/course_part"
+	"github.com/mikhail5545/product-service-go/internal/services/product"
+	"github.com/mikhail5545/product-service-go/internal/services/seminar"
+	trainingsession "github.com/mikhail5545/product-service-go/internal/services/training_session"
+	"github.com/mikhail5545/product-service-go/internal/util/errors"
 )
 
-func SetupRouter(
-	e *echo.Echo, productService *services.ProductService,
-	tsService *services.TrainingSessionService,
-	courseService *services.CourseService,
-	seminarService *services.SeminarService,
+func Setup(
+	e *echo.Echo,
+	productService *product.Service,
+	cpService *coursepart.Service,
+	tsService *trainingsession.Service,
+	courseService *course.Service,
+	seminarService *seminar.Service,
 ) {
-	e.HTTPErrorHandler = handlers.HTTPErrorHandler
+	e.HTTPErrorHandler = errors.HTTPErrorHandler
 
 	api := e.Group("/api")
 	ver := api.Group("/v0")
@@ -41,72 +55,82 @@ func SetupRouter(
 	e.Use(middleware.Recover())
 
 	// --- Public handlers ---
-	productHandler := publichandlers.NewProductHandler(productService)
-	tsHandler := publichandlers.NewTrainingSessionHandler(tsService)
-	courseHandler := publichandlers.NewCourseHandler(courseService)
-	seminarHandler := publichandlers.NewSeminarHandler(seminarService)
+	productHandler := publicproduct.New(productService)
+	cpHandler := publiccp.New(cpService)
+	tsHandler := publicts.New(tsService)
+	courseHandler := publiccourse.New(courseService)
+	seminarHandler := publicseminar.New(seminarService)
 
 	// --- Admin handlers ---
-	adminProductHandler := adminhandlers.NewProductHandler(productService)
-	adminTrainingSessionHandler := adminhandlers.NewTrainingSessionHandler(tsService)
-	adminCourseHandler := adminhandlers.NewCourseHandler(courseService)
-	adminSeminarHandler := adminhandlers.NewSeminarService(seminarService)
+	adminProductHandler := adminproduct.New(productService)
+	admincpHandler := admincp.New(cpService)
+	admintsHandler := admints.New(tsService)
+	adminCourseHandler := admincourse.New(courseService)
+	adminSeminarHandler := adminseminar.New(seminarService)
 
 	products := ver.Group("/products")
 	{
-		products.GET("", productHandler.GetProducts)
-		products.GET("/:id", productHandler.GetProduct)
+		products.GET("", productHandler.List)
+		products.GET("/:id", productHandler.Get)
 	}
 	trainingSesssions := ver.Group("/training-sessions")
 	{
-		trainingSesssions.GET("", tsHandler.GetTrainingSessions)
-		trainingSesssions.GET("/:id", tsHandler.GetTrainingSession)
+		trainingSesssions.GET("", tsHandler.List)
+		trainingSesssions.GET("/:id", tsHandler.Get)
 	}
 	courses := ver.Group("/courses")
 	{
-		courses.GET("", courseHandler.GetCourses)
-		courses.GET("/:id", courseHandler.GetCourse)
-		courses.GET("/:id/parts/:part_id", courseHandler.GetCoursePart)
+		courses.GET("", courseHandler.List)
+		courses.GET("/:id", courseHandler.Get)
+	}
+	course_parts := ver.Group("/course-parts")
+	{
+		course_parts.GET("/:cid", cpHandler.List)
+		course_parts.GET("/:id", cpHandler.Get)
 	}
 	seminars := ver.Group("/seminars")
 	{
-		seminars.GET("", seminarHandler.GetSeminars)
-		seminars.GET("/:id", seminarHandler.GetSeminar)
+		seminars.GET("", seminarHandler.List)
+		seminars.GET("/:id", seminarHandler.Get)
 	}
 
 	admin := ver.Group("/admin")
 	{
 		adminProducts := admin.Group("/products")
 		{
-			adminProducts.GET("", adminProductHandler.GetProducts)
-			adminProducts.GET("/:id", adminProductHandler.GetProduct)
-			adminProducts.POST("", adminProductHandler.CreateProduct)
-			adminProducts.PUT("/:id", adminProductHandler.UpdateProduct)
-			adminProducts.DELETE("/:id", adminProductHandler.DeleteProduct)
+			adminProducts.GET("", adminProductHandler.List)
+			adminProducts.GET("/:id", adminProductHandler.Get)
+			adminProducts.POST("", adminProductHandler.Create)
+			adminProducts.PATCH("/:id", adminProductHandler.Update)
+			adminProducts.DELETE("/:id", adminProductHandler.Delete)
 		}
 		adminTrainingSessions := admin.Group("/training-sessions")
 		{
-			adminTrainingSessions.GET("", adminTrainingSessionHandler.GetTrainingSessions)
-			adminTrainingSessions.GET("/:id", adminTrainingSessionHandler.GetTrainingSession)
-			adminTrainingSessions.POST("", adminTrainingSessionHandler.CreateTrainingSession)
-			adminTrainingSessions.PUT("/:id", adminTrainingSessionHandler.UpdateTrainingSession)
-			adminTrainingSessions.DELETE("/:id", adminTrainingSessionHandler.DeleteTrainingSession)
+			adminTrainingSessions.GET("", admintsHandler.List)
+			adminTrainingSessions.GET("/:id", admintsHandler.Get)
+			adminTrainingSessions.POST("", admintsHandler.Create)
+			adminTrainingSessions.PATCH("/:id", admintsHandler.Update)
+			adminTrainingSessions.DELETE("/:id", admintsHandler.Delete)
 		}
 		adminCourses := admin.Group("/courses")
 		{
-			adminCourses.GET("", adminCourseHandler.GetCourses)
-			adminCourses.GET("/:id", adminCourseHandler.GetCourse)
-			adminCourses.POST("", adminCourseHandler.CreateCourse)
-			adminCourses.PUT("/:id", adminCourseHandler.UpdateCourse)
-			adminCourses.GET("/:id/parts/:part_id", adminCourseHandler.GetCoursePart)
+			adminCourses.GET("", adminCourseHandler.List)
+			adminCourses.GET("/:id", adminCourseHandler.Get)
+			adminCourses.POST("", adminCourseHandler.Create)
+			adminCourses.PATCH("/:id", adminCourseHandler.Update)
+		}
+		adminCourseParts := admin.Group("/course-parts")
+		{
+			adminCourseParts.GET("", admincpHandler.List)
+			adminCourseParts.GET("/:id", admincpHandler.Get)
 		}
 		adminSeminars := admin.Group("/seminars")
 		{
-			adminSeminars.GET("", adminSeminarHandler.GetSeminars)
-			adminSeminars.GET("/:id", adminSeminarHandler.GetSeminar)
-			adminSeminars.POST("", adminSeminarHandler.CreateSeminar)
-			adminSeminars.PUT("/:id", adminSeminarHandler.UpdateSeminar)
-			adminSeminars.DELETE("/:id", adminSeminarHandler.DeleteSeminar)
+			adminSeminars.GET("", adminSeminarHandler.List)
+			adminSeminars.GET("/:id", adminSeminarHandler.Get)
+			adminSeminars.POST("", adminSeminarHandler.Create)
+			adminSeminars.PATCH("/:id", adminSeminarHandler.Update)
+			adminSeminars.DELETE("/:id", adminSeminarHandler.Delete)
 		}
 	}
 }

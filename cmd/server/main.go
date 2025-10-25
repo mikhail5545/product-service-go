@@ -28,13 +28,17 @@ import (
 	"github.com/labstack/echo/v4"
 	mediaclient "github.com/mikhail5545/product-service-go/internal/clients/mediaservice"
 	"github.com/mikhail5545/product-service-go/internal/database"
+	courserepo "github.com/mikhail5545/product-service-go/internal/database/course"
+	cprepo "github.com/mikhail5545/product-service-go/internal/database/course_part"
+	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
+	seminarrepo "github.com/mikhail5545/product-service-go/internal/database/seminar"
+	tsrepo "github.com/mikhail5545/product-service-go/internal/database/training_session"
 	"github.com/mikhail5545/product-service-go/internal/routers"
-	"github.com/mikhail5545/product-service-go/internal/server"
-	"github.com/mikhail5545/product-service-go/internal/services"
-	coursepb "github.com/mikhail5545/proto-go/proto/course/v0"
-	productpb "github.com/mikhail5545/proto-go/proto/product/v0"
-	seminarpb "github.com/mikhail5545/proto-go/proto/seminar/v0"
-	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
+	courseservice "github.com/mikhail5545/product-service-go/internal/services/course"
+	cpservice "github.com/mikhail5545/product-service-go/internal/services/course_part"
+	productservice "github.com/mikhail5545/product-service-go/internal/services/product"
+	seminarservice "github.com/mikhail5545/product-service-go/internal/services/seminar"
+	tsservice "github.com/mikhail5545/product-service-go/internal/services/training_session"
 	"google.golang.org/grpc"
 )
 
@@ -73,16 +77,18 @@ func main() {
 	defer mediaSvcClient.Close()
 
 	// Create an instance of required repositories
-	productRepo := database.NewProductRepository(db)
-	trainingSessionRepo := database.NewTrainingSessionRepository(db)
-	courseRepo := database.NewCourseRepository(db)
-	seminarRepo := database.NewSeminarRepository(db)
+	productRepo := productrepo.New(db)
+	trainingSessionRepo := tsrepo.New(db)
+	courseRepo := courserepo.New(db)
+	seminarRepo := seminarrepo.New(db)
+	coursePartRepo := cprepo.New(db)
 
 	// Create an instance of required services
-	productService := services.NewProductService(productRepo)
-	trainingSessionService := services.NewTrainingSessionService(trainingSessionRepo, productRepo)
-	courseService := services.NewCourseService(courseRepo, productRepo, mediaSvcClient)
-	seminarService := services.NewSeminarService(seminarRepo, productRepo)
+	productService := productservice.New(productRepo)
+	trainingSessionService := tsservice.New(trainingSessionRepo, productRepo)
+	courseService := courseservice.New(courseRepo, productRepo, mediaSvcClient)
+	seminarService := seminarservice.New(seminarRepo, productRepo)
+	coursePartService := cpservice.New(coursePartRepo, courseRepo)
 
 	// --- Start gRPC server ---
 	go func() {
@@ -103,7 +109,7 @@ func main() {
 
 	// Register HTTP handlers
 
-	routers.SetupRouter(e, productService, trainingSessionService, courseService, seminarService)
+	routers.Setup(e, productService, coursePartService, trainingSessionService, courseService, seminarService)
 	httpListenAddr := fmt.Sprintf(":%d", httpPort)
 	if err := e.Start(httpListenAddr); err != nil {
 		log.Fatalf("Failed to start HTTP server: %v", err)
@@ -111,25 +117,25 @@ func main() {
 }
 
 func startGRPCServer(
-	productService *services.ProductService,
-	tsService *services.TrainingSessionService,
-	courseService *services.CourseService,
-	seminarService *services.SeminarService,
+	productService *productservice.Service,
+	tsService *tsservice.Service,
+	courseService *courseservice.Service,
+	seminarService *seminarservice.Service,
 	lis net.Listener,
 ) *grpc.Server {
 	grpcServer := grpc.NewServer()
 
-	// Create instances of required gRPC server implementations
-	productServer := server.NewProductServer(productService)
-	trainingSessionServer := server.NewTrainingSessionServer(tsService)
-	courseServer := server.NewCourseServer(courseService)
-	seminarServer := server.NewSeminarServer(seminarService)
+	// // Create instances of required gRPC server implementations
+	// productServer := server.NewProductServer(productService)
+	// trainingSessionServer := server.NewTrainingSessionServer(tsService)
+	// courseServer := server.NewCourseServer(courseService)
+	// seminarServer := server.NewSeminarServer(seminarService)
 
-	// Register gRPC services with the server
-	productpb.RegisterProductServiceServer(grpcServer, productServer)
-	trainingsessionpb.RegisterTrainingSessionServiceServer(grpcServer, trainingSessionServer)
-	coursepb.RegisterCourseServiceServer(grpcServer, courseServer)
-	seminarpb.RegisterSeminarServiceServer(grpcServer, seminarServer)
+	// // Register gRPC services with the server
+	// productpb.RegisterProductServiceServer(grpcServer, productServer)
+	// trainingsessionpb.RegisterTrainingSessionServiceServer(grpcServer, trainingSessionServer)
+	// coursepb.RegisterCourseServiceServer(grpcServer, courseServer)
+	// seminarpb.RegisterSeminarServiceServer(grpcServer, seminarServer)
 
 	return grpcServer
 }

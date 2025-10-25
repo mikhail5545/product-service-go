@@ -60,3 +60,7 @@ func (c *Client) Close() error {
 func (c *Client) GetMuxUpload(ctx context.Context, req *muxpb.GetMuxUploadRequest) (*muxpb.GetMuxUploadResponse, error) {
 	return c.client.GetMuxUpload(ctx, req)
 }
+
+func (c *Client) DeleteMuxUpload(ctx context.Context, req *muxpb.DeleteMuxUploadRequest) (*muxpb.DeleteMuxUploadResponse, error) {
+	return c.client.DeleteMuxUpload(ctx, req)
+}
