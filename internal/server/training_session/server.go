@@ -15,7 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package server
+/*
+Package trainingsession provides the implementation of the gRPC
+[trainingsessionpb.TrainingSessionServiceServer] interface and provides
+various operations for TrainingSession models.
+*/
+package trainingsession
 
 import (
 	"context"
@@ -27,15 +32,24 @@ import (
 	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
 )
 
+// Server implements the gRPC [trainingsessionpb.TrainingSessionServiceServer] interface and provides
+// operations for TrainingSession models. It acts as an adapter between the gRPC transport layer
+// and the server-layer buusiness logic of microservice, defined in the [trainingsession.Service].
+//
+// For more information about underlying gRPC server, see [github.com/mikhail5545/proto-go].
 type Server struct {
 	trainingsessionpb.UnimplementedTrainingSessionServiceServer
 	service *trainingsession.Service
 }
 
-func NewServer(s *trainingsession.Service) *Server {
+// New creates a new [trainingsession.Server].
+func New(s *trainingsession.Service) *Server {
 	return &Server{service: s}
 }
 
+// Get retrieves a training session by their ID.
+// It returns the full training session object.
+// If the training session is not found, it returns a `NotFound` gRPC error.
 func (s *Server) Get(ctx context.Context, req *trainingsessionpb.GetRequest) (*trainingsessionpb.GetResponse, error) {
 	ts, err := s.service.Get(ctx, req.GetId())
 	if err != nil {
@@ -45,6 +59,9 @@ func (s *Server) Get(ctx context.Context, req *trainingsessionpb.GetRequest) (*t
 	return &trainingsessionpb.GetResponse{TrainingSession: types.TrainingSessionToProtobuf(ts)}, nil
 }
 
+// List retrieves a paginated list of all training sessions.
+// The response contains a list of full training session objects.
+// and the total number of training sessions in the system.
 func (s *Server) List(ctx context.Context, req *trainingsessionpb.ListRequest) (*trainingsessionpb.ListResponse, error) {
 	ts, total, err := s.service.List(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
@@ -58,6 +75,11 @@ func (s *Server) List(ctx context.Context, req *trainingsessionpb.ListRequest) (
 	return &trainingsessionpb.ListResponse{TrainingSessions: pbTs, Total: total}, nil
 }
 
+// Create creates a new training session record, typically in the process of direct training session
+// creation. It automatically creates an underlying product.
+//
+// If request payload not satisfies service expectations, it returns a `InvalidArgument` gRPC error.
+// It returns newly created course training session with all fields.
 func (s *Server) Create(ctx context.Context, req *trainingsessionpb.CreateRequest) (*trainingsessionpb.CreateResponse, error) {
 	ts := &models.TrainingSession{
 		DurationMinutes: int(req.GetDurationMinutes()),
@@ -76,6 +98,12 @@ func (s *Server) Create(ctx context.Context, req *trainingsessionpb.CreateReques
 	return &trainingsessionpb.CreateResponse{TrainingSession: types.TrainingSessionToProtobuf(ts)}, nil
 }
 
+// Update updates training session fields that have been acually changed. All request fields
+// except ID are optional, so service will update training session only if at least one field
+// has been updated.
+//
+// It populates only updated fields in the response along with the `fieldmaskpb.UpdateMask` which contains
+// paths to updated fields.
 func (s *Server) Update(ctx context.Context, req *trainingsessionpb.UpdateRequest) (*trainingsessionpb.UpdateResponse, error) {
 	ts := &models.TrainingSession{
 		DurationMinutes: int(req.GetDurationMinutes()),
@@ -94,6 +122,7 @@ func (s *Server) Update(ctx context.Context, req *trainingsessionpb.UpdateReques
 	return types.TrainingSessionToProtobufUpdate(updates, productUpdates), nil
 }
 
+// Delete completely deletes training session from the system.
 func (s *Server) Delete(ctx context.Context, req *trainingsessionpb.DeleteRequest) (*trainingsessionpb.DeleteResponse, error) {
 	err := s.service.Delete(ctx, req.GetId())
 	if err != nil {
