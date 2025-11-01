@@ -15,30 +15,70 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Package seminar provides repository-layer logic for seminar models.
 package seminar
 
 import (
 	"context"
 
-	"github.com/mikhail5545/product-service-go/internal/models"
+	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -destination=../../test/database/seminar_mock/repo_mock.go -package=seminar_mock github.com/mikhail5545/product-service-go/internal/database/seminar Repository
+
+// Repository defines the interface for seminar data operations.
 type Repository interface {
-	// Read operations
-	Get(ctx context.Context, id string) (*models.Seminar, error)
-	List(ctx context.Context, limit, offset int) ([]models.Seminar, error)
+	// --- Only published and not soft-deleted ---
+
+	// Get retrieves single seminar record from the database.
+	Get(ctx context.Context, id string) (*seminarmodel.Seminar, error)
+	// Select retrieves specidied seminar fields from the database.
+	Select(ctx context.Context, id string, fields ...string) (*seminarmodel.Seminar, error)
+	// List retrieves a paginated list of all seminar records in the database.
+	List(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error)
+	// Count counts the total number of all seminar records in the database.
 	Count(ctx context.Context) (int64, error)
 
-	// Write operations
-	Create(ctx context.Context, seminar *models.Seminar) error
-	Update(ctx context.Context, seminar *models.Seminar, updates any) (int64, error)
-	Delete(ctx context.Context, id string) error
+	// --- With soft-deleted, if soft-deleted then also unpublished ---
 
+	// GetWithDeleted retrieves single seminar record from the database including soft-deleted ones.
+	GetWithDeleted(ctx context.Context, id string) (*seminarmodel.Seminar, error)
+	// ListDeleted retrieves a paginated list of all soft-deleted seminar records from database.
+	ListDeleted(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error)
+	// CountDeleted counts the total number of all soft-deleted seminar records in the database.
+	CountDeleted(ctx context.Context) (int64, error)
+
+	// --- With unpublished, but not soft-deleted ---
+
+	// GetWithUnpublished retrieves single seminar record from the database including unpublished seminars.
+	GetWithUnpublished(ctx context.Context, id string) (*seminarmodel.Seminar, error)
+	// ListWithUnpublished retrieves paginated list of all unpublished seminar records from the database.
+	ListUnpublished(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error)
+	// CountWithUnpublished counts the total number of all unpublished seminar records in the database.
+	CountUnpublished(ctx context.Context) (int64, error)
+
+	// --- Common ---
+
+	// Create creates a new seminar record in the database.
+	Create(ctx context.Context, seminar *seminarmodel.Seminar) error
+	// SetInStock sets a new value for seminar's InStock field.
+	SetInStock(ctx context.Context, id string, inStock bool) (int64, error)
+	// Update performs partial update of a seminar record using updates.
+	Update(ctx context.Context, seminar *seminarmodel.Seminar, updates any) (int64, error)
+	// Delete performs soft-delete of a seminar record.
+	Delete(ctx context.Context, id string) (int64, error)
+	// DeletePermanent performs permanent delete of a seminar record.
+	DeletePermanent(ctx context.Context, id string) (int64, error)
+	// Restore restores soft-deleted seminar record.
+	Restore(ctx context.Context, id string) (int64, error)
+	// DB returns the underlying gorm.DB instance.
 	DB() *gorm.DB
+	// WithTx returns a new repository instance with the given transaction.
 	WithTx(tx *gorm.DB) Repository
 }
 
+// gormRepository holds gorm.DB for GORM-based database operations.
 type gormRepository struct {
 	db *gorm.DB
 }
@@ -58,33 +98,123 @@ func (r *gormRepository) WithTx(tx *gorm.DB) Repository {
 	return &gormRepository{db: tx}
 }
 
-func (r *gormRepository) Get(ctx context.Context, id string) (*models.Seminar, error) {
-	var seminar *models.Seminar
-	err := r.db.WithContext(ctx).Preload("ReservationProduct").Preload("EarlyProduct").Preload("LateProduct").Preload("EarlySurchargeProduct").Preload("LateSurchargeProduct").First(&seminar, "id = ?", id).Error
+// --- Only published and not soft-deleted ---
+
+// Get retrieves single seminar record from the database.
+func (r *gormRepository) Get(ctx context.Context, id string) (*seminarmodel.Seminar, error) {
+	var seminar *seminarmodel.Seminar
+	err := r.db.WithContext(ctx).Where("in_stock = ?", true).First(&seminar, "id = ?", id).Error
 	return seminar, err
 }
 
-func (r *gormRepository) List(ctx context.Context, limit, offset int) ([]models.Seminar, error) {
-	var seminars []models.Seminar
-	err := r.db.WithContext(ctx).Preload("ReservationProduct").Preload("EarlyProduct").Preload("LateProduct").Preload("EarlySurchargeProduct").Preload("LateSurchargeProduct").Order("created_at desc").Limit(limit).Offset(offset).Find(&seminars).Error
+// Select retrieves specidied seminar fields from the database.
+func (r *gormRepository) Select(ctx context.Context, id string, fields ...string) (*seminarmodel.Seminar, error) {
+	var seminar *seminarmodel.Seminar
+	err := r.db.WithContext(ctx).Model(&seminarmodel.Seminar{}).Where("in_stock = ?", true).Select(fields).Where("id = ?", id).First(&seminar).Error
+	return seminar, err
+}
+
+// List retrieves a paginated list of all seminar records in the database.
+func (r *gormRepository) List(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error) {
+	var seminars []seminarmodel.Seminar
+	err := r.db.WithContext(ctx).Model(&seminarmodel.Seminar{}).Where("in_stock = ?", true).Order("created_at desc").Limit(limit).Offset(offset).Find(&seminars).Error
 	return seminars, err
 }
 
+// Count counts the total number of all seminar records in the database.
 func (r *gormRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
-	err := r.db.WithContext(ctx).Model(&models.Seminar{}).Count(&count).Error
+	err := r.db.WithContext(ctx).Model(&seminarmodel.Seminar{}).Where("in_stock = ?", true).Count(&count).Error
 	return count, err
 }
 
-func (r *gormRepository) Create(ctx context.Context, seminar *models.Seminar) error {
+// --- With soft-deleted, if soft-deleted then also unpublished ---
+
+// GetWithDeleted retrieves single seminar record from the database including soft-deleted ones.
+func (r *gormRepository) GetWithDeleted(ctx context.Context, id string) (*seminarmodel.Seminar, error) {
+	var seminar *seminarmodel.Seminar
+	err := r.db.WithContext(ctx).Unscoped().First(&seminar, "id = ?", id).Error
+	return seminar, err
+}
+
+// ListDeleted retrieves a paginated list of all soft-deleted seminar records from database.
+func (r *gormRepository) ListDeleted(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error) {
+	var seminars []seminarmodel.Seminar
+	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Order("created_at desc").Limit(limit).Offset(offset).Find(&seminars).Error
+	return seminars, err
+}
+
+// CountDeleted counts the total number of all soft-deleted seminar records in the database.
+func (r *gormRepository) CountDeleted(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Unscoped().
+		Model(&seminarmodel.Seminar{}).
+		Where("deleted_at IS NOT NULL").
+		Count(&count).Error
+	return count, err
+}
+
+// --- With unpublished, but not soft-deleted ---
+
+// GetWithUnpublished retrieves single seminar record from the database including unpublished seminars.
+func (r *gormRepository) GetWithUnpublished(ctx context.Context, id string) (*seminarmodel.Seminar, error) {
+	var seminar seminarmodel.Seminar
+	err := r.db.WithContext(ctx).First(&seminar, id).Error
+	return &seminar, err
+}
+
+// ListUnpublished retrieves paginated list of all unpublished seminar records from the database.
+func (r *gormRepository) ListUnpublished(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error) {
+	var seminars []seminarmodel.Seminar
+	err := r.db.WithContext(ctx).
+		Model(&seminarmodel.Seminar{}).
+		Where("in_stock = ?", false).
+		Order("created_at DESC").
+		Limit(limit).Offset(offset).
+		Find(&seminars).Error
+	return seminars, err
+}
+
+// CountUnpublished counts the total number of all unpublished seminar records in the database.
+func (r *gormRepository) CountUnpublished(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&seminarmodel.Seminar{}).Where("in_stock = ?", false).Count(&count).Error
+	return count, err
+}
+
+// --- Common ---
+
+// Create creates a new CoursePart record in the database.
+func (r *gormRepository) Create(ctx context.Context, seminar *seminarmodel.Seminar) error {
 	return r.db.WithContext(ctx).Create(seminar).Error
 }
 
-func (r *gormRepository) Update(ctx context.Context, seminar *models.Seminar, updates any) (int64, error) {
+// SetInStock sets a new value for seminar's InStock field.
+func (r *gormRepository) SetInStock(ctx context.Context, id string, inStock bool) (int64, error) {
+	res := r.db.WithContext(ctx).Model(&seminarmodel.Seminar{}).Where("id = ?", id).Update("in_stock", inStock)
+	return res.RowsAffected, res.Error
+}
+
+// Update performs partial update of a seminar record using updates.
+func (r *gormRepository) Update(ctx context.Context, seminar *seminarmodel.Seminar, updates any) (int64, error) {
 	res := r.db.WithContext(ctx).Model(seminar).Updates(updates)
 	return res.RowsAffected, res.Error
 }
 
-func (r *gormRepository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&models.Seminar{}, id).Error
+// Delete performs soft-delete of a seminar record.
+func (r *gormRepository) Delete(ctx context.Context, id string) (int64, error) {
+	res := r.db.WithContext(ctx).Delete(&seminarmodel.Seminar{}, id)
+	return res.RowsAffected, res.Error
+}
+
+// DeletePermanent performs permanent delete of a seminar record.
+func (r *gormRepository) DeletePermanent(ctx context.Context, id string) (int64, error) {
+	res := r.db.WithContext(ctx).Unscoped().Delete(&seminarmodel.Seminar{}, id)
+	return res.RowsAffected, res.Error
+}
+
+// Restore restores soft-deleted seminar record.
+func (r *gormRepository) Restore(ctx context.Context, id string) (int64, error) {
+	res := r.db.WithContext(ctx).Unscoped().Model(&seminarmodel.Seminar{}).Where("id = ?", id).Update("deleted_at", nil)
+	return res.RowsAffected, res.Error
 }

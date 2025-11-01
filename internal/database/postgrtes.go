@@ -20,7 +20,12 @@ package database
 import (
 	"context"
 
-	"github.com/mikhail5545/product-service-go/internal/models"
+	coursemodel "github.com/mikhail5545/product-service-go/internal/models/course"
+	coursepartmodel "github.com/mikhail5545/product-service-go/internal/models/course_part"
+	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
+	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
+	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
+	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -31,7 +36,15 @@ func NewPostgresDB(ctx context.Context, dsn string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&models.Product{}, &models.TrainingSession{}, &models.CoursePart{}, &models.Course{})
+	err = db.AutoMigrate(
+		&productmodel.Product{},
+		&trainingsessionmodel.TrainingSession{},
+		&coursepartmodel.CoursePart{},
+		&coursemodel.Course{},
+		&trainingsessionmodel.TrainingSession{},
+		&seminarmodel.Seminar{},
+		&physicalgoodmodel.PhysicalGood{},
+	)
 	if err != nil {
 		sqlDB, _ := db.DB()
 		sqlDB.Close()
