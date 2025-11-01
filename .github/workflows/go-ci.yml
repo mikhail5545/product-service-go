@@ -51,7 +51,7 @@ jobs:
 
             -   name: Run Unit Tests, Filter and Collect Coverage
                 run: |
-                    go test -v race -covermode=atomic -coverprofile=coverage.tmp ./...
+                    go test -v -race -covermode=atomic -coverprofile=coverage.tmp ./...
                     grep -v 'internal/test/database' coverage.tmp > coverage.out
                 working-directory: ./
             
