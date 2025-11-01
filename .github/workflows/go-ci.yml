@@ -3,8 +3,16 @@ name: Go CI/CD Pipeline
 on:
     push:
         branches: ["main", "origin/master", "master"]
+        paths-ignore:
+            -   '**.md'
+            -   'docs/**'
+            -   'LICENSE'
     pull_request:
         branches: ["main", "origin/master", "master"]
+        paths-ignore:
+            -   '**.md'
+            -   'docs/**'
+            -   'LICENSE'
 
 jobs:
     build-and-test:
