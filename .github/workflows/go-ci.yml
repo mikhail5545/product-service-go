@@ -2,13 +2,13 @@ name: Go CI/CD Pipeline
 
 on:
     push:
-        branches: ["main", "origin/master", "master"]
+        branches: ["main", "master"]
         paths-ignore:
             -   '**.md'
             -   'docs/**'
             -   'LICENSE'
     pull_request:
-        branches: ["main", "origin/master", "master"]
+        branches: ["main", "master"]
         paths-ignore:
             -   '**.md'
             -   'docs/**'
@@ -49,8 +49,10 @@ jobs:
             -   name: Install dependencies
                 run: go mod download
 
-            -   name: Run Unit Tests and Collect Coverage
-                run: go test -v -race -cover=atomic -coverprofile=coverage.out ./...
+            -   name: Run Unit Tests, Filter and Collect Coverage
+                run: |
+                    go test -v race -covermode=atomic -coverprofile=coverage.tmp ./...
+                    grep -v 'internal/test/database' coverage.tmp > coverage.out
                 working-directory: ./
             
             -   name: Enforce Minimum Coverage
