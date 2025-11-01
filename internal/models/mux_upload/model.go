@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package models
+package muxupload
 
 import (
 	"time"
@@ -34,26 +34,4 @@ type MUXUpload struct {
 	MaxHeight             *int       `gorm:"null" json:"max_height,omitempty"`
 	MaxWidth              *int       `gorm:"null" json:"max_width,omitempty"`
 	AssetCreatedAt        *time.Time `gorm:"null" json:"asset_created_at,omitempty"`
-}
-
-// DTO models
-type UpdateMUXUploadRequest struct {
-	VideoProcessingStatus string    `json:"video_processing_status"`
-	MUXUploadID           string    `json:"mux_upload_id"`
-	MUXAssetID            string    `json:"mux_asset_id"`
-	MUXPlaybackID         string    `json:"mux_playback_id"`
-	Duration              float64   `json:"duration"`
-	AspectRatio           string    `json:"aspect_ratio"`
-	MaxHeight             int       `json:"max_height"`
-	MaxWidth              int       `json:"max_width"`
-	AssetCreatedAt        time.Time `json:"asset_created_at"`
-}
-
-type MUXVideo struct {
-	VideoProcessingStatus string  `json:"video_processing_status"`
-	MUXPlaybackID         string  `json:"mux_playback_id"`
-	Duration              float64 `json:"duration"`
-	AspectRatio           string  `json:"aspect_ratio"`
-	MaxHeight             int     `json:"max_height"`
-	MaxWidth              int     `json:"max_width"`
 }
