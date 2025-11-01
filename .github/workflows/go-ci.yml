@@ -39,7 +39,7 @@ jobs:
                 run: go mod download
 
             -   name: Run Unit Tests and Collect Coverage
-                run: go test -v -race -coverage=atomic -coverageprofile=coverage.out ./...
+                run: go test -v -race -cover=atomic -coverprofile=coverage.out ./...
                 working-directory: ./
             
             -   name: Enforce Minimum Coverage
