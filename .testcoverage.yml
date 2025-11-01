@@ -1,0 +1,6 @@
+test_coverage_threshold: 0.80
+
+diff_coverage)threshold: 0.90
+
+exclude_packages:
+    -   github.com/mikhail5545/product-service-go/test/database

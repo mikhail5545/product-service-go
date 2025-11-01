@@ -33,11 +33,11 @@ jobs:
             -   name: Run Unit Tests and Collect Coverage
                 run: go test -v -race -coverage=atomic -coverageprofile=coverage.out ./...
             
-            -   name: Enforce Minimum Coverage (e.g., 80%)
-                uses: wei/go-coverage-checkout@v1
+            -   name: Enforce Minimum Coverage
+                uses: vladopajic/go-test-coverage@v2
                 with:
-                    cover-file: coverage.out
-                    min-coverage: 80
+                    profile: coverage.out
+                    config: ./.testcoverage.yml
 
             -   name: Print Coverage Summary
                 run: go tool cover -func=coverage.out
