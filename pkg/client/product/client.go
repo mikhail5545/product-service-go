@@ -46,21 +46,7 @@ type Service interface {
 	// ListByType retrieves a paginated list of all products by their `type` field.
 	// The response contains a list of products that have specified `type`
 	// and the total number of products with that `type` in the system.
-	ListByType(ctx context.Context, req *productpb.ListByTypeRequest) (*productpb.ListByTypeResponse, error)
-	// Create creates a new product record, typically in the process of direct product
-	// creation. To create underlying product for other data types ([models.Course], [models.Seminar]),
-	// use specified Create methods of this data types.
-	//
-	// If request payload not satisfies service expectations, it returns a `InvalidArgument` gRPC error.
-	// It returns newly created Product model with all fields.
-	Create(ctx context.Context, req *productpb.CreateRequest) (*productpb.CreateResponse, error)
-	// Update updates product fields that have been acually changed. All request fields
-	// except ID are optional, so service will update product only if at least one field
-	// has been updated.
-	//
-	// It populates only updated fields in the response along with the `fieldmaskpb.UpdateMask` which contains
-	// paths to updated fields.
-	Update(ctx context.Context, req *productpb.UpdateRequest) (*productpb.UpdateResponse, error)
+	ListByDetailsType(ctx context.Context, req *productpb.ListByDetailsTypeRequest) (*productpb.ListByDetailsTypeResponse, error)
 
 	// Close tears down connection to the client and all underlying connections.
 	Close() error
@@ -104,34 +90,12 @@ func (c *Client) List(ctx context.Context, req *productpb.ListRequest) (*product
 	return c.client.List(ctx, req)
 }
 
-// ListByType calls [ProductServiceServer.ListByType] method via client connection
-// to retrieve a paginated list of all products by their `type` field.
+// ListByDetailsType calls [ProductServiceServer.ListByType] method via client connection
+// to retrieve a paginated list of all products by their `DetailsType` field.
 // The response contains a list of products that have specified `type`
 // and the total number of products with that `type` in the system.
-func (c *Client) ListByType(ctx context.Context, req *productpb.ListByTypeRequest) (*productpb.ListByTypeResponse, error) {
-	return c.client.ListByType(ctx, req)
-}
-
-// Create calls [ProductServiceServer.Create] method via client connection
-// to create a new product record, typically in the process of direct product
-// creation. To create underlying product for other data types ([models.Course], [models.Seminar]),
-// use specified Create methods of this data types.
-//
-// If request payload not satisfies service expectations, it returns a `InvalidArgument` gRPC error.
-// It returns newly created Product model with all fields.
-func (c *Client) Create(ctx context.Context, req *productpb.CreateRequest) (*productpb.CreateResponse, error) {
-	return c.client.Create(ctx, req)
-}
-
-// Update calls [ProductServiceServer.Update] method via client connection
-// to update product fields that have been acually changed. All request fields
-// except ID are optional, so service will update product only if at least one field
-// has been updated.
-//
-// It populates only updated fields in the response along with the `fieldmaskpb.UpdateMask` which contains
-// paths to updated fields.
-func (c *Client) Update(ctx context.Context, req *productpb.UpdateRequest) (*productpb.UpdateResponse, error) {
-	return c.client.Update(ctx, req)
+func (c *Client) ListByDetailsType(ctx context.Context, req *productpb.ListByDetailsTypeRequest) (*productpb.ListByDetailsTypeResponse, error) {
+	return c.client.ListByDetailsType(ctx, req)
 }
 
 // Close tears down connection to the client and all underlying connections.
