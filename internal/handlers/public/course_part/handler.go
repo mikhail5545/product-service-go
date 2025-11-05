@@ -18,19 +18,32 @@
 package coursepart
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	coursepart "github.com/mikhail5545/product-service-go/internal/services/course_part"
+	coursepartservice "github.com/mikhail5545/product-service-go/internal/services/course_part"
 	"github.com/mikhail5545/product-service-go/internal/util/request"
 )
 
 type Handler struct {
-	service *coursepart.Service
+	service coursepartservice.Service
 }
 
-func New(s *coursepart.Service) *Handler {
+func New(s coursepartservice.Service) *Handler {
 	return &Handler{service: s}
+}
+
+func (h *Handler) ServeError(c echo.Context, code int, msg string) error {
+	return c.JSON(code, map[string]string{"error": msg})
+}
+
+func (h *Handler) HandleServiceError(c echo.Context, err error) error {
+	var se *coursepartservice.Error
+	if errors.As(err, &se) {
+		return c.JSON(se.GetCode(), map[string]any{"error": se.Msg})
+	}
+	return c.JSON(http.StatusInternalServerError, map[string]any{"error": "Internal server error"})
 }
 
 func (h *Handler) Get(c echo.Context) error {
@@ -38,11 +51,11 @@ func (h *Handler) Get(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	course, err := h.service.Get(c.Request().Context(), id)
+	details, err := h.service.Get(c.Request().Context(), id)
 	if err != nil {
-		return err
+		return h.HandleServiceError(c, err)
 	}
-	return c.JSON(http.StatusOK, course)
+	return c.JSON(http.StatusOK, map[string]any{"course_part_details": details})
 }
 
 func (h *Handler) List(c echo.Context) error {
@@ -50,13 +63,16 @@ func (h *Handler) List(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	limit, offset := request.GetPaginationParams(c, -1, 0)
-	courses, total, err := h.service.List(c.Request().Context(), cid, limit, offset)
+	limit, offset, err := request.GetPaginationParams(c, -1, 0)
 	if err != nil {
 		return err
 	}
+	details, total, err := h.service.List(c.Request().Context(), cid, limit, offset)
+	if err != nil {
+		return h.HandleServiceError(c, err)
+	}
 	return c.JSON(http.StatusOK, map[string]any{
-		"course_parts": courses,
-		"total":        total,
+		"course_part_details": details,
+		"total":               total,
 	})
 }

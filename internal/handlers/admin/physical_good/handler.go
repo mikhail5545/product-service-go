@@ -15,23 +15,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package seminar
+package physicalgood
 
 import (
 	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/mikhail5545/product-service-go/internal/models/seminar"
-	seminarservice "github.com/mikhail5545/product-service-go/internal/services/seminar"
+	physicalgood "github.com/mikhail5545/product-service-go/internal/models/physical_good"
+	physicalgoodservice "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/util/request"
 )
 
 type Handler struct {
-	service seminarservice.Service
+	service physicalgoodservice.Service
 }
 
-func New(s seminarservice.Service) *Handler {
+func New(s physicalgoodservice.Service) *Handler {
 	return &Handler{service: s}
 }
 
@@ -40,7 +40,7 @@ func (h *Handler) ServeError(c echo.Context, code int, msg string) error {
 }
 
 func (h *Handler) HandleServiceError(c echo.Context, err error) error {
-	var se *seminarservice.Error
+	var se *physicalgoodservice.Error
 	if errors.As(err, &se) {
 		return c.JSON(se.GetCode(), map[string]any{"error": se.Msg})
 	}
@@ -48,7 +48,7 @@ func (h *Handler) HandleServiceError(c echo.Context, err error) error {
 }
 
 func (h *Handler) Get(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
 	if err != nil {
 		return err
 	}
@@ -56,11 +56,11 @@ func (h *Handler) Get(c echo.Context) error {
 	if err != nil {
 		return h.HandleServiceError(c, err)
 	}
-	return c.JSON(http.StatusOK, map[string]any{"seminar_details": details})
+	return c.JSON(http.StatusOK, map[string]any{"physical_good_details": details})
 }
 
 func (h *Handler) GetWithDeleted(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
 	if err != nil {
 		return err
 	}
@@ -68,11 +68,11 @@ func (h *Handler) GetWithDeleted(c echo.Context) error {
 	if err != nil {
 		return h.HandleServiceError(c, err)
 	}
-	return c.JSON(http.StatusOK, map[string]any{"seminar_details": details})
+	return c.JSON(http.StatusOK, map[string]any{"physical_good_details": details})
 }
 
 func (h *Handler) GetWithUnpublished(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
 	if err != nil {
 		return err
 	}
@@ -80,9 +80,13 @@ func (h *Handler) GetWithUnpublished(c echo.Context) error {
 	if err != nil {
 		return h.HandleServiceError(c, err)
 	}
-	return c.JSON(http.StatusOK, map[string]any{"seminar_details": details})
+	return c.JSON(http.StatusOK, map[string]any{"physical_good_details": details})
 }
 
+// List handles the retrieval of a paginated list of published physical goods.
+// @Summary List published physical goods
+// @Description Retrieves a paginated list of physical goods that are currently published.
+// @Success 200 {object} map[string]any{physical_good_details=[]physicalgood.PhysicalGoodDetails, total=int64}
 func (h *Handler) List(c echo.Context) error {
 	limit, offset, err := request.GetPaginationParams(c, 10, 0)
 	if err != nil {
@@ -90,14 +94,18 @@ func (h *Handler) List(c echo.Context) error {
 	}
 	details, total, err := h.service.List(c.Request().Context(), limit, offset)
 	if err != nil {
-		return h.HandleServiceError(c, err)
+		h.HandleServiceError(c, err)
 	}
 	return c.JSON(http.StatusOK, map[string]any{
-		"seminar_details": details,
-		"total":           total,
+		"physical_good_details": details,
+		"total":                 total,
 	})
 }
 
+// ListDeleted handles the retrieval of a paginated list of soft-deleted physical goods.
+// @Summary List soft-deleted physical goods
+// @Description Retrieves a paginated list of physical goods that have been soft-deleted.
+// @Success 200 {object} map[string]any{physical_good_details=[]physicalgood.PhysicalGoodDetails, total=int64}
 func (h *Handler) ListDeleted(c echo.Context) error {
 	limit, offset, err := request.GetPaginationParams(c, 10, 0)
 	if err != nil {
@@ -105,14 +113,18 @@ func (h *Handler) ListDeleted(c echo.Context) error {
 	}
 	details, total, err := h.service.ListDeleted(c.Request().Context(), limit, offset)
 	if err != nil {
-		return h.HandleServiceError(c, err)
+		h.HandleServiceError(c, err)
 	}
 	return c.JSON(http.StatusOK, map[string]any{
-		"seminar_details": details,
-		"total":           total,
+		"physical_good_details": details,
+		"total":                 total,
 	})
 }
 
+// ListUnpublished handles the retrieval of a paginated list of unpublished physical goods.
+// @Summary List unpublished physical goods
+// @Description Retrieves a paginated list of physical goods that are not currently published.
+// @Success 200 {object} map[string]any{physical_good_details=[]physicalgood.PhysicalGoodDetails, total=int64}
 func (h *Handler) ListUnpublished(c echo.Context) error {
 	limit, offset, err := request.GetPaginationParams(c, 10, 0)
 	if err != nil {
@@ -120,18 +132,18 @@ func (h *Handler) ListUnpublished(c echo.Context) error {
 	}
 	details, total, err := h.service.ListUnpublished(c.Request().Context(), limit, offset)
 	if err != nil {
-		return h.HandleServiceError(c, err)
+		h.HandleServiceError(c, err)
 	}
 	return c.JSON(http.StatusOK, map[string]any{
-		"seminar_details": details,
-		"total":           total,
+		"physical_good_details": details,
+		"total":                 total,
 	})
 }
 
 func (h *Handler) Create(c echo.Context) error {
-	req := new(seminar.CreateRequest)
-	if err := request.BindAndValidateJSON(c, req); err != nil {
-		return err
+	var req *physicalgood.CreateRequest
+	if err := c.Bind(&req); err != nil {
+		return h.ServeError(c, http.StatusBadRequest, "Invalid request JSON payload")
 	}
 	resp, err := h.service.Create(c.Request().Context(), req)
 	if err != nil {
@@ -140,14 +152,38 @@ func (h *Handler) Create(c echo.Context) error {
 	return c.JSON(http.StatusCreated, map[string]any{"response": resp})
 }
 
-func (h *Handler) Update(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
+func (h *Handler) Publish(c echo.Context) error {
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
 	if err != nil {
 		return err
 	}
-	req := new(seminar.UpdateRequest)
-	if err := request.BindAndValidateJSON(c, req); err != nil {
+	err = h.service.Publish(c.Request().Context(), id)
+	if err != nil {
+		return h.HandleServiceError(c, err)
+	}
+	return c.NoContent(http.StatusAccepted)
+}
+
+func (h *Handler) Unpublish(c echo.Context) error {
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
+	if err != nil {
 		return err
+	}
+	err = h.service.Unpublish(c.Request().Context(), id)
+	if err != nil {
+		return h.HandleServiceError(c, err)
+	}
+	return c.NoContent(http.StatusAccepted)
+}
+
+func (h *Handler) Update(c echo.Context) error {
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
+	if err != nil {
+		return err
+	}
+	var req *physicalgood.UpdateRequest
+	if err := c.Bind(&req); err != nil {
+		return h.ServeError(c, http.StatusBadRequest, "Invalid request JSON payload")
 	}
 	req.ID = id
 	updates, err := h.service.Update(c.Request().Context(), req)
@@ -157,56 +193,37 @@ func (h *Handler) Update(c echo.Context) error {
 	return c.JSON(http.StatusAccepted, map[string]any{"updates": updates})
 }
 
-func (h *Handler) Publish(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
-	if err != nil {
-		return err
-	}
-	if err := h.service.Publish(c.Request().Context(), id); err != nil {
-		return h.HandleServiceError(c, err)
-	}
-	return c.NoContent(http.StatusAccepted)
-}
-
-func (h *Handler) Unpublish(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
-	if err != nil {
-		return err
-	}
-	if err := h.service.Unpublish(c.Request().Context(), id); err != nil {
-		return h.HandleServiceError(c, err)
-	}
-	return c.NoContent(http.StatusAccepted)
-}
-
 func (h *Handler) Delete(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
 	if err != nil {
 		return err
 	}
-	if err := h.service.Delete(c.Request().Context(), id); err != nil {
+	err = h.service.Delete(c.Request().Context(), id)
+	if err != nil {
 		return h.HandleServiceError(c, err)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) DeletePermanent(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
 	if err != nil {
 		return err
 	}
-	if err := h.service.DeletePermanent(c.Request().Context(), id); err != nil {
+	err = h.service.DeletePermanent(c.Request().Context(), id)
+	if err != nil {
 		return h.HandleServiceError(c, err)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) Restore(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid seminar ID")
+	id, err := request.GetIDParam(c, ":id", "Invalid physical good ID")
 	if err != nil {
 		return err
 	}
-	if err := h.service.Restore(c.Request().Context(), id); err != nil {
+	err = h.service.Restore(c.Request().Context(), id)
+	if err != nil {
 		return h.HandleServiceError(c, err)
 	}
 	return c.NoContent(http.StatusAccepted)

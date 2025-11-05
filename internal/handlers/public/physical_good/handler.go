@@ -15,44 +15,60 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-package product
+package physicalgood
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/mikhail5545/product-service-go/internal/services/product"
+	physicalgoodservice "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/util/request"
 )
 
 type Handler struct {
-	service *product.Service
+	service physicalgoodservice.Service
 }
 
-func New(s *product.Service) *Handler {
+func New(s physicalgoodservice.Service) *Handler {
 	return &Handler{service: s}
 }
 
+func (h *Handler) ServeError(c echo.Context, code int, msg string) error {
+	return c.JSON(code, map[string]string{"error": msg})
+}
+
+func (h *Handler) HandleServiceError(c echo.Context, err error) error {
+	var se *physicalgoodservice.Error
+	if errors.As(err, &se) {
+		return c.JSON(se.GetCode(), map[string]any{"error": se.Msg})
+	}
+	return c.JSON(http.StatusInternalServerError, map[string]any{"error": "Internal server error"})
+}
+
 func (h *Handler) Get(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid product ID")
+	id, err := request.GetIDParam(c, ":id", "Invalid training session ID")
 	if err != nil {
 		return err
 	}
-	product, err := h.service.Get(c.Request().Context(), id)
+	details, err := h.service.Get(c.Request().Context(), id)
 	if err != nil {
-		return err
+		return h.HandleServiceError(c, err)
 	}
-	return c.JSON(http.StatusOK, product)
+	return c.JSON(http.StatusOK, map[string]any{"physical_good_details": details})
 }
 
 func (h *Handler) List(c echo.Context) error {
-	limit, offset := request.GetPaginationParams(c, 10, 0)
-	products, total, err := h.service.List(c.Request().Context(), limit, offset)
+	limit, offset, err := request.GetPaginationParams(c, 10, 0)
 	if err != nil {
 		return err
 	}
+	details, total, err := h.service.List(c.Request().Context(), limit, offset)
+	if err != nil {
+		return h.HandleServiceError(c, err)
+	}
 	return c.JSON(http.StatusOK, map[string]any{
-		"products": products,
-		"total":    total,
+		"physical_good_details": details,
+		"total":                 total,
 	})
 }
