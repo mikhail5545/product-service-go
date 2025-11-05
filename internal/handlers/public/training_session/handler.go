@@ -18,19 +18,32 @@
 package trainingsession
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	trainingsession "github.com/mikhail5545/product-service-go/internal/services/training_session"
+	trainingsessionservice "github.com/mikhail5545/product-service-go/internal/services/training_session"
 	"github.com/mikhail5545/product-service-go/internal/util/request"
 )
 
 type Handler struct {
-	service *trainingsession.Service
+	service trainingsessionservice.Service
 }
 
-func New(s *trainingsession.Service) *Handler {
+func New(s trainingsessionservice.Service) *Handler {
 	return &Handler{service: s}
+}
+
+func (h *Handler) ServeError(c echo.Context, code int, msg string) error {
+	return c.JSON(code, map[string]string{"error": msg})
+}
+
+func (h *Handler) HandleServiceError(c echo.Context, err error) error {
+	var se *trainingsessionservice.Error
+	if errors.As(err, &se) {
+		return c.JSON(se.GetCode(), map[string]any{"error": se.Msg})
+	}
+	return c.JSON(http.StatusInternalServerError, map[string]any{"error": "Internal server error"})
 }
 
 func (h *Handler) Get(c echo.Context) error {
@@ -38,21 +51,24 @@ func (h *Handler) Get(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	ts, err := h.service.Get(c.Request().Context(), id)
+	details, err := h.service.Get(c.Request().Context(), id)
 	if err != nil {
-		return err
+		return h.HandleServiceError(c, err)
 	}
-	return c.JSON(http.StatusOK, ts)
+	return c.JSON(http.StatusOK, map[string]any{"training_session_details": details})
 }
 
 func (h *Handler) List(c echo.Context) error {
-	limit, offset := request.GetPaginationParams(c, 10, 0)
-	sessions, total, err := h.service.List(c.Request().Context(), limit, offset)
+	limit, offset, err := request.GetPaginationParams(c, 10, 0)
 	if err != nil {
 		return err
 	}
+	details, total, err := h.service.List(c.Request().Context(), limit, offset)
+	if err != nil {
+		return h.HandleServiceError(c, err)
+	}
 	return c.JSON(http.StatusOK, map[string]any{
-		"training_sessions": sessions,
-		"total":             total,
+		"training_session_details": details,
+		"total":                    total,
 	})
 }
