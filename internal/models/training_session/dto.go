@@ -43,7 +43,7 @@ type UpdateRequest struct {
 }
 
 type TrainingSessionDetails struct {
-	TrainingSession
+	*TrainingSession
 	Price     float32 `json:"price"`
 	ProductID string  `json:"product_id"`
 }

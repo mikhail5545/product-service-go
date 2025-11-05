@@ -19,8 +19,11 @@
 package trainingsession
 
 import (
+	"errors"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/mikhail5545/product-service-go/internal/models/common"
 )
 
 // Validate validates fields of [trainingsession.CreateRequest].
@@ -33,13 +36,13 @@ import (
 //   - DurationMinutes: required, min 30, must be a multiple of 30.
 //   - Format: required, "online" or "offline".
 //   - AccessDuration: required, >= 1.
-func (req *CreateRequest) Validate() error {
+func (req CreateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.Name,
 			validation.Required,
 			validation.Length(3, 255),
-			is.Alphanumeric,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -78,7 +81,7 @@ func (req *CreateRequest) Validate() error {
 //   - Format: optional, "online" or "offline".
 //   - AccessDuration: optional, >= 1.
 //   - Tags: optional, 1-10 items, 3-20 characters each.
-func (req *UpdateRequest) Validate() error {
+func (req UpdateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.ID,
@@ -88,7 +91,7 @@ func (req *UpdateRequest) Validate() error {
 		validation.Field(
 			&req.Name,
 			validation.Length(3, 255),
-			is.Alphanumeric,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -100,8 +103,14 @@ func (req *UpdateRequest) Validate() error {
 		),
 		validation.Field(
 			&req.DurationMinutes,
-			validation.Min(30),
-			validation.MultipleOf(30),
+			validation.By(func(value interface{}) error {
+				if duration, ok := value.(int); ok {
+					if duration <= 0 || duration%30 != 0 {
+						return errors.New("should be greater then 0 and be multiple of 30")
+					}
+				}
+				return nil
+			}),
 		),
 		validation.Field(
 			&req.Price,

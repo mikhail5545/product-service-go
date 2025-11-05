@@ -6,6 +6,7 @@ import (
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/mikhail5545/product-service-go/internal/models/common"
 )
 
 // Validate validates fields of [seminar.CreateRequest].
@@ -23,13 +24,13 @@ import (
 //   - EndingDate: required, at least 1 hour after Date.
 //   - LatePaymentDate: required, at least 24 hours from now, max 24 hours before Date.
 //   - Place: required, 3-255 characters.
-func (req *CreateRequest) Validate() error {
+func (req CreateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.Name,
 			validation.Required,
 			validation.Length(3, 255),
-			is.Alphanumeric,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -69,7 +70,14 @@ func (req *CreateRequest) Validate() error {
 		validation.Field(
 			&req.EndingDate,
 			validation.Required,
-			validation.Min(req.Date.Add(time.Duration(1)*time.Hour)),
+			validation.By(func(value any) error {
+				if endingDate, ok := value.(*time.Time); ok && endingDate != nil {
+					if req.Date.Sub(*endingDate) > (time.Duration(2) * time.Hour) {
+						return errors.New("must be at least 2 hours after the seminar date")
+					}
+				}
+				return nil
+			}),
 		),
 		validation.Field(
 			&req.LatePaymentDate,
@@ -110,7 +118,7 @@ func (req *CreateRequest) Validate() error {
 //   - LatePaymentDate: optional, at least 24 hours from now, max 24 hours before Date.
 //   - Place: optional, 3-255 characters.
 //   - Tags: optional, 1-10 items, 3-20 characters each.
-func (req *UpdateRequest) Validate() error {
+func (req UpdateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.ID,
@@ -120,7 +128,7 @@ func (req *UpdateRequest) Validate() error {
 		validation.Field(
 			&req.Name,
 			validation.Length(3, 255),
-			is.Alpha,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -156,7 +164,16 @@ func (req *UpdateRequest) Validate() error {
 		),
 		validation.Field(
 			&req.EndingDate,
-			validation.When(req.Date != nil, validation.Min(req.Date.Add(time.Duration(1)*time.Hour))),
+			validation.When(req.Date != nil && req.EndingDate != nil,
+				validation.By(func(value any) error {
+					if endingDate, ok := value.(*time.Time); ok && endingDate != nil {
+						if req.Date.Sub(*endingDate) > (time.Duration(2) * time.Hour) {
+							return errors.New("must be at least 2 hours after the seminar date")
+						}
+					}
+					return nil
+				}),
+			),
 		),
 		validation.Field(
 			&req.LatePaymentDate,

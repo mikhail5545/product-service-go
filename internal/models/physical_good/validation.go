@@ -19,8 +19,11 @@
 package physicalgood
 
 import (
+	"errors"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/mikhail5545/product-service-go/internal/models/common"
 )
 
 // Validate validates fields of [physicalgood.CreateRequest].
@@ -32,13 +35,13 @@ import (
 //   - Price: required, >= 1.
 //   - ShippingRequired: required, boolean.
 //   - Amount: required, >= 0, >= 1 if ShippingRequired is true.
-func (req *CreateRequest) Validate() error {
+func (req CreateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.Name,
 			validation.Required,
 			validation.Length(3, 255),
-			is.Alphanumeric,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -49,10 +52,6 @@ func (req *CreateRequest) Validate() error {
 			&req.Price,
 			validation.Required,
 			validation.Min(float32(1)),
-		),
-		validation.Field(
-			&req.ShippingRequired,
-			validation.Required,
 		),
 		validation.Field(
 			&req.Amount,
@@ -78,7 +77,7 @@ func (req *CreateRequest) Validate() error {
 //   - ShippingRequired: optional, boolean.
 //   - Amount: optional, >= 0, >= 1 if ShippingRequired is true.
 //   - Tags: optional, 1-10 items, 3-20 characters each.
-func (req *UpdateRequest) Validate() error {
+func (req UpdateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.ID,
@@ -88,7 +87,7 @@ func (req *UpdateRequest) Validate() error {
 		validation.Field(
 			&req.Name,
 			validation.Length(3, 255),
-			is.Alphanumeric,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -105,10 +104,16 @@ func (req *UpdateRequest) Validate() error {
 		validation.Field(
 			&req.Amount,
 			validation.Min(0),
-			validation.When(
-				*req.ShippingRequired,
-				validation.Min(1),
-			),
+			validation.By(func(value interface{}) error {
+				if req.ShippingRequired != nil && *req.ShippingRequired {
+					if amount, ok := value.(*int); ok {
+						if *amount < 1 {
+							return errors.New("must be greater then 0 if shipping is required")
+						}
+					}
+				}
+				return nil
+			}),
 		),
 		validation.Field(
 			&req.Tags,

@@ -21,6 +21,7 @@ package coursepart
 import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/mikhail5545/product-service-go/internal/models/common"
 )
 
 // Validate validates fields of [coursepart.UpdateRequest].
@@ -31,7 +32,7 @@ import (
 //   - Name: required, 3-255 characters, Alpha only.
 //   - ShortDescription: required, 3-255 characters.
 //   - Number: required, min 1.
-func (req *CreateRequest) Validate() error {
+func (req CreateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.CourseID,
@@ -42,7 +43,7 @@ func (req *CreateRequest) Validate() error {
 			&req.Name,
 			validation.Required,
 			validation.Length(3, 255),
-			is.Alphanumeric,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -68,7 +69,7 @@ func (req *CreateRequest) Validate() error {
 //   - LongDescription: optional, 3-3000 characters.
 //   - Number: optional, min 1.
 //   - Tags: optional, 1-10 items, 3-20 characters each.
-func (req *UpdateRequest) Validate() error {
+func (req UpdateRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.ID,
@@ -83,7 +84,7 @@ func (req *UpdateRequest) Validate() error {
 		validation.Field(
 			&req.Name,
 			validation.Length(3, 255),
-			is.Alphanumeric,
+			validation.By(common.ValidateName),
 		),
 		validation.Field(
 			&req.ShortDescription,
@@ -111,7 +112,7 @@ func (req *UpdateRequest) Validate() error {
 //
 //   - ID: required, UUID
 //   - MUXVideoID: required, UUID
-func (req *AddVideoRequest) Validate() error {
+func (req AddVideoRequest) Validate() error {
 	return validation.ValidateStruct(&req,
 		validation.Field(
 			&req.ID,
