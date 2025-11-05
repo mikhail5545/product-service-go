@@ -57,9 +57,9 @@ func ToGRPCError(err error) error {
 	if errors.As(err, &productErr) {
 		switch productErr.GetCode() {
 		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, productErr.Error())
+			return status.Errorf(codes.InvalidArgument, "Product service error occurred: %s", productErr.Error())
 		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, productErr.Error())
+			return status.Errorf(codes.NotFound, "Product service error occurred: %s", productErr.Error())
 		}
 	}
 
@@ -67,9 +67,9 @@ func ToGRPCError(err error) error {
 	if errors.As(err, &tsError) {
 		switch tsError.GetCode() {
 		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, tsError.Error())
+			return status.Errorf(codes.InvalidArgument, "Training session service error occurred: %s", tsError.Error())
 		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, tsError.Error())
+			return status.Errorf(codes.NotFound, "Training session service error occurred: %s", tsError.Error())
 		}
 	}
 
@@ -77,9 +77,9 @@ func ToGRPCError(err error) error {
 	if errors.As(err, &courseErr) {
 		switch courseErr.GetCode() {
 		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, courseErr.Error())
+			return status.Errorf(codes.InvalidArgument, "Course service error occurred: %s", courseErr.Error())
 		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, courseErr.Error())
+			return status.Errorf(codes.NotFound, "Course service error occurred: %s", courseErr.Error())
 		}
 	}
 
@@ -87,9 +87,9 @@ func ToGRPCError(err error) error {
 	if errors.As(err, &semianrErr) {
 		switch semianrErr.GetCode() {
 		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, semianrErr.Error())
+			return status.Errorf(codes.InvalidArgument, "Seminar service error occurred: %s", semianrErr.Error())
 		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, semianrErr.Error())
+			return status.Errorf(codes.NotFound, "Seminar service error occurred: %s", semianrErr.Error())
 		}
 	}
 
@@ -97,9 +97,9 @@ func ToGRPCError(err error) error {
 	if errors.As(err, &coursePartErr) {
 		switch coursePartErr.GetCode() {
 		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, coursePartErr.Error())
+			return status.Errorf(codes.InvalidArgument, "Course part service error occurred: %s", coursePartErr.Error())
 		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, coursePartErr.Error())
+			return status.Errorf(codes.NotFound, "Course part service error occurred: %s", coursePartErr.Error())
 		}
 	}
 
@@ -107,9 +107,9 @@ func ToGRPCError(err error) error {
 	if errors.As(err, &physicalGoodErr) {
 		switch physicalGoodErr.GetCode() {
 		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, physicalGoodErr.Error())
+			return status.Errorf(codes.InvalidArgument, "Physical good service error occurred: %s", physicalGoodErr.Error())
 		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, physicalGoodErr.Error())
+			return status.Errorf(codes.NotFound, "Physical good service error occurred: %s", physicalGoodErr.Error())
 		}
 	}
 
