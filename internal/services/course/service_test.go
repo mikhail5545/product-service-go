@@ -43,11 +43,7 @@ func TestService_Get(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -168,11 +164,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -293,11 +285,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -418,11 +406,7 @@ func TestService_GetReduced(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -543,11 +527,7 @@ func TestService_GetReducedWithDeleted(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -668,11 +648,7 @@ func TestService_List(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	course1ID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 	course2ID := "a1b2c3d4-e5f6-7890-1234-567890abcdef"
@@ -793,11 +769,7 @@ func TestService_ListDeleted(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	course1ID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 	course2ID := "a1b2c3d4-e5f6-7890-1234-567890abcdef"
@@ -917,11 +889,7 @@ func TestService_ListUnpublished(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	course1ID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 	course2ID := "a1b2c3d4-e5f6-7890-1234-567890abcdef"
@@ -1012,11 +980,7 @@ func TestService_Create(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	createReq := &course.CreateRequest{
 		Name:             "Course name",
@@ -1160,11 +1124,7 @@ func TestService_Publish(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1229,11 +1189,7 @@ func TestService_Unpublish(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1301,11 +1257,7 @@ func TestService_Update(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1510,11 +1462,7 @@ func TestService_Delete(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1538,6 +1486,7 @@ func TestService_Delete(t *testing.T) {
 		mockProductRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxProductRepo)
 		mockPartRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPartRepo)
 
+		mockTxCourseRepo.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(&course.Course{}, nil)
 		mockTxCourseRepo.EXPECT().SetInStock(gomock.Any(), courseID, false).Return(int64(1), nil)
 		mockTxProductRepo.EXPECT().SetInStockByDetailsID(gomock.Any(), courseID, false).Return(int64(1), nil)
 		mockTxPartRepo.EXPECT().SetPublishedByCourseID(gomock.Any(), courseID, false).Return(int64(1), nil)
@@ -1582,7 +1531,7 @@ func TestService_Delete(t *testing.T) {
 		mockProductRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxProductRepo)
 		mockPartRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPartRepo)
 
-		mockTxCourseRepo.EXPECT().SetInStock(gomock.Any(), courseID, false).Return(int64(0), nil)
+		mockTxCourseRepo.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(nil, gorm.ErrRecordNotFound)
 
 		err = testService.Delete(context.Background(), courseID)
 
@@ -1613,6 +1562,7 @@ func TestService_Delete(t *testing.T) {
 		mockPartRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPartRepo)
 
 		dbErr := errors.New("database error")
+		mockTxCourseRepo.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(&course.Course{}, nil)
 		mockTxCourseRepo.EXPECT().SetInStock(gomock.Any(), courseID, false).Return(int64(0), dbErr)
 
 		err = testService.Delete(context.Background(), courseID)
@@ -1642,11 +1592,7 @@ func TestService_DeletePermanent(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1767,11 +1713,7 @@ func TestService_Restore(t *testing.T) {
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
 
-	testService := &Service{
-		CourseRepo:  mockCourseRepo,
-		ProductRepo: mockProductRepo,
-		PartRepo:    mockPartRepo,
-	}
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1846,7 +1788,7 @@ func TestService_Restore(t *testing.T) {
 		mockProductRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxProductRepo)
 		mockPartRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPartRepo)
 
-		mockTxCourseRepo.EXPECT().Restore(gomock.Any(), courseID).Return(int64(0), nil)
+		mockTxCourseRepo.EXPECT().Restore(gomock.Any(), courseID).Return(int64(0), nil).AnyTimes()
 
 		err := testService.Restore(context.Background(), courseID)
 		if err == nil {

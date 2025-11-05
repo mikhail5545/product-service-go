@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Package product provides service-layer business logic for products.
 package product
 
 import (
@@ -22,18 +23,84 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
-	"github.com/mikhail5545/product-service-go/internal/database/product"
-	"github.com/mikhail5545/product-service-go/internal/models"
+	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
+	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	"gorm.io/gorm"
 )
 
-type Service struct {
-	Repo product.Repository
+//go:generate mockgen -destination=../../test/services/product_mock/service_mock.go -package=product_mock . Service
+
+// Service provides service-layer business logic for product models.
+type Service interface {
+	// Get retrieves a single published and not soft-deleted product record from the database.
+	//
+	// Returns a Product struct containing the information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	Get(ctx context.Context, id string) (*productmodel.Product, error)
+	// GetWithDeleted retrieves a single product record from the database, including soft-deleted ones.
+	//
+	// Returns a Product struct containing the information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetWithDeleted(ctx context.Context, id string) (*productmodel.Product, error)
+	// GetWithUnpublished retrieves a single product record from the database, including unpublished ones (but not soft-deleted).
+	//
+	// Returns a Product struct containing the information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetWithUnpublished(ctx context.Context, id string) (*productmodel.Product, error)
+	// GetByDetailsID retrieves a single published and not soft-deleted product record from the database by it's DetailsID.
+	//
+	// Returns a Product struct containing the information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetByDetailsID(ctx context.Context, detailsID string) (*productmodel.Product, error)
+	// GetWithDeletedByDetailsID retrieves a single product record from the database by it's DetailsID, including soft-deleted ones.
+	//
+	// Returns a Product struct containing the information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetWithDeletedByDetailsID(ctx context.Context, detailsID string) (*productmodel.Product, error)
+	// GetWithUnpublishedByDetailsID retrieves a single product record from the database by it's DetailsID,
+	// including unpublished ones (but not soft-deleted).
+	//
+	// Returns a Product struct containing the information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetWithUnpublishedByDetailsID(ctx context.Context, detailsID string) (*productmodel.Product, error)
+	// List retrieves a paginated list of all published and not soft-deleted product records.
+	//
+	// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	List(ctx context.Context, limit, offset int) ([]productmodel.Product, int64, error)
+	// ListDeleted retrieves a paginated list of all soft-deleted product records.
+	//
+	// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	ListDeleted(ctx context.Context, limit, offset int) ([]productmodel.Product, int64, error)
+	// ListUnpublished retrieves a paginated list of all unpublished (but not soft-deleted) product records.
+	//
+	// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	ListUnpublished(ctx context.Context, limit, offset int) ([]productmodel.Product, int64, error)
+	// List retrieves a paginated list of all published and not soft-deleted product records with specified DetailsType.
+	//
+	// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	ListByDetailsType(ctx context.Context, detailsType string, limit, offset int) ([]productmodel.Product, int64, error)
 }
 
+// service provides service-layer business logic for product models.
+// It holds [productrepo.Repository] instance
+// to perform database operations.
+type service struct {
+	Repo productrepo.Repository
+}
+
+// Error represents product service error.
 type Error struct {
 	Msg  string
 	Err  error
@@ -52,172 +119,192 @@ func (e *Error) GetCode() int {
 	return e.Code
 }
 
-func New(pr product.Repository) *Service {
-	return &Service{Repo: pr}
+// New creates a new service instance with provided product repository.
+func New(pr productrepo.Repository) Service {
+	return &service{Repo: pr}
 }
 
-func (s *Service) List(ctx context.Context, limit, offset int) ([]models.Product, int64, error) {
+// Get retrieves a single published and not soft-deleted product record from the database.
+//
+// Returns a Product struct containing the information.
+// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+// or a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) Get(ctx context.Context, id string) (*productmodel.Product, error) {
+	if _, err := uuid.Parse(id); err != nil {
+		return nil, &Error{Msg: "Invalid product id", Err: err, Code: http.StatusBadRequest}
+	}
+	product, err := s.Repo.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &Error{Msg: "Product not found", Err: err, Code: http.StatusNotFound}
+		}
+		return nil, &Error{Msg: "Failed to get product", Err: err, Code: http.StatusInternalServerError}
+	}
+	return product, nil
+}
+
+// GetWithDeleted retrieves a single product record from the database, including soft-deleted ones.
+//
+// Returns a Product struct containing the information.
+// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+// or a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) GetWithDeleted(ctx context.Context, id string) (*productmodel.Product, error) {
+	if _, err := uuid.Parse(id); err != nil {
+		return nil, &Error{Msg: "Invalid product id", Err: err, Code: http.StatusBadRequest}
+	}
+	product, err := s.Repo.GetWithDeleted(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &Error{Msg: "Product not found", Err: err, Code: http.StatusNotFound}
+		}
+		return nil, &Error{Msg: "Failed to get product", Err: err, Code: http.StatusInternalServerError}
+	}
+	return product, nil
+}
+
+// GetWithUnpublished retrieves a single product record from the database, including unpublished ones (but not soft-deleted).
+//
+// Returns a Product struct containing the information.
+// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+// or a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) GetWithUnpublished(ctx context.Context, id string) (*productmodel.Product, error) {
+	if _, err := uuid.Parse(id); err != nil {
+		return nil, &Error{Msg: "Invalid product id", Err: err, Code: http.StatusBadRequest}
+	}
+	product, err := s.Repo.GetWithUnpublished(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &Error{Msg: "Product not found", Err: err, Code: http.StatusNotFound}
+		}
+		return nil, &Error{Msg: "Failed to get product", Err: err, Code: http.StatusInternalServerError}
+	}
+	return product, nil
+}
+
+// GetByDetailsID retrieves a single published and not soft-deleted product record from the database by it's DetailsID.
+//
+// Returns a Product struct containing the information.
+// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+// or a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) GetByDetailsID(ctx context.Context, detailsID string) (*productmodel.Product, error) {
+	if _, err := uuid.Parse(detailsID); err != nil {
+		return nil, &Error{Msg: "Invalid product details id", Err: err, Code: http.StatusBadRequest}
+	}
+
+	product, err := s.Repo.GetByDetailsID(ctx, detailsID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &Error{Msg: "Product not found", Err: err, Code: http.StatusNotFound}
+		}
+		return nil, &Error{Msg: "Failed to get product", Err: err, Code: http.StatusInternalServerError}
+	}
+	return product, nil
+}
+
+// GetWithDeletedByDetailsID retrieves a single product record from the database by it's DetailsID, including soft-deleted ones.
+//
+// Returns a Product struct containing the information.
+// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+// or a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) GetWithDeletedByDetailsID(ctx context.Context, detailsID string) (*productmodel.Product, error) {
+	if _, err := uuid.Parse(detailsID); err != nil {
+		return nil, &Error{Msg: "Invalid product details id", Err: err, Code: http.StatusBadRequest}
+	}
+
+	product, err := s.Repo.GetWithDeletedByDetailsID(ctx, detailsID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &Error{Msg: "Product not found", Err: err, Code: http.StatusNotFound}
+		}
+		return nil, &Error{Msg: "Failed to get product", Err: err, Code: http.StatusInternalServerError}
+	}
+	return product, nil
+}
+
+// GetWithUnpublishedByDetailsID retrieves a single product record from the database by it's DetailsID,
+// including unpublished ones (but not soft-deleted).
+//
+// Returns a Product struct containing the information.
+// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+// or a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) GetWithUnpublishedByDetailsID(ctx context.Context, detailsID string) (*productmodel.Product, error) {
+	if _, err := uuid.Parse(detailsID); err != nil {
+		return nil, &Error{Msg: "Invalid product details id", Err: err, Code: http.StatusBadRequest}
+	}
+
+	product, err := s.Repo.GetWithUnpublishedByDetailsID(ctx, detailsID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &Error{Msg: "Product not found", Err: err, Code: http.StatusNotFound}
+		}
+		return nil, &Error{Msg: "Failed to get product", Err: err, Code: http.StatusInternalServerError}
+	}
+	return product, nil
+}
+
+// List retrieves a paginated list of all published and not soft-deleted product records.
+//
+// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) List(ctx context.Context, limit, offset int) ([]productmodel.Product, int64, error) {
 	products, err := s.Repo.List(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{
-			Msg:  "Failed to get products",
-			Err:  err,
-			Code: http.StatusInternalServerError,
-		}
+		return nil, 0, &Error{Msg: "Failed to get products", Err: err, Code: http.StatusInternalServerError}
 	}
 
 	total, err := s.Repo.Count(ctx)
 	if err != nil {
-		return nil, 0, &Error{
-			Msg:  "Failed to get products count",
-			Err:  err,
-			Code: http.StatusInternalServerError,
-		}
+		return nil, 0, &Error{Msg: "Failed to count products", Err: err, Code: http.StatusInternalServerError}
 	}
 	return products, total, nil
 }
 
-func (s *Service) Get(ctx context.Context, id string) (*models.Product, error) {
-	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{
-			Msg:  "Invalid product id",
-			Err:  err,
-			Code: http.StatusBadRequest,
-		}
+// ListDeleted retrieves a paginated list of all soft-deleted product records.
+//
+// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) ListDeleted(ctx context.Context, limit, offset int) ([]productmodel.Product, int64, error) {
+	products, err := s.Repo.ListDeleted(ctx, limit, offset)
+	if err != nil {
+		return nil, 0, &Error{Msg: "Failed to get products", Err: err, Code: http.StatusInternalServerError}
 	}
 
-	product, err := s.Repo.Get(ctx, id)
+	total, err := s.Repo.CountDeleted(ctx)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{
-				Msg:  "Product not found",
-				Err:  err,
-				Code: http.StatusNotFound,
-			}
-		}
-		return nil, &Error{
-			Msg:  "Failed to get product",
-			Err:  err,
-			Code: http.StatusInternalServerError,
-		}
-	}
-	return product, nil
-}
-
-func (s *Service) ListByType(ctx context.Context, productType string, limit, offset int) ([]models.Product, int64, error) {
-	products, err := s.Repo.ListByType(ctx, productType, limit, offset)
-	if err != nil {
-		return nil, 0, &Error{
-			Msg:  "Failed to get product",
-			Err:  err,
-			Code: http.StatusInternalServerError,
-		}
-	}
-	total, err := s.Repo.CountByType(ctx, productType)
-	if err != nil {
-		return nil, 0, &Error{
-			Msg:  "Failed to count products",
-			Err:  err,
-			Code: http.StatusInternalServerError,
-		}
+		return nil, 0, &Error{Msg: "Failed to count products", Err: err, Code: http.StatusInternalServerError}
 	}
 	return products, total, nil
 }
 
-func (s *Service) Create(ctx context.Context, product *models.Product) (*models.Product, error) {
-	err := s.Repo.DB().Transaction(func(tx *gorm.DB) error {
-		txRepo := s.Repo.WithTx(tx)
-
-		if product.Name == "" {
-			return &Error{Msg: "product name cannot be empty", Err: nil, Code: http.StatusBadRequest}
-		}
-		if product.Description == "" {
-			return &Error{Msg: "product description cannot be empty", Err: nil, Code: http.StatusBadRequest}
-		}
-		if product.Amount < 0 {
-			return &Error{Msg: "amount cannot be negative", Err: nil, Code: http.StatusBadRequest}
-		}
-		if product.Price <= 0 {
-			return &Error{Msg: "price cannot be negative or null", Err: nil, Code: http.StatusBadRequest}
-		}
-
-		product.ID = uuid.New().String()
-		product.CreatedAt = time.Now()
-		product.UpdatedAt = time.Now()
-		product.ProductType = "physical"
-
-		if err := txRepo.Create(ctx, product); err != nil {
-			return &Error{Msg: "failed to create product", Err: err, Code: http.StatusInternalServerError}
-		}
-
-		return nil
-	})
-
+// ListUnpublished retrieves a paginated list of all unpublished (but not soft-deleted) product records.
+//
+// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) ListUnpublished(ctx context.Context, limit, offset int) ([]productmodel.Product, int64, error) {
+	products, err := s.Repo.ListUnpublished(ctx, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, &Error{Msg: "Failed to get products", Err: err, Code: http.StatusInternalServerError}
 	}
-	return product, nil
+
+	total, err := s.Repo.CountUnpublished(ctx)
+	if err != nil {
+		return nil, 0, &Error{Msg: "Failed to count products", Err: err, Code: http.StatusInternalServerError}
+	}
+	return products, total, nil
 }
 
-func (s *Service) Update(ctx context.Context, req *models.Product, id string) (map[string]any, error) {
-	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{
-			Msg:  "invalid product id",
-			Err:  err,
-			Code: http.StatusBadRequest,
-		}
-	}
-
-	updates := make(map[string]any)
-	err := s.Repo.DB().Transaction(func(tx *gorm.DB) error {
-		txRepo := s.Repo.WithTx(tx)
-
-		product, err := txRepo.Get(ctx, id)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{
-					Msg:  "product not found",
-					Err:  err,
-					Code: http.StatusNotFound,
-				}
-			}
-			return &Error{
-				Msg:  "failed to find product",
-				Err:  err,
-				Code: http.StatusInternalServerError,
-			}
-		}
-
-		if req.Name != "" && req.Name != product.Name {
-			updates["name"] = req.Name
-		}
-		if req.Price != 0 && req.Price != product.Price {
-			updates["price"] = req.Price
-		}
-		if req.Amount >= 0 && req.Amount != product.Amount { // amount can be null
-			updates["amount"] = req.Amount
-		}
-		if req.ShippingRequired != product.ShippingRequired {
-			updates["shipping_required"] = req.ShippingRequired
-		}
-		//TODO: implement image upload via media-service-go
-		if len(updates) > 0 {
-			product.UpdatedAt = time.Now()
-			if _, err := txRepo.Update(ctx, product, updates); err != nil {
-				return &Error{Msg: "failed to update product", Err: err, Code: http.StatusInternalServerError}
-			}
-		}
-		return nil
-	})
+// List retrieves a paginated list of all published and not soft-deleted product records with specified DetailsType.
+//
+// Returns a slice of ProductDetails, the total count of such records, and an error if one occurs.
+// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+func (s *service) ListByDetailsType(ctx context.Context, detailsType string, limit, offset int) ([]productmodel.Product, int64, error) {
+	products, err := s.Repo.ListByDetailsType(ctx, detailsType, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, &Error{Msg: "Failed to get products", Err: err, Code: http.StatusInternalServerError}
 	}
-	return updates, nil
-}
-
-func (s *Service) Delete(ctx context.Context, id string) error {
-	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "invalid product id", Err: err, Code: http.StatusBadRequest}
+	total, err := s.Repo.CountByDetailsType(ctx, detailsType)
+	if err != nil {
+		return nil, 0, &Error{Msg: "Failed to count products", Err: err, Code: http.StatusInternalServerError}
 	}
-	return s.Repo.Delete(ctx, id)
+	return products, total, nil
 }

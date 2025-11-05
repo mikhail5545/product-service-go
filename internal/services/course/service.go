@@ -35,11 +35,121 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -destination=../../test/services/course_mock/service_mock.go -package=course_mock . Service
+
 // Service provides service-layer business logic for course models.
+type Service interface {
+	// Get retrieves a single published and not soft-deleted course record from the database,
+	// along with its associated product details (price and product ID). Also it preloads all
+	// its associated course part records.
+	//
+	// Returns a CourseDetails struct containing the combined information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	Get(ctx context.Context, id string) (*course.CourseDetails, error)
+	// GetWithDeleted retrieves a single course record from the database, including soft-deleted ones,
+	// along with its associated product details. Also it preloads all its associated course part records.
+	//
+	// Returns a CourseDetails struct containing the combined information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetWithDeleted(ctx context.Context, id string) (*course.CourseDetails, error)
+	// GetWithUnpublished retrieves a single course record from the database, including unpublished ones (but not soft-deleted),
+	// along with its associated product details. Also it preloads all its associated course part records.
+	//
+	// Returns a CourseDetails struct containing the combined information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetWithUnpublished(ctx context.Context, id string) (*course.CourseDetails, error)
+	// GetReduced retrieves a single published and not soft-deleted course record from the database,
+	// along with its associated product details (price and product ID).
+	//
+	// Returns a CourseDetails struct containing the combined information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetReduced(ctx context.Context, id string) (*course.CourseDetails, error)
+	// GetReducedWithDeleted retrieves a single course record from the database, including soft-deleted ones,
+	// along with its associated product details.
+	//
+	// Returns a CourseDetails struct containing the combined information.
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	GetReducedWithDeleted(ctx context.Context, id string) (*course.CourseDetails, error)
+	// List retrieves a paginated list of all published and not soft-deleted course records.
+	// Each record is returned with its associated product details and preloaded course part records.
+	//
+	// Returns a slice of CourseDetails, the total count of such records, and an error if one occurs.
+	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	List(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error)
+	// ListDeleted retrieves a paginated list of all soft-deleted course records.
+	// Each record is returned with its associated product details.
+	//
+	// Returns a slice of CourseDetails, the total count of such records, and an error if one occurs.
+	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	ListDeleted(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error)
+	// ListUnpublished retrieves a paginated list of all unpublished (but not soft-deleted) course records.
+	// Each record is returned with its associated product details.
+	//
+	// Returns a slice of CourseDetails, the total count of such records, and an error if one occurs.
+	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	ListUnpublished(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error)
+	// Create creates a new Course record and its associated Product record in the database.
+	// It validates the request payload to ensure all required fields are present.
+	// Both the course and the product are created in an unpublished state (`InStock: false`).
+	//
+	// Returns a CreateResponse containing the newly created CourseID and ProductID.
+	// Returns an error if the request payload is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
+	Create(ctx context.Context, req *course.CreateRequest) (*course.CreateResponse, error)
+	// Publish sets the `InStock` field to true for a course and its associated product,
+	// making it available in the catalog. All of its associated course parts (if they exist)
+	// should be unpublished separately.
+	//
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	Publish(ctx context.Context, id string) error
+	// Unpublish sets the `InStock` field to false for a course, its associated course parts
+	// and its associated product, archiving it from the catalog.
+	//
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	Unpublish(ctx context.Context, id string) error
+	// Update performs a partial update of a course and its related product.
+	// The request should contain the course's ID and the fields to be updated.
+	// At least one field must be provided for an update to occur.
+	//
+	// Returns a map containing the fields that were actually changed, nested under "course" and "product" keys.
+	// Example: `{"course": {"name": "new name"}, "product": {"price": 99.99}}`
+	// Returns an error if the request payload is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	Update(ctx context.Context, req *course.UpdateRequest) (map[string]any, error)
+	// Delete performs a soft-delete of a course, its associated course parts
+	// and its associated product record.
+	// It also unpublishes all records, meaning they must be manually published again after restoration.
+	//
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	Delete(ctx context.Context, id string) error
+	// DeletePermanent performs a complete delete of a course, its associated course parts
+	// and its associated product record.
+	//
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	DeletePermanent(ctx context.Context, id string) error
+	// Restore performs a restore of a course, its associated course parts
+	// and its related product record.
+	// Course record, its associated course part records and its related product record
+	// are not being published. This should be done manually.
+	//
+	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
+	// or a database/internal error occurs (http.StatusInternalServerError).
+	Restore(ctx context.Context, id string) error
+}
+
+// service provides service-layer business logic for course models.
 // It holds [course.Repository],
 // [product.Repository] and [coursepart.Repository]
 // instances to perform database operations.
-type Service struct {
+type service struct {
 	CourseRepo  courserepo.Repository
 	ProductRepo productrepo.Repository
 	PartRepo    coursepartrepo.Repository
@@ -70,8 +180,8 @@ func New(
 	cr courserepo.Repository,
 	pr productrepo.Repository,
 	cpr coursepartrepo.Repository,
-) *Service {
-	return &Service{
+) Service {
+	return &service{
 		CourseRepo:  cr,
 		ProductRepo: pr,
 		PartRepo:    cpr,
@@ -85,7 +195,7 @@ func New(
 // Returns a CourseDetails struct containing the combined information.
 // Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) Get(ctx context.Context, id string) (*course.CourseDetails, error) {
+func (s *service) Get(ctx context.Context, id string) (*course.CourseDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
@@ -116,7 +226,7 @@ func (s *Service) Get(ctx context.Context, id string) (*course.CourseDetails, er
 // Returns a CourseDetails struct containing the combined information.
 // Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) GetWithDeleted(ctx context.Context, id string) (*course.CourseDetails, error) {
+func (s *service) GetWithDeleted(ctx context.Context, id string) (*course.CourseDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
@@ -147,7 +257,7 @@ func (s *Service) GetWithDeleted(ctx context.Context, id string) (*course.Course
 // Returns a CourseDetails struct containing the combined information.
 // Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) GetWithUnpublished(ctx context.Context, id string) (*course.CourseDetails, error) {
+func (s *service) GetWithUnpublished(ctx context.Context, id string) (*course.CourseDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
@@ -178,7 +288,7 @@ func (s *Service) GetWithUnpublished(ctx context.Context, id string) (*course.Co
 // Returns a CourseDetails struct containing the combined information.
 // Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) GetReduced(ctx context.Context, id string) (*course.CourseDetails, error) {
+func (s *service) GetReduced(ctx context.Context, id string) (*course.CourseDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, &Error{
 			Msg:  "Invalid course ID",
@@ -214,7 +324,7 @@ func (s *Service) GetReduced(ctx context.Context, id string) (*course.CourseDeta
 // Returns a CourseDetails struct containing the combined information.
 // Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) GetReducedWithDeleted(ctx context.Context, id string) (*course.CourseDetails, error) {
+func (s *service) GetReducedWithDeleted(ctx context.Context, id string) (*course.CourseDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
 		return nil, &Error{
 			Msg:  "Invalid course ID",
@@ -249,7 +359,7 @@ func (s *Service) GetReducedWithDeleted(ctx context.Context, id string) (*course
 //
 // Returns a slice of CourseDetails, the total count of such records, and an error if one occurs.
 // Returns an error if a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) List(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error) {
+func (s *service) List(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error) {
 	courses, err := s.CourseRepo.List(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, &Error{Msg: "Failed to get courses", Err: err, Code: http.StatusInternalServerError}
@@ -286,7 +396,7 @@ func (s *Service) List(ctx context.Context, limit, offset int) ([]course.CourseD
 //
 // Returns a slice of CourseDetails, the total count of such records, and an error if one occurs.
 // Returns an error if a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) ListDeleted(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error) {
+func (s *service) ListDeleted(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error) {
 	courses, err := s.CourseRepo.ListDeleted(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, &Error{Msg: "Failed to get courses", Err: err, Code: http.StatusInternalServerError}
@@ -323,7 +433,7 @@ func (s *Service) ListDeleted(ctx context.Context, limit, offset int) ([]course.
 //
 // Returns a slice of CourseDetails, the total count of such records, and an error if one occurs.
 // Returns an error if a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) ListUnpublished(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error) {
+func (s *service) ListUnpublished(ctx context.Context, limit, offset int) ([]course.CourseDetails, int64, error) {
 	courses, err := s.CourseRepo.ListUnpublished(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, &Error{Msg: "Failed to get courses", Err: err, Code: http.StatusInternalServerError}
@@ -361,7 +471,7 @@ func (s *Service) ListUnpublished(ctx context.Context, limit, offset int) ([]cou
 //
 // Returns a CreateResponse containing the newly created CourseID and ProductID.
 // Returns an error if the request payload is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) Create(ctx context.Context, req *course.CreateRequest) (*course.CreateResponse, error) {
+func (s *service) Create(ctx context.Context, req *course.CreateRequest) (*course.CreateResponse, error) {
 	var courseID, productID string
 	err := s.CourseRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txCourseRepo := s.CourseRepo.WithTx(tx)
@@ -411,7 +521,7 @@ func (s *Service) Create(ctx context.Context, req *course.CreateRequest) (*cours
 //
 // Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) Publish(ctx context.Context, id string) error {
+func (s *service) Publish(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
 		return &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
@@ -437,7 +547,7 @@ func (s *Service) Publish(ctx context.Context, id string) error {
 //
 // Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) Unpublish(ctx context.Context, id string) error {
+func (s *service) Unpublish(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
 		return &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
@@ -469,7 +579,7 @@ func (s *Service) Unpublish(ctx context.Context, id string) error {
 // Example: `{"course": {"name": "new name"}, "product": {"price": 99.99}}`
 // Returns an error if the request payload is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) Update(ctx context.Context, req *course.UpdateRequest) (map[string]any, error) {
+func (s *service) Update(ctx context.Context, req *course.UpdateRequest) (map[string]any, error) {
 	updates := make(map[string]any)
 	err := s.CourseRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txCourseRepo := s.CourseRepo.WithTx(tx)
@@ -549,7 +659,7 @@ func (s *Service) Update(ctx context.Context, req *course.UpdateRequest) (map[st
 //
 // Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) Delete(ctx context.Context, id string) error {
+func (s *service) Delete(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
 		return &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
@@ -558,12 +668,16 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		txProductRepo := s.ProductRepo.WithTx(tx)
 		txPartRepo := s.PartRepo.WithTx(tx)
 
-		// Unpublish all instances
-		ra, err := txCourseRepo.SetInStock(ctx, id, false)
-		if err != nil {
+		// Check if the record exists first (including unpublished, but not soft-deleted)
+		if _, err := txCourseRepo.GetWithUnpublished(ctx, id); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Course not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get course", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		if _, err := txCourseRepo.SetInStock(ctx, id, false); err != nil {
 			return &Error{Msg: "Failed to unpublish course", Err: err, Code: http.StatusInternalServerError}
-		} else if ra == 0 {
-			return &Error{Msg: "Course not found", Err: err, Code: http.StatusNotFound}
 		}
 
 		// Course may not have any parts
@@ -571,7 +685,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 			return &Error{Msg: "Failed to unpublish course parts", Err: err, Code: http.StatusInternalServerError}
 		}
 
-		ra, err = txProductRepo.SetInStockByDetailsID(ctx, id, false)
+		ra, err := txProductRepo.SetInStockByDetailsID(ctx, id, false)
 		if err != nil {
 			return &Error{Msg: "Failed to unpublish course product", Err: err, Code: http.StatusInternalServerError}
 		} else if ra == 0 {
@@ -599,7 +713,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 //
 // Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) DeletePermanent(ctx context.Context, id string) error {
+func (s *service) DeletePermanent(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
 		return &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
@@ -636,7 +750,7 @@ func (s *Service) DeletePermanent(ctx context.Context, id string) error {
 //
 // Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
-func (s *Service) Restore(ctx context.Context, id string) error {
+func (s *service) Restore(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
 		return &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
 	}
