@@ -25,11 +25,11 @@ package product
 import (
 	"context"
 
-	"github.com/mikhail5545/product-service-go/internal/models"
-	"github.com/mikhail5545/product-service-go/internal/services/product"
+	productservice "github.com/mikhail5545/product-service-go/internal/services/product"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
 	productpb "github.com/mikhail5545/proto-go/proto/product/v0"
+	"google.golang.org/grpc"
 )
 
 // Server implements the gRPC [productpb.ProductServiceServer] interface and provides
@@ -40,12 +40,17 @@ import (
 type Server struct {
 	productpb.UnimplementedProductServiceServer
 	// service provides service-layer business logic for Product operations.
-	service *product.Service
+	service productservice.Service
 }
 
 // New creates a new Server instance.
-func New(s *product.Service) *Server {
-	return &Server{service: s}
+func New(svc productservice.Service) *Server {
+	return &Server{service: svc}
+}
+
+// Register registers the course server with a gRPC server instance.
+func Register(s *grpc.Server, svc productservice.Service) {
+	productpb.RegisterProductServiceServer(s, New(svc))
 }
 
 // Get retrieves a product by their ID.
@@ -56,7 +61,6 @@ func (s *Server) Get(ctx context.Context, req *productpb.GetRequest) (*productpb
 	if err != nil {
 		return nil, errors.ToGRPCError(err)
 	}
-
 	return &productpb.GetResponse{Product: types.ProductToProtobuf(product)}, nil
 }
 
@@ -79,8 +83,8 @@ func (s *Server) List(ctx context.Context, req *productpb.ListRequest) (*product
 // ListByType retrieves a paginated list of all products by their `type` field.
 // The response contains a list of products that have specified `type`
 // and the total number of products with that `type` in the system.
-func (s *Server) ListByType(ctx context.Context, req *productpb.ListByTypeRequest) (*productpb.ListByTypeResponse, error) {
-	products, total, err := s.service.ListByType(ctx, req.GetProductType(), int(req.GetLimit()), int(req.GetOffset()))
+func (s *Server) ListByDetailsType(ctx context.Context, req *productpb.ListByDetailsTypeRequest) (*productpb.ListByDetailsTypeResponse, error) {
+	products, total, err := s.service.ListByDetailsType(ctx, req.GetDetailsType(), int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
 		return nil, errors.ToGRPCError(err)
 	}
@@ -88,53 +92,5 @@ func (s *Server) ListByType(ctx context.Context, req *productpb.ListByTypeReques
 	for _, product := range products {
 		pbProducts = append(pbProducts, types.ProductToProtobuf(&product))
 	}
-
-	return &productpb.ListByTypeResponse{Products: pbProducts, Total: total}, nil
-}
-
-// Create creates a new product record, typically in the process of direct product
-// creation. To create underlying product for other data types ([models.Course], [models.Seminar]),
-// use specified Create methods of this data types.
-//
-// If request payload not satisfies service expectations, it returns a `InvalidArgument` gRPC error.
-// It returns newly created Product model with all fields.
-func (s *Server) Create(ctx context.Context, req *productpb.CreateRequest) (*productpb.CreateResponse, error) {
-	product := &models.Product{
-		Name:             req.GetName(),
-		Description:      req.GetDescription(),
-		Price:            req.GetPrice(),
-		Amount:           int(req.GetAmount()),
-		ShippingRequired: req.GetShippingRequired(),
-	}
-
-	product, err := s.service.Create(ctx, product)
-	if err != nil {
-		return nil, errors.ToGRPCError(err)
-	}
-
-	return &productpb.CreateResponse{Product: types.ProductToProtobuf(product)}, nil
-}
-
-// Update updates product fields that have been acually changed. All request fields
-// except ID are optional, so service will update product only if at least one field
-// has been updated.
-//
-// It populates only updated fields in the response along with the `fieldmaskpb.UpdateMask` which contains
-// paths to updated fields.
-func (s *Server) Update(ctx context.Context, req *productpb.UpdateRequest) (*productpb.UpdateResponse, error) {
-	product := &models.Product{
-		Name:             req.GetName(),
-		Description:      req.GetDescription(),
-		Price:            req.GetPrice(),
-		Amount:           int(req.GetAmount()),
-		ImageUrl:         req.GetImageUrl(),
-		ShippingRequired: req.GetShippingRequired(),
-	}
-
-	updates, err := s.service.Update(ctx, product, req.GetId())
-	if err != nil {
-		return nil, errors.ToGRPCError(err)
-	}
-
-	return types.ProductToProtobufUpdate(updates), nil
+	return &productpb.ListByDetailsTypeResponse{Products: pbProducts, Total: total}, nil
 }

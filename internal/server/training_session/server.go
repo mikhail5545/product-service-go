@@ -25,11 +25,12 @@ package trainingsession
 import (
 	"context"
 
-	"github.com/mikhail5545/product-service-go/internal/models"
-	trainingsession "github.com/mikhail5545/product-service-go/internal/services/training_session"
+	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
+	trainingsessionservice "github.com/mikhail5545/product-service-go/internal/services/training_session"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
 	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
+	"google.golang.org/grpc"
 )
 
 // Server implements the gRPC [trainingsessionpb.TrainingSessionServiceServer] interface and provides
@@ -39,90 +40,181 @@ import (
 // For more information about underlying gRPC server, see [github.com/mikhail5545/proto-go].
 type Server struct {
 	trainingsessionpb.UnimplementedTrainingSessionServiceServer
-	service *trainingsession.Service
+	service trainingsessionservice.Service
 }
 
 // New creates a new [trainingsession.Server].
-func New(s *trainingsession.Service) *Server {
-	return &Server{service: s}
+func New(svc trainingsessionservice.Service) *Server {
+	return &Server{service: svc}
 }
 
-// Get retrieves a training session by their ID.
-// It returns the full training session object.
-// If the training session is not found, it returns a `NotFound` gRPC error.
+// Register registers the course server with a gRPC server instance.
+func Register(s *grpc.Server, svc trainingsessionservice.Service) {
+	trainingsessionpb.RegisterTrainingSessionServiceServer(s, New(svc))
+}
+
+// Get retrieves a single published and not soft-deleted training session record,
+// along with its associated product details.
+//
+// Returns a `NotFound` gRPC error if the record is not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Get(ctx context.Context, req *trainingsessionpb.GetRequest) (*trainingsessionpb.GetResponse, error) {
-	ts, err := s.service.Get(ctx, req.GetId())
+	details, err := s.service.Get(ctx, req.GetId())
 	if err != nil {
 		return nil, errors.ToGRPCError(err)
 	}
 
-	return &trainingsessionpb.GetResponse{TrainingSession: types.TrainingSessionToProtobuf(ts)}, nil
+	return &trainingsessionpb.GetResponse{TrainingSessionDetails: types.TrainingSessionDetailsToProtobuf(details)}, nil
 }
 
-// List retrieves a paginated list of all training sessions.
-// The response contains a list of full training session objects.
-// and the total number of training sessions in the system.
+// GetWithDeleted retrieves a single training session record, including soft-deleted ones,
+// along with its associated product details.
+//
+// Returns a `NotFound` gRPC error if the record is not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
+func (s *Server) GetWithDeleted(ctx context.Context, req *trainingsessionpb.GetWithDeletedRequest) (*trainingsessionpb.GetWithDeletedResponse, error) {
+	details, err := s.service.GetWithDeleted(ctx, req.GetId())
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+
+	return &trainingsessionpb.GetWithDeletedResponse{TrainingSessionDetails: types.TrainingSessionDetailsToProtobuf(details)}, nil
+}
+
+// GetWithUnpublished retrieves a single training session record, including unpublished ones,
+// along with its associated product details.
+//
+// Returns a `NotFound` gRPC error if the record is not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
+func (s *Server) GetWithUnpublished(ctx context.Context, req *trainingsessionpb.GetWithUnpublishedRequest) (*trainingsessionpb.GetWithUnpublishedResponse, error) {
+	details, err := s.service.GetWithUnpublished(ctx, req.GetId())
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+
+	return &trainingsessionpb.GetWithUnpublishedResponse{TrainingSessionDetails: types.TrainingSessionDetailsToProtobuf(details)}, nil
+}
+
+// List retrieves a paginated list of all published and not soft-deleted training session records.
+// Each record includes its associated product details.
+// The response also contains the total count of such records.
 func (s *Server) List(ctx context.Context, req *trainingsessionpb.ListRequest) (*trainingsessionpb.ListResponse, error) {
 	ts, total, err := s.service.List(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
 		return nil, errors.ToGRPCError(err)
 	}
-	var pbTs []*trainingsessionpb.TrainingSession
+	var pbdetails []*trainingsessionpb.TrainingSessionDetails
 	for _, ts := range ts {
-		pbTs = append(pbTs, types.TrainingSessionToProtobuf(&ts))
+		pbdetails = append(pbdetails, types.TrainingSessionDetailsToProtobuf(&ts))
 	}
 
-	return &trainingsessionpb.ListResponse{TrainingSessions: pbTs, Total: total}, nil
+	return &trainingsessionpb.ListResponse{TrainingSessionsDetails: pbdetails, Total: total}, nil
 }
 
-// Create creates a new training session record, typically in the process of direct training session
-// creation. It automatically creates an underlying product.
+// ListDeleted retrieves a paginated list of all soft-deleted training session records.
+// Each record includes its associated product details.
+// The response also contains the total count of such records.
+func (s *Server) ListDeleted(ctx context.Context, req *trainingsessionpb.ListDeletedRequest) (*trainingsessionpb.ListDeletedResponse, error) {
+	ts, total, err := s.service.ListDeleted(ctx, int(req.GetLimit()), int(req.GetOffset()))
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	var pbdetails []*trainingsessionpb.TrainingSessionDetails
+	for _, ts := range ts {
+		pbdetails = append(pbdetails, types.TrainingSessionDetailsToProtobuf(&ts))
+	}
+
+	return &trainingsessionpb.ListDeletedResponse{TrainingSessionsDetails: pbdetails, Total: total}, nil
+}
+
+// ListUnpublished retrieves a paginated list of all unpublished (but not soft-deleted) training session records.
+// Each record includes its associated product details.
+// The response also contains the total count of such records.
+func (s *Server) ListUnpublished(ctx context.Context, req *trainingsessionpb.ListUnpublishedRequest) (*trainingsessionpb.ListUnpublishedResponse, error) {
+	ts, total, err := s.service.ListUnpublished(ctx, int(req.GetLimit()), int(req.GetOffset()))
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	var pbdetails []*trainingsessionpb.TrainingSessionDetails
+	for _, ts := range ts {
+		pbdetails = append(pbdetails, types.TrainingSessionDetailsToProtobuf(&ts))
+	}
+
+	return &trainingsessionpb.ListUnpublishedResponse{TrainingSessionsDetails: pbdetails, Total: total}, nil
+}
+
+// Publish makes a training session and its associated product available in the catalog by setting `InStock` to true.
 //
-// If request payload not satisfies service expectations, it returns a `InvalidArgument` gRPC error.
-// It returns newly created course training session with all fields.
+// Returns a `NotFound` gRPC error if the record is not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
+func (s *Server) Publish(ctx context.Context, req *trainingsessionpb.PublishRequest) (*trainingsessionpb.PublishResponse, error) {
+	if err := s.service.Publish(ctx, req.GetId()); err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	return &trainingsessionpb.PublishResponse{Id: req.GetId()}, nil
+}
+
+// Unpublish archives a training session and its associated product from the catalog
+// by setting their `InStock` field to false.
+//
+// Returns a `NotFound` gRPC error if any of the records are not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
+func (s *Server) Unpublish(ctx context.Context, req *trainingsessionpb.UnpublishRequest) (*trainingsessionpb.UnpublishResponse, error) {
+	if err := s.service.Unpublish(ctx, req.GetId()); err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	return &trainingsessionpb.UnpublishResponse{Id: req.GetId()}, nil
+}
+
+// Create creates a new TrainingSession and its associated Product.
+// Both are created in an unpublished state.
+//
+// Returns an `InvalidArgument` gRPC error if the request payload is invalid.
 func (s *Server) Create(ctx context.Context, req *trainingsessionpb.CreateRequest) (*trainingsessionpb.CreateResponse, error) {
-	ts := &models.TrainingSession{
-		DurationMinutes: int(req.GetDurationMinutes()),
-		Format:          req.GetFormat(),
-		Product: &models.Product{
-			Name:        req.GetProduct().GetName(),
-			Description: req.GetProduct().GetDescription(),
-			Price:       req.GetProduct().GetPrice(),
-		},
+	createReq := &trainingsessionmodel.CreateRequest{
+		Name:             req.GetName(),
+		ShortDescription: req.GetShortDescription(),
+		Format:           req.GetFormat(),
+		Price:            req.GetPrice(),
+		DurationMinutes:  int(req.GetDurationMinutes()),
 	}
-	ts, err := s.service.Create(ctx, ts)
+	res, err := s.service.Create(ctx, createReq)
 	if err != nil {
 		return nil, errors.ToGRPCError(err)
 	}
-
-	return &trainingsessionpb.CreateResponse{TrainingSession: types.TrainingSessionToProtobuf(ts)}, nil
+	return &trainingsessionpb.CreateResponse{Id: res.ID, ProductId: res.ProductID}, nil
 }
 
-// Update updates training session fields that have been acually changed. All request fields
-// except ID are optional, so service will update training session only if at least one field
-// has been updated.
+// Update performs a partial update of a training session and its related product.
+// At least one field must be provided for an update to occur.
+// The response contains only the fields that were actually changed.
 //
-// It populates only updated fields in the response along with the `fieldmaskpb.UpdateMask` which contains
-// paths to updated fields.
+// Returns a `NotFound` gRPC error if the record is not found.
+// Returns an `InvalidArgument` gRPC error if the request payload is invalid.
 func (s *Server) Update(ctx context.Context, req *trainingsessionpb.UpdateRequest) (*trainingsessionpb.UpdateResponse, error) {
-	ts := &models.TrainingSession{
-		DurationMinutes: int(req.GetDurationMinutes()),
-		Format:          req.GetFormat(),
-		Product: &models.Product{
-			Name:        req.GetProduct().GetName(),
-			Description: req.GetProduct().GetDescription(),
-			Price:       req.GetProduct().GetPrice(),
-		},
+	updateReq := &trainingsessionmodel.UpdateRequest{
+		ID:               req.GetId(),
+		Name:             req.Name,
+		ShortDescription: req.ShortDescription,
+		LongDescription:  req.LongDescription,
+		Format:           req.Format,
+		Price:            req.Price,
+		Tags:             req.Tags,
 	}
-	updates, productUpdates, err := s.service.Update(ctx, ts, req.GetId())
+	dm := int(req.GetDurationMinutes())
+	updateReq.DurationMinutes = &dm
+	res, err := s.service.Update(ctx, updateReq)
 	if err != nil {
 		return nil, errors.ToGRPCError(err)
 	}
-
-	return types.TrainingSessionToProtobufUpdate(updates, productUpdates), nil
+	return types.TrainingSessionToProtobufUpdate(&trainingsessionpb.UpdateResponse{Id: req.GetId()}, res), nil
 }
 
-// Delete completely deletes training session from the system.
+// Delete performs a soft-delete on a training session and its associated product.
+// It also unpublishes them, requiring manual re-publishing after restoration.
+//
+// Returns a `NotFound` gRPC error if any of the records are not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Delete(ctx context.Context, req *trainingsessionpb.DeleteRequest) (*trainingsessionpb.DeleteResponse, error) {
 	err := s.service.Delete(ctx, req.GetId())
 	if err != nil {
@@ -130,4 +222,32 @@ func (s *Server) Delete(ctx context.Context, req *trainingsessionpb.DeleteReques
 	}
 
 	return &trainingsessionpb.DeleteResponse{Id: req.GetId()}, nil
+}
+
+// DeletePermanent permanently deletes a trainign session and its associated product from the database.
+// This action is irreversible.
+//
+// Returns a `NotFound` gRPC error if any of the records are not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
+func (s *Server) DeletePermanent(ctx context.Context, req *trainingsessionpb.DeletePermanentRequest) (*trainingsessionpb.DeletePermanentResponse, error) {
+	err := s.service.DeletePermanent(ctx, req.GetId())
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+
+	return &trainingsessionpb.DeletePermanentResponse{Id: req.GetId()}, nil
+}
+
+// Restore restores a soft-deleted training session and its associated product.
+// The restored records are not automatically published and must be published manually.
+//
+// Returns a `NotFound` gRPC error if any of the records are not found.
+// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
+func (s *Server) Restore(ctx context.Context, req *trainingsessionpb.RestoreRequest) (*trainingsessionpb.RestoreResponse, error) {
+	err := s.service.Restore(ctx, req.GetId())
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+
+	return &trainingsessionpb.RestoreResponse{Id: req.GetId()}, nil
 }
