@@ -24,6 +24,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mikhail5545/product-service-go/internal/services/course"
 	coursepart "github.com/mikhail5545/product-service-go/internal/services/course_part"
+	physicalgood "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/services/product"
 	"github.com/mikhail5545/product-service-go/internal/services/seminar"
 	trainingsession "github.com/mikhail5545/product-service-go/internal/services/training_session"
@@ -31,17 +32,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// serviceError is an interface to check for custom service errors
-// that contain an HTTP status code.
-type serviceError interface {
+type ServiceError interface {
 	GetCode() int
+	Error() string
 }
 
 // HTTPErrorHandler is a custom error handler for Echo.
 func HTTPErrorHandler(err error, c echo.Context) {
-	var se serviceError
+	var se ServiceError
 	if errors.As(err, &se) {
-		c.JSON(se.GetCode(), map[string]string{"error": err.Error()})
+		c.JSON(se.GetCode(), map[string]string{"error": se.Error()})
 		return
 	}
 	c.JSON(http.StatusInternalServerError, map[string]string{"error": "internal server error"})
@@ -100,6 +100,16 @@ func ToGRPCError(err error) error {
 			return status.Errorf(codes.InvalidArgument, coursePartErr.Error())
 		case http.StatusNotFound:
 			return status.Errorf(codes.NotFound, coursePartErr.Error())
+		}
+	}
+
+	var physicalGoodErr *physicalgood.Error
+	if errors.As(err, &physicalGoodErr) {
+		switch physicalGoodErr.GetCode() {
+		case http.StatusBadRequest:
+			return status.Errorf(codes.InvalidArgument, physicalGoodErr.Error())
+		case http.StatusNotFound:
+			return status.Errorf(codes.NotFound, physicalGoodErr.Error())
 		}
 	}
 

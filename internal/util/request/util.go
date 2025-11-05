@@ -30,38 +30,48 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 // BindAndValidateJSON binds the request body to the given struct and handles validation errors.
 func BindAndValidateJSON(c echo.Context, req any) error {
-	if err := c.Bind(req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request JSON payload."})
+	if err := c.Bind(req); err != nil { //nolint:wrapcheck
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request JSON payload.")
 	}
-	// Here you could add validation logic using a library like 'validator'
 	return nil
 }
 
 // GetIDParam extracts a required ID from the path parameters.
 func GetIDParam(c echo.Context, paramName, errorMsg string) (string, error) {
 	id := c.Param(paramName)
-	if id == "" {
-		return "", c.JSON(http.StatusBadRequest, map[string]string{"error": errorMsg})
+	if _, err := uuid.Parse(id); err != nil {
+		return "", echo.NewHTTPError(http.StatusBadRequest, errorMsg)
 	}
 	return id, nil
 }
 
 // GetPaginationParams extracts 'limit' and 'offset' from query parameters with default values.
-func GetPaginationParams(c echo.Context, defaultLimit, defaultOffset int) (int, int) {
-	limit, err := strconv.Atoi(c.QueryParam("limit"))
-	if err != nil || limit < -1 {
-		limit = defaultLimit
+func GetPaginationParams(c echo.Context, defaultLimit, defaultOffset int) (int, int, error) {
+	limitStr := c.QueryParam("limit")
+	limit := defaultLimit
+	if limitStr != "" {
+		var err error
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil || limit < -1 {
+			return 0, 0, echo.NewHTTPError(http.StatusBadRequest, "Invalid pagination parameters.")
+		}
 	}
 
-	offset, err := strconv.Atoi(c.QueryParam("offset"))
-	if err != nil || offset < 0 {
-		offset = defaultOffset
+	offsetStr := c.QueryParam("offset")
+	offset := defaultOffset
+	if offsetStr != "" {
+		var err error
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil || offset < 0 {
+			return 0, 0, echo.NewHTTPError(http.StatusBadRequest, "Invalid pagination parameters.")
+		}
 	}
 
-	return limit, offset
+	return limit, offset, nil
 }
