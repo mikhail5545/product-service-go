@@ -20,6 +20,7 @@ package trainingsession
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -27,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
 	trainingsessionrepo "github.com/mikhail5545/product-service-go/internal/database/training_session"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	"gorm.io/gorm"
@@ -121,6 +123,24 @@ type Service interface {
 	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 	// or a database/internal error occurs (http.StatusInternalServerError).
 	Restore(ctx context.Context, id string) error
+	// AddImage adds a new image to a training session. It's called by media-service-go upon successful image upload.
+	// The function validates the request, checks the image limit, and appends the new image information.
+	//
+	// Returns an AddResponse with the MediaServiceID on success.
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The training session (owner) is not found (http.StatusNotFound).
+	// - The image limit (5) is exceeded (http.StatusBadRequest).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error)
+	// DeleteImage removes an image from a training session. It's called by media-service-go upon successful image deletion.
+	// The function validates the request and removes the image information from the training session.
+	//
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The training session (owner) or image is not found (http.StatusNotFound).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
 }
 
 // service provides service-layer business logic for training session models.
@@ -552,6 +572,116 @@ func (s *service) Update(ctx context.Context, req *trainingsessionmodel.UpdateRe
 		return nil, err
 	}
 	return updates, nil
+}
+
+// AddImage adds a new image to a training session. It's called by media-service-go upon successful image upload.
+// The function validates the request, checks the image limit, and appends the new image information.
+//
+// Returns an AddResponse with the MediaServiceID on success.
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The training session (owner) is not found (http.StatusNotFound).
+// - The image limit (5) is exceeded (http.StatusBadRequest).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error) {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return nil, &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	err := s.TrainingSessionRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txTrainingSessionRepo := s.TrainingSessionRepo.WithTx(tx)
+
+		tsRec, err := txTrainingSessionRepo.GetWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Training session not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get training session", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		if tsRec.UploadedImageAmount >= 5 {
+			return &Error{Msg: "Maximum number of uploaded images is 5 per item", Err: nil, Code: http.StatusBadRequest}
+		}
+
+		newImage := &imagemodel.Image{
+			PublicID:       req.PublicID,
+			URL:            req.URL,
+			SecureURL:      req.SecureURL,
+			MediaServiceID: req.MediaServiceID,
+		}
+
+		if err := txTrainingSessionRepo.AddImage(ctx, tsRec, newImage); err != nil {
+			return &Error{Msg: "Failed to add image to training session", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		// Increment the image count and save
+		tsRec.UploadedImageAmount++
+		if _, err := txTrainingSessionRepo.Update(ctx, tsRec, map[string]any{"uploaded_image_amount": tsRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update training session", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &imagemodel.AddResponse{MediaServiceID: req.MediaServiceID}, nil
+}
+
+// DeleteImage removes an image from a training session. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the training session.
+//
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The training session (owner) or image is not found (http.StatusNotFound).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	return s.TrainingSessionRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txTrainingSessionRepo := s.TrainingSessionRepo.WithTx(tx)
+
+		tsRec, err := txTrainingSessionRepo.GetWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Training session not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get training session", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		var imageFound bool
+		for i, img := range tsRec.Images {
+			if img.MediaServiceID == req.MediaServiceID {
+				imageFound = true
+				// Remove the image from the slice
+				tsRec.Images = append(tsRec.Images[:i], tsRec.Images[i+1:]...)
+				break
+			}
+		}
+
+		if !imageFound {
+			return &Error{Msg: "Image not found on training session", Err: gorm.ErrRecordNotFound, Code: http.StatusNotFound}
+		}
+
+		if err := txTrainingSessionRepo.DeleteImage(ctx, tsRec, req.MediaServiceID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Image not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to delete training session image", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		tsRec.UploadedImageAmount--
+
+		// Save the updated image list and count
+		if _, err := txTrainingSessionRepo.Update(ctx, tsRec, map[string]any{"images": tsRec.Images, "uploaded_image_amount": tsRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update training session", Err: err, Code: http.StatusInternalServerError}
+		}
+		return nil
+	})
 }
 
 // Delete performs a soft-delete of a training session and its related product record.

@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	course "github.com/mikhail5545/product-service-go/internal/models/course"
+	image "github.com/mikhail5545/product-service-go/internal/models/image"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -39,6 +40,21 @@ func NewMockService(ctrl *gomock.Controller) *MockService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
+}
+
+// AddImage mocks base method.
+func (m *MockService) AddImage(ctx context.Context, req *image.AddRequest) (*image.AddResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddImage", ctx, req)
+	ret0, _ := ret[0].(*image.AddResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddImage indicates an expected call of AddImage.
+func (mr *MockServiceMockRecorder) AddImage(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddImage", reflect.TypeOf((*MockService)(nil).AddImage), ctx, req)
 }
 
 // Create mocks base method.
@@ -68,6 +84,20 @@ func (m *MockService) Delete(ctx context.Context, id string) error {
 func (mr *MockServiceMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockService)(nil).Delete), ctx, id)
+}
+
+// DeleteImage mocks base method.
+func (m *MockService) DeleteImage(ctx context.Context, req *image.DeleteRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteImage", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteImage indicates an expected call of DeleteImage.
+func (mr *MockServiceMockRecorder) DeleteImage(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockService)(nil).DeleteImage), ctx, req)
 }
 
 // DeletePermanent mocks base method.

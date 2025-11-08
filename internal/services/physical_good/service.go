@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	physicalgoodrepo "github.com/mikhail5545/product-service-go/internal/database/physical_good"
 	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	"gorm.io/gorm"
@@ -122,6 +123,24 @@ type Service interface {
 	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 	// or a database/internal error occurs (http.StatusInternalServerError).
 	Restore(ctx context.Context, id string) error
+	// AddImage adds a new image to a physical good. It's called by media-service-go upon successful image upload.
+	// The function validates the request, checks the image limit, and appends the new image information.
+	//
+	// Returns an AddResponse with the MediaServiceID on success.
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The physical good (owner) is not found (http.StatusNotFound).
+	// - The image limit (5) is exceeded (http.StatusBadRequest).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error)
+	// DeleteImage removes an image from a physical good. It's called by media-service-go upon successful image deletion.
+	// The function validates the request and removes the image information from the physical good.
+	//
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The physical good (owner) or image is not found (http.StatusNotFound).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
 }
 
 // service provides service-layer business logic for physical good models.
@@ -546,6 +565,116 @@ func (s *service) Update(ctx context.Context, req *physicalgoodmodel.UpdateReque
 		return nil, err
 	}
 	return allUpdates, nil
+}
+
+// AddImage adds a new image to a physical good. It's called by media-service-go upon successful image upload.
+// The function validates the request, checks the image limit, and appends the new image information.
+//
+// Returns an AddResponse with the MediaServiceID on success.
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The physical good (owner) is not found (http.StatusNotFound).
+// - The image limit (5) is exceeded (http.StatusBadRequest).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error) {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return nil, &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	err := s.PhysicalGoodRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txPhysicalGoodRepo := s.PhysicalGoodRepo.WithTx(tx)
+
+		goodRec, err := txPhysicalGoodRepo.GetWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Physical good not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get physical good", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		if goodRec.UploadedImageAmount >= 5 {
+			return &Error{Msg: "Maximum number of uploaded images is 5 per item", Err: nil, Code: http.StatusBadRequest}
+		}
+
+		newImage := &imagemodel.Image{
+			PublicID:       req.PublicID,
+			URL:            req.URL,
+			SecureURL:      req.SecureURL,
+			MediaServiceID: req.MediaServiceID,
+		}
+
+		if err := txPhysicalGoodRepo.AddImage(ctx, goodRec, newImage); err != nil {
+			return &Error{Msg: "Failed to add image to physical good", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		// Increment the image count and save
+		goodRec.UploadedImageAmount++
+		if _, err := txPhysicalGoodRepo.Update(ctx, goodRec, map[string]any{"uploaded_image_amount": goodRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update physical good", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &imagemodel.AddResponse{MediaServiceID: req.MediaServiceID}, nil
+}
+
+// DeleteImage removes an image from a physical good. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the physical good.
+//
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The physical good (owner) or image is not found (http.StatusNotFound).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	return s.PhysicalGoodRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txPhysicalGoodRepo := s.PhysicalGoodRepo.WithTx(tx)
+
+		goodRec, err := txPhysicalGoodRepo.GetWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Physical good not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get physical good", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		var imageFound bool
+		for i, img := range goodRec.Images {
+			if img.MediaServiceID == req.MediaServiceID {
+				imageFound = true
+				// Remove the image from the slice
+				goodRec.Images = append(goodRec.Images[:i], goodRec.Images[i+1:]...)
+				break
+			}
+		}
+
+		if !imageFound {
+			return &Error{Msg: "Image not found on physical good", Err: gorm.ErrRecordNotFound, Code: http.StatusNotFound}
+		}
+
+		if err := txPhysicalGoodRepo.DeleteImage(ctx, goodRec, req.MediaServiceID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Image not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to delete physical good image", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		goodRec.UploadedImageAmount--
+
+		// Save the updated image list and count
+		if _, err := txPhysicalGoodRepo.Update(ctx, goodRec, map[string]any{"images": goodRec.Images, "uploaded_image_amount": goodRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update physical good", Err: err, Code: http.StatusInternalServerError}
+		}
+		return nil
+	})
 }
 
 // Delete performs a soft-delete of a physical good and its related product record.

@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
 	seminarrepo "github.com/mikhail5545/product-service-go/internal/database/seminar"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
 	"gorm.io/gorm"
@@ -124,6 +125,24 @@ type Service interface {
 	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 	// or a database/internal error occurs (http.StatusInternalServerError).
 	Restore(ctx context.Context, id string) error
+	// AddImage adds a new image to a seminar. It's called by media-service-go upon successful image upload.
+	// The function validates the request, checks the image limit, and appends the new image information.
+	//
+	// Returns an AddResponse with the MediaServiceID on success.
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The seminar (owner) is not found (http.StatusNotFound).
+	// - The image limit (5) is exceeded (http.StatusBadRequest).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error)
+	// DeleteImage removes an image from a seminar. It's called by media-service-go upon successful image deletion.
+	// The function validates the request and removes the image information from the seminar.
+	//
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The seminar (owner) or image is not found (http.StatusNotFound).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
 }
 
 // service provides service-layer business logic for seminar models.
@@ -870,6 +889,116 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 		return nil, err
 	}
 	return allUpdates, nil
+}
+
+// AddImage adds a new image to a seminar. It's called by media-service-go upon successful image upload.
+// The function validates the request, checks the image limit, and appends the new image information.
+//
+// Returns an AddResponse with the MediaServiceID on success.
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The seminar (owner) is not found (http.StatusNotFound).
+// - The image limit (5) is exceeded (http.StatusBadRequest).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error) {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return nil, &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	err := s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txSeminarRepo := s.SeminarRepo.WithTx(tx)
+
+		seminarRec, err := txSeminarRepo.GetWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get seminar", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		if seminarRec.UploadedImageAmount >= 5 {
+			return &Error{Msg: "Maximum number of uploaded images is 5 per item", Err: nil, Code: http.StatusBadRequest}
+		}
+
+		newImage := &imagemodel.Image{
+			PublicID:       req.PublicID,
+			URL:            req.URL,
+			SecureURL:      req.SecureURL,
+			MediaServiceID: req.MediaServiceID,
+		}
+
+		if err := txSeminarRepo.AddImage(ctx, seminarRec, newImage); err != nil {
+			return &Error{Msg: "Failed to add image to seminar", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		// Increment the image count and save
+		seminarRec.UploadedImageAmount++
+		if _, err := txSeminarRepo.Update(ctx, seminarRec, map[string]any{"uploaded_image_amount": seminarRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update seminar", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &imagemodel.AddResponse{MediaServiceID: req.MediaServiceID}, nil
+}
+
+// DeleteImage removes an image from a seminar. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the seminar.
+//
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The seminar (owner) or image is not found (http.StatusNotFound).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	return s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txSeminarRepo := s.SeminarRepo.WithTx(tx)
+
+		seminarRec, err := txSeminarRepo.GetWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get seminar", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		var imageFound bool
+		for i, img := range seminarRec.Images {
+			if img.MediaServiceID == req.MediaServiceID {
+				imageFound = true
+				// Remove the image from the slice
+				seminarRec.Images = append(seminarRec.Images[:i], seminarRec.Images[i+1:]...)
+				break
+			}
+		}
+
+		if !imageFound {
+			return &Error{Msg: "Image not found on seminar", Err: gorm.ErrRecordNotFound, Code: http.StatusNotFound}
+		}
+
+		if err := txSeminarRepo.DeleteImage(ctx, seminarRec, req.MediaServiceID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Image not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to delete seminar image", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		seminarRec.UploadedImageAmount--
+
+		// Save the updated image list and count
+		if _, err := txSeminarRepo.Update(ctx, seminarRec, map[string]any{"images": seminarRec.Images, "uploaded_image_amount": seminarRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update seminar", Err: err, Code: http.StatusInternalServerError}
+		}
+		return nil
+	})
 }
 
 // Delete performs a soft-delete of a seminar and all of its related product records.

@@ -31,6 +31,7 @@ import (
 	coursepartrepo "github.com/mikhail5545/product-service-go/internal/database/course_part"
 	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
 	"github.com/mikhail5545/product-service-go/internal/models/course"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
 	"gorm.io/gorm"
 )
@@ -143,6 +144,26 @@ type Service interface {
 	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
 	// or a database/internal error occurs (http.StatusInternalServerError).
 	Restore(ctx context.Context, id string) error
+	// AddImage adds a new image to a course. It's called by media-service-go upon successful image upload.
+	// The function validates the request, checks the image limit, and appends the new image information.
+	// If it's the first image, it's set as primary.
+	//
+	// Returns an AddResponse with the MediaServiceID on success.
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The course (owner) is not found (http.StatusNotFound).
+	// - The image limit (5) is exceeded (http.StatusBadRequest).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error)
+	// DeleteImage removes an image from a course. It's called by media-service-go upon successful image deletion.
+	// The function validates the request and removes the image information from the course.
+	// If the deleted image was the primary one, it promotes the next available image to be primary.
+	//
+	// Returns an error if:
+	// - The request payload is invalid (http.StatusBadRequest).
+	// - The course (owner) or image is not found (http.StatusNotFound).
+	// - A database/internal error occurs (http.StatusInternalServerError).
+	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
 }
 
 // service provides service-layer business logic for course models.
@@ -651,6 +672,116 @@ func (s *service) Update(ctx context.Context, req *course.UpdateRequest) (map[st
 		return nil, err
 	}
 	return updates, nil
+}
+
+// AddImage adds a new image to a course. It's called by media-service-go upon successful image upload.
+// The function validates the request, checks the image limit, and appends the new image information.
+//
+// Returns an AddResponse with the MediaServiceID on success.
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The course (owner) is not found (http.StatusNotFound).
+// - The image limit (5) is exceeded (http.StatusBadRequest).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) (*imagemodel.AddResponse, error) {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return nil, &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	err := s.CourseRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txCourseRepo := s.CourseRepo.WithTx(tx)
+
+		courseRec, err := txCourseRepo.GetReducedWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Course not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get course", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		if courseRec.UploadedImageAmount >= 5 {
+			return &Error{Msg: "Maximum number of uploaded images is 5 per item", Err: nil, Code: http.StatusBadRequest}
+		}
+
+		newImage := &imagemodel.Image{
+			PublicID:       req.PublicID,
+			URL:            req.URL,
+			SecureURL:      req.SecureURL,
+			MediaServiceID: req.MediaServiceID,
+		}
+
+		if err := txCourseRepo.AddImage(ctx, courseRec, newImage); err != nil {
+			return &Error{Msg: "Failed to add image to course", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		// Increment the image count and save
+		courseRec.UploadedImageAmount++
+		if _, err := txCourseRepo.Update(ctx, courseRec, map[string]any{"uploaded_image_amount": courseRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update course", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &imagemodel.AddResponse{MediaServiceID: req.MediaServiceID, OwnerID: req.OwnerID}, nil
+}
+
+// DeleteImage removes an image from a course. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the course.
+//
+// Returns an error if:
+// - The request payload is invalid (http.StatusBadRequest).
+// - The course (owner) or image is not found (http.StatusNotFound).
+// - A database/internal error occurs (http.StatusInternalServerError).
+func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
+	if err := req.Validate(); err != nil {
+		validationMsg, _ := json.Marshal(err)
+		return &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+	}
+
+	return s.CourseRepo.DB().Transaction(func(tx *gorm.DB) error {
+		txCourseRepo := s.CourseRepo.WithTx(tx)
+
+		courseRec, err := txCourseRepo.GetWithUnpublished(ctx, req.OwnerID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Course not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to get course", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		var imageFound bool
+		for i, img := range courseRec.Images {
+			if img.MediaServiceID == req.MediaServiceID {
+				imageFound = true
+				// Remove the image from the slice
+				courseRec.Images = append(courseRec.Images[:i], courseRec.Images[i+1:]...)
+				break
+			}
+		}
+
+		if !imageFound {
+			return &Error{Msg: "Image not found on course", Err: gorm.ErrRecordNotFound, Code: http.StatusNotFound}
+		}
+
+		if err := txCourseRepo.DeleteImage(ctx, courseRec, req.MediaServiceID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return &Error{Msg: "Image not found", Err: err, Code: http.StatusNotFound}
+			}
+			return &Error{Msg: "Failed to delete course image", Err: err, Code: http.StatusInternalServerError}
+		}
+
+		courseRec.UploadedImageAmount--
+
+		// Save the updated image list and count
+		if _, err := txCourseRepo.Update(ctx, courseRec, map[string]any{"images": courseRec.Images, "uploaded_image_amount": courseRec.UploadedImageAmount}); err != nil {
+			return &Error{Msg: "Failed to update course", Err: err, Code: http.StatusInternalServerError}
+		}
+		return nil
+	})
 }
 
 // Delete performs a soft-delete of a course, its associated course parts
