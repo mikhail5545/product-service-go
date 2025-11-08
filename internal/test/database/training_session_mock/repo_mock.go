@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	trainingsession "github.com/mikhail5545/product-service-go/internal/database/training_session"
+	image "github.com/mikhail5545/product-service-go/internal/models/image"
 	trainingsession0 "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	gomock "go.uber.org/mock/gomock"
 	gorm "gorm.io/gorm"
@@ -41,6 +42,20 @@ func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
+}
+
+// AddImage mocks base method.
+func (m *MockRepository) AddImage(ctx context.Context, ts *trainingsession0.TrainingSession, arg2 *image.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddImage", ctx, ts, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddImage indicates an expected call of AddImage.
+func (mr *MockRepositoryMockRecorder) AddImage(ctx, ts, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddImage", reflect.TypeOf((*MockRepository)(nil).AddImage), ctx, ts, arg2)
 }
 
 // Count mocks base method.
@@ -129,6 +144,20 @@ func (m *MockRepository) Delete(ctx context.Context, id string) (int64, error) {
 func (mr *MockRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), ctx, id)
+}
+
+// DeleteImage mocks base method.
+func (m *MockRepository) DeleteImage(ctx context.Context, ts *trainingsession0.TrainingSession, mediaSvcID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteImage", ctx, ts, mediaSvcID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteImage indicates an expected call of DeleteImage.
+func (mr *MockRepositoryMockRecorder) DeleteImage(ctx, ts, mediaSvcID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockRepository)(nil).DeleteImage), ctx, ts, mediaSvcID)
 }
 
 // DeletePermanent mocks base method.
