@@ -21,6 +21,7 @@ package seminar
 import (
 	"context"
 
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
 	"gorm.io/gorm"
 )
@@ -66,6 +67,10 @@ type Repository interface {
 	SetInStock(ctx context.Context, id string, inStock bool) (int64, error)
 	// Update performs partial update of a seminar record using updates.
 	Update(ctx context.Context, seminar *seminarmodel.Seminar, updates any) (int64, error)
+	// AddImage adds a new image for the Seminar record in the database.
+	AddImage(ctx context.Context, seminar *seminarmodel.Seminar, image *imagemodel.Image) error
+	// DeleteImage deletes an image from the Seminar record.
+	DeleteImage(ctx context.Context, seminar *seminarmodel.Seminar, mediaSvcID string) error
 	// Delete performs soft-delete of a seminar record.
 	Delete(ctx context.Context, id string) (int64, error)
 	// DeletePermanent performs permanent delete of a seminar record.
@@ -103,7 +108,7 @@ func (r *gormRepository) WithTx(tx *gorm.DB) Repository {
 // Get retrieves single seminar record from the database.
 func (r *gormRepository) Get(ctx context.Context, id string) (*seminarmodel.Seminar, error) {
 	var seminar *seminarmodel.Seminar
-	err := r.db.WithContext(ctx).Where("in_stock = ?", true).First(&seminar, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Where("in_stock = ?", true).Preload("Images").First(&seminar, "id = ?", id).Error
 	return seminar, err
 }
 
@@ -117,7 +122,7 @@ func (r *gormRepository) Select(ctx context.Context, id string, fields ...string
 // List retrieves a paginated list of all seminar records in the database.
 func (r *gormRepository) List(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error) {
 	var seminars []seminarmodel.Seminar
-	err := r.db.WithContext(ctx).Model(&seminarmodel.Seminar{}).Where("in_stock = ?", true).Order("created_at desc").Limit(limit).Offset(offset).Find(&seminars).Error
+	err := r.db.WithContext(ctx).Model(&seminarmodel.Seminar{}).Preload("Images").Where("in_stock = ?", true).Order("created_at desc").Limit(limit).Offset(offset).Find(&seminars).Error
 	return seminars, err
 }
 
@@ -133,14 +138,14 @@ func (r *gormRepository) Count(ctx context.Context) (int64, error) {
 // GetWithDeleted retrieves single seminar record from the database including soft-deleted ones.
 func (r *gormRepository) GetWithDeleted(ctx context.Context, id string) (*seminarmodel.Seminar, error) {
 	var seminar *seminarmodel.Seminar
-	err := r.db.WithContext(ctx).Unscoped().First(&seminar, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("Images").First(&seminar, "id = ?", id).Error
 	return seminar, err
 }
 
 // ListDeleted retrieves a paginated list of all soft-deleted seminar records from database.
 func (r *gormRepository) ListDeleted(ctx context.Context, limit, offset int) ([]seminarmodel.Seminar, error) {
 	var seminars []seminarmodel.Seminar
-	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Order("created_at desc").Limit(limit).Offset(offset).Find(&seminars).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("Images").Where("deleted_at IS NOT NULL").Order("created_at desc").Limit(limit).Offset(offset).Find(&seminars).Error
 	return seminars, err
 }
 
@@ -159,7 +164,7 @@ func (r *gormRepository) CountDeleted(ctx context.Context) (int64, error) {
 // GetWithUnpublished retrieves single seminar record from the database including unpublished seminars.
 func (r *gormRepository) GetWithUnpublished(ctx context.Context, id string) (*seminarmodel.Seminar, error) {
 	var seminar seminarmodel.Seminar
-	err := r.db.WithContext(ctx).First(&seminar, id).Error
+	err := r.db.WithContext(ctx).Preload("Images").First(&seminar, id).Error
 	return &seminar, err
 }
 
@@ -168,6 +173,7 @@ func (r *gormRepository) ListUnpublished(ctx context.Context, limit, offset int)
 	var seminars []seminarmodel.Seminar
 	err := r.db.WithContext(ctx).
 		Model(&seminarmodel.Seminar{}).
+		Preload("Images").
 		Where("in_stock = ?", false).
 		Order("created_at DESC").
 		Limit(limit).Offset(offset).
@@ -184,7 +190,7 @@ func (r *gormRepository) CountUnpublished(ctx context.Context) (int64, error) {
 
 // --- Common ---
 
-// Create creates a new CoursePart record in the database.
+// Create creates a new SeminarPart record in the database.
 func (r *gormRepository) Create(ctx context.Context, seminar *seminarmodel.Seminar) error {
 	return r.db.WithContext(ctx).Create(seminar).Error
 }
@@ -199,6 +205,16 @@ func (r *gormRepository) SetInStock(ctx context.Context, id string, inStock bool
 func (r *gormRepository) Update(ctx context.Context, seminar *seminarmodel.Seminar, updates any) (int64, error) {
 	res := r.db.WithContext(ctx).Model(seminar).Updates(updates)
 	return res.RowsAffected, res.Error
+}
+
+// AddImage adds a new image for the Seminar record in the database.
+func (r *gormRepository) AddImage(ctx context.Context, seminar *seminarmodel.Seminar, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(seminar).Association("Images").Append(image)
+}
+
+// DeleteImage deletes an image from the Seminar record.
+func (r *gormRepository) DeleteImage(ctx context.Context, seminar *seminarmodel.Seminar, mediaSvcID string) error {
+	return r.db.WithContext(ctx).Model(seminar).Association("Images").Delete(&imagemodel.Image{MediaServiceID: mediaSvcID})
 }
 
 // Delete performs soft-delete of a seminar record.

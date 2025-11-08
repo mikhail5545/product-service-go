@@ -21,6 +21,7 @@ package physicalgood
 import (
 	"context"
 
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	"gorm.io/gorm"
 )
@@ -66,6 +67,10 @@ type Repository interface {
 	SetInStock(ctx context.Context, id string, inStock bool) (int64, error)
 	// Update performs partial update of a physical good record using updates.
 	Update(ctx context.Context, ts *physicalgoodmodel.PhysicalGood, updates any) (int64, error)
+	// AddImage adds a new image for the physical good record in the database.
+	AddImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error
+	// DeleteImage deletes an image from the physical good record.
+	DeleteImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, mediaSvcID string) error
 	// Delete performs soft-delete of a physical good record.
 	Delete(ctx context.Context, id string) (int64, error)
 	// DeletePermanent performs permanent delete of a physical good record.
@@ -107,7 +112,7 @@ func (r *gormRepository) WithTx(tx *gorm.DB) Repository {
 // Get retrieves a single physical good record from the database.
 func (r *gormRepository) Get(ctx context.Context, id string) (*physicalgoodmodel.PhysicalGood, error) {
 	var good physicalgoodmodel.PhysicalGood
-	err := r.db.WithContext(ctx).Where("in_stock = ?", true).First(&good, id).Error
+	err := r.db.WithContext(ctx).Preload("Images").Where("in_stock = ?", true).First(&good, id).Error
 	return &good, err
 }
 
@@ -121,7 +126,7 @@ func (r *gormRepository) Select(ctx context.Context, id string, fields ...string
 // List retrieves a paginated list of all physical good records int the database.
 func (r *gormRepository) List(ctx context.Context, limit, offset int) ([]physicalgoodmodel.PhysicalGood, error) {
 	var goods []physicalgoodmodel.PhysicalGood
-	err := r.db.WithContext(ctx).Where("in_stock = ?", true).Limit(limit).Offset(offset).Order("created_at desc").Find(&goods).Error
+	err := r.db.WithContext(ctx).Where("in_stock = ?", true).Preload("Images").Limit(limit).Offset(offset).Order("created_at desc").Find(&goods).Error
 	return goods, err
 }
 
@@ -137,14 +142,14 @@ func (r *gormRepository) Count(ctx context.Context) (int64, error) {
 // GetWithDeleted retrieves a single physical good record from the database including soft-deleted physial goods.
 func (r *gormRepository) GetWithDeleted(ctx context.Context, id string) (*physicalgoodmodel.PhysicalGood, error) {
 	var good physicalgoodmodel.PhysicalGood
-	err := r.db.WithContext(ctx).Unscoped().First(&good, id).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("Images").First(&good, id).Error
 	return &good, err
 }
 
 // ListDeleted retrieves a paginated list of all soft-deleted physical good records in the database.
 func (r *gormRepository) ListDeleted(ctx context.Context, limit, offset int) ([]physicalgoodmodel.PhysicalGood, error) {
 	var goods []physicalgoodmodel.PhysicalGood
-	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Limit(limit).Offset(offset).Order("created_at desc").Find(&goods).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("Images").Where("deleted_at IS NOT NULL").Limit(limit).Offset(offset).Order("created_at desc").Find(&goods).Error
 	return goods, err
 }
 
@@ -163,7 +168,7 @@ func (r *gormRepository) CountDeleted(ctx context.Context) (int64, error) {
 // GetWithUnpublished retrieves a single physical good record from the database including unpublished physial goods.
 func (r *gormRepository) GetWithUnpublished(ctx context.Context, id string) (*physicalgoodmodel.PhysicalGood, error) {
 	var good physicalgoodmodel.PhysicalGood
-	err := r.db.WithContext(ctx).First(&good, id).Error
+	err := r.db.WithContext(ctx).Preload("Images").First(&good, id).Error
 	return &good, err
 }
 
@@ -172,6 +177,7 @@ func (r *gormRepository) ListUnpublished(ctx context.Context, limit, offset int)
 	var goods []physicalgoodmodel.PhysicalGood
 	err := r.db.WithContext(ctx).
 		Model(&physicalgoodmodel.PhysicalGood{}).
+		Preload("Images").
 		Where("in_stock = ?", false).
 		Order("created_at DESC").
 		Limit(limit).Offset(offset).
@@ -203,6 +209,16 @@ func (r *gormRepository) SetInStock(ctx context.Context, id string, inStock bool
 func (r *gormRepository) Update(ctx context.Context, good *physicalgoodmodel.PhysicalGood, updates any) (int64, error) {
 	res := r.db.WithContext(ctx).Model(good).Updates(updates)
 	return res.RowsAffected, res.Error
+}
+
+// AddImage adds a new image for the physical good record in the database.
+func (r *gormRepository) AddImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(good).Association("Images").Append(image)
+}
+
+// DeleteImage deletes an image from the physical good record.
+func (r *gormRepository) DeleteImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, mediaSvcID string) error {
+	return r.db.WithContext(ctx).Model(good).Association("Images").Delete(&imagemodel.Image{MediaServiceID: mediaSvcID})
 }
 
 // Delete performs soft-delete of a physical good record.

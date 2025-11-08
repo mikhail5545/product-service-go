@@ -21,6 +21,7 @@ package trainingsession
 import (
 	"context"
 
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	tsmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	"gorm.io/gorm"
 )
@@ -66,6 +67,10 @@ type Repository interface {
 	SetInStock(ctx context.Context, id string, inStock bool) (int64, error)
 	// Update performs a partial update of a training session record using the provided updates map.
 	Update(ctx context.Context, ts *tsmodel.TrainingSession, updates any) (int64, error)
+	// AddImage adds a new image for the training session record in the database.
+	AddImage(ctx context.Context, ts *tsmodel.TrainingSession, image *imagemodel.Image) error
+	// DeleteImage deletes an image from the training session record.
+	DeleteImage(ctx context.Context, ts *tsmodel.TrainingSession, mediaSvcID string) error
 	// Delete performs a soft-delete of a training session record.
 	Delete(ctx context.Context, id string) (int64, error)
 	// DeletePermanent performs a permanent delete of a training session record.
@@ -108,7 +113,7 @@ func (r *gormRepository) WithTx(tx *gorm.DB) Repository {
 // Get retrieves a single published and not soft-deleted training session record from the database.
 func (r *gormRepository) Get(ctx context.Context, id string) (*tsmodel.TrainingSession, error) {
 	var ts tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Where("in_stock = ?", true).First(&ts, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Preload("Images").Where("in_stock = ?", true).First(&ts, "id = ?", id).Error
 	return &ts, err
 }
 
@@ -122,7 +127,7 @@ func (r *gormRepository) Select(ctx context.Context, id string, fields ...string
 // List retrieves a paginated list of all published and not soft-deleted training session records in the database.
 func (r *gormRepository) List(ctx context.Context, limit, offset int) ([]tsmodel.TrainingSession, error) {
 	var ts []tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Where("in_stock = ?", true).Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
+	err := r.db.WithContext(ctx).Where("in_stock = ?", true).Preload("Images").Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
 	return ts, err
 }
 
@@ -138,14 +143,14 @@ func (r *gormRepository) Count(ctx context.Context) (int64, error) {
 // GetWithDeleted retrieves a single training session record from the database, including soft-deleted ones.
 func (r *gormRepository) GetWithDeleted(ctx context.Context, id string) (*tsmodel.TrainingSession, error) {
 	var ts tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Unscoped().First(&ts, id).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("Images").First(&ts, id).Error
 	return &ts, err
 }
 
 // ListDeleted retrieves a paginated list of all soft-deleted training session records in the database.
 func (r *gormRepository) ListDeleted(ctx context.Context, limit, offset int) ([]tsmodel.TrainingSession, error) { // Corrected comment
 	var ts []tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
+	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Preload("Images").Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
 	return ts, err
 }
 
@@ -164,7 +169,7 @@ func (r *gormRepository) CountDeleted(ctx context.Context) (int64, error) {
 // GetWithUnpublished retrieves a single training session record from the database, including unpublished ones (but not soft-deleted).
 func (r *gormRepository) GetWithUnpublished(ctx context.Context, id string) (*tsmodel.TrainingSession, error) {
 	var ts tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).First(&ts, id).Error
+	err := r.db.WithContext(ctx).Preload("Images").First(&ts, id).Error
 	return &ts, err
 }
 
@@ -173,6 +178,7 @@ func (r *gormRepository) ListUnpublished(ctx context.Context, limit, offset int)
 	var ts []tsmodel.TrainingSession
 	err := r.db.WithContext(ctx).
 		Model(&tsmodel.TrainingSession{}).
+		Preload("Images").
 		Where("in_stock = ?", false).
 		Order("created_at DESC").
 		Limit(limit).Offset(offset).
@@ -198,6 +204,16 @@ func (r *gormRepository) Create(ctx context.Context, ts *tsmodel.TrainingSession
 func (r *gormRepository) Update(ctx context.Context, ts *tsmodel.TrainingSession, updates any) (int64, error) {
 	res := r.db.WithContext(ctx).Model(ts).Updates(updates)
 	return res.RowsAffected, res.Error
+}
+
+// AddImage adds a new image for the training session record in the database.
+func (r *gormRepository) AddImage(ctx context.Context, ts *tsmodel.TrainingSession, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(ts).Association("Images").Append(image)
+}
+
+// DeleteImage deletes an image from the training session record.
+func (r *gormRepository) DeleteImage(ctx context.Context, ts *tsmodel.TrainingSession, mediaSvcID string) error {
+	return r.db.WithContext(ctx).Model(ts).Association("Images").Delete(&imagemodel.Image{MediaServiceID: mediaSvcID})
 }
 
 // SetInStock sets a new value for the training session's InStock field.

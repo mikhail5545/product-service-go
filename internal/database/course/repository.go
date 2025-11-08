@@ -22,6 +22,7 @@ import (
 	"context"
 
 	coursemodel "github.com/mikhail5545/product-service-go/internal/models/course"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"gorm.io/gorm"
 )
 
@@ -72,6 +73,10 @@ type Repository interface {
 	SetInStock(ctx context.Context, id string, inStock bool) (int64, error)
 	// Update performs partial update of Course record in the database using updates.
 	Update(ctx context.Context, course *coursemodel.Course, updates any) (int64, error)
+	// AddImage adds a new image for the Course record in the database.
+	AddImage(ctx context.Context, course *coursemodel.Course, image *imagemodel.Image) error
+	// DeleteImage deletes an image from the course record.
+	DeleteImage(ctx context.Context, course *coursemodel.Course, mediaSvcID string) error
 	// Delete performs soft-delete of Course record.
 	Delete(ctx context.Context, id string) (int64, error)
 	// DeletePermanent performs permanent delete of course record.
@@ -109,7 +114,7 @@ func (r *gormRepository) WithTx(tx *gorm.DB) Repository {
 // Get retrieves single Course record from the database.
 func (r *gormRepository) Get(ctx context.Context, id string) (*coursemodel.Course, error) {
 	var course coursemodel.Course
-	err := r.db.WithContext(ctx).Preload("CourseParts").First(&course, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Preload("CourseParts").Preload("Images").First(&course, "id = ?", id).Error
 	return &course, err
 }
 
@@ -123,7 +128,7 @@ func (r *gormRepository) Select(ctx context.Context, id string, fields ...string
 // GetReduced retrieves single course record withound any course parts.
 func (r *gormRepository) GetReduced(ctx context.Context, id string) (*coursemodel.Course, error) {
 	var course coursemodel.Course
-	err := r.db.WithContext(ctx).First(&course, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Preload("Images").First(&course, "id = ?", id).Error
 	return &course, err
 }
 
@@ -146,21 +151,21 @@ func (r *gormRepository) Count(ctx context.Context) (int64, error) {
 // GetWithDeleted retrieves single course record from the database including soft-deleted courses.
 func (r *gormRepository) GetWithDeleted(ctx context.Context, id string) (*coursemodel.Course, error) {
 	var course coursemodel.Course
-	err := r.db.WithContext(ctx).Unscoped().Preload("CourseParts").First(&course, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("CourseParts").Preload("Images").First(&course, "id = ?", id).Error
 	return &course, err
 }
 
 // GetReducedWithDeleted retrieves course data withound any Course Parts including soft-deleted ones.
 func (r *gormRepository) GetReducedWithDeleted(ctx context.Context, id string) (*coursemodel.Course, error) {
 	var course coursemodel.Course
-	err := r.db.WithContext(ctx).Unscoped().First(&course, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("Images").First(&course, "id = ?", id).Error
 	return &course, err
 }
 
 // ListDeleted retrieves all soft-deleted course records from database without any course parts.
 func (r *gormRepository) ListDeleted(ctx context.Context, limit, offset int) ([]coursemodel.Course, error) {
 	var courses []coursemodel.Course
-	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Limit(limit).Offset(offset).Order("created_at desc").Find(&courses).Error
+	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Preload("Images").Limit(limit).Offset(offset).Order("created_at desc").Find(&courses).Error
 	return courses, err
 }
 
@@ -176,14 +181,14 @@ func (r *gormRepository) CountDeleted(ctx context.Context) (int64, error) {
 // GetWithUnpublished retrieves single course record from the database including unpublished courses.
 func (r *gormRepository) GetWithUnpublished(ctx context.Context, id string) (*coursemodel.Course, error) {
 	var course coursemodel.Course
-	err := r.db.WithContext(ctx).Preload("CourseParts").First(&course, id).Error
+	err := r.db.WithContext(ctx).Preload("CourseParts").Preload("Images").First(&course, id).Error
 	return &course, err
 }
 
 // GetReducedWithDeleted retrieves single course record withound any course parts including soft-deleted courses.
 func (r *gormRepository) GetReducedWithUnpublished(ctx context.Context, id string) (*coursemodel.Course, error) {
 	var course coursemodel.Course
-	err := r.db.WithContext(ctx).First(&course, id).Error
+	err := r.db.WithContext(ctx).Preload("Images").First(&course, id).Error
 	return &course, err
 }
 
@@ -223,6 +228,16 @@ func (r *gormRepository) SetInStock(ctx context.Context, id string, inStock bool
 func (r *gormRepository) Update(ctx context.Context, course *coursemodel.Course, updates any) (int64, error) {
 	res := r.db.WithContext(ctx).Model(course).Updates(updates)
 	return res.RowsAffected, res.Error
+}
+
+// AddImage adds a new image for the Course record in the database.
+func (r *gormRepository) AddImage(ctx context.Context, course *coursemodel.Course, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(course).Association("Images").Append(image)
+}
+
+// DeleteImage deletes an image from the course record.
+func (r *gormRepository) DeleteImage(ctx context.Context, course *coursemodel.Course, mediaSvcID string) error {
+	return r.db.WithContext(ctx).Model(course).Association("Images").Delete(&imagemodel.Image{MediaServiceID: mediaSvcID})
 }
 
 // Delete performs soft-delete of Course record.
