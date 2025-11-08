@@ -25,6 +25,7 @@ package trainingsession
 import (
 	"context"
 
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	trainingsessionservice "github.com/mikhail5545/product-service-go/internal/services/training_session"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
@@ -208,6 +209,44 @@ func (s *Server) Update(ctx context.Context, req *trainingsessionpb.UpdateReques
 		return nil, errors.ToGRPCError(err)
 	}
 	return types.TrainingSessionToProtobufUpdate(&trainingsessionpb.UpdateResponse{Id: req.GetId()}, res), nil
+}
+
+// AddImage adds a new image to a training session. It's called by media-service-go upon successful image upload.
+// It validates the request, checks the image limit and appends the new information.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
+// Returns `NotFound` gRPC error if the record is not found.
+func (s *Server) AddImage(ctx context.Context, req *trainingsessionpb.AddImageRequest) (*trainingsessionpb.AddImageResponse, error) {
+	addRequest := &imagemodel.AddRequest{
+		OwnerID:        req.GetOwnerId(),
+		MediaServiceID: req.GetMediaServiceId(),
+		URL:            req.GetUrl(),
+		SecureURL:      req.GetSecureUrl(),
+		PublicID:       req.GetPublicId(),
+	}
+	resp, err := s.service.AddImage(ctx, addRequest)
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	return &trainingsessionpb.AddImageResponse{MediaServiceId: resp.MediaServiceID, OwnerId: resp.OwnerID}, nil
+}
+
+// DeleteImage deletes an image from a training session. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the training session.
+// This action is irreversable.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error if any of records is not found.
+func (s *Server) DeleteImage(ctx context.Context, req *trainingsessionpb.DeleteImageRequest) (*trainingsessionpb.DeleteImageResponse, error) {
+	deleteReq := &imagemodel.DeleteRequest{
+		OwnerID:        req.GetOwnerId(),
+		MediaServiceID: req.GetMediaServiceId(),
+	}
+	err := s.service.DeleteImage(ctx, deleteReq)
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	return &trainingsessionpb.DeleteImageResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
 }
 
 // Delete performs a soft-delete on a training session and its associated product.

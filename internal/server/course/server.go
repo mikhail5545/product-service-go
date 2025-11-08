@@ -26,6 +26,7 @@ import (
 	"context"
 
 	coursemodel "github.com/mikhail5545/product-service-go/internal/models/course"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	courseservice "github.com/mikhail5545/product-service-go/internal/services/course"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
@@ -240,6 +241,44 @@ func (s *Server) Update(ctx context.Context, req *coursepb.UpdateRequest) (*cour
 	}
 
 	return types.CourseToProtobufUpdate(res), nil
+}
+
+// AddImage adds a new image to a course. It's called by media-service-go upon successful image upload.
+// It validates the request, checks the image limit and appends the new information.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
+// Returns `NotFound` gRPC error if the record is not found.
+func (s *Server) AddImage(ctx context.Context, req *coursepb.AddImageRequest) (*coursepb.AddImageResponse, error) {
+	addRequest := &imagemodel.AddRequest{
+		OwnerID:        req.GetOwnerId(),
+		MediaServiceID: req.GetMediaServiceId(),
+		URL:            req.GetUrl(),
+		SecureURL:      req.GetSecureUrl(),
+		PublicID:       req.GetPublicId(),
+	}
+	resp, err := s.service.AddImage(ctx, addRequest)
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	return &coursepb.AddImageResponse{MediaServiceId: resp.MediaServiceID, OwnerId: resp.OwnerID}, nil
+}
+
+// DeleteImage deletes an image from a course. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the course.
+// This action is irreversable.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error if any of records is not found.
+func (s *Server) DeleteImage(ctx context.Context, req *coursepb.DeleteImageRequest) (*coursepb.DeleteImageResponse, error) {
+	deleteReq := &imagemodel.DeleteRequest{
+		OwnerID:        req.GetOwnerId(),
+		MediaServiceID: req.GetMediaServiceId(),
+	}
+	err := s.service.DeleteImage(ctx, deleteReq)
+	if err != nil {
+		return nil, errors.ToGRPCError(err)
+	}
+	return &coursepb.DeleteImageResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
 }
 
 // Delete performs a soft-delete on a course, its associated product, and all its course parts.
