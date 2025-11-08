@@ -15,11 +15,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Package image provides models, DTO models for image related requests and validation tools.
 package image
 
-type Image struct {
-	PublicID       string `json:"public_id"`
+type AddRequest struct {
 	URL            string `json:"url"`
 	SecureURL      string `json:"secure_url"`
-	MediaServiceID string `json:"media_service_id"` // External id (uuid) for media-service-go operations (image upload, delete, etc.).
+	PublicID       string `json:"public_id"`
+	MediaServiceID string `json:"media_service_id"`
+	OwnerID        string `json:"owner_id"`
+}
+
+type AddResponse struct {
+	MediaServiceID string `json:"media_service_id"`
+	OwnerID        string `json:"owner_id"`
+}
+
+type DeleteRequest struct {
+	MediaServiceID string `json:"media_service_id"`
+	OwnerID        string `json:"owner_id"`
 }

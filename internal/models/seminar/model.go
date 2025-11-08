@@ -33,6 +33,7 @@ type Seminar struct {
 	Name                    string         `gorm:"type:varchar(255)" json:"name"`
 	ShortDescription        string         `gorm:"type:varchar(255)" json:"short_description"` // For concise, limited text. Brief description
 	LongDescription         string         `gorm:"type:text" json:"long_description"`          // For large text\Markdown content. Detailed description
+	UploadedImageAmount     int            `json:"uploaded_image_amount"`
 	Images                  []image.Image  `gorm:"polymorphic:Owner;" json:"images"`
 	ReservationProductID    *string        `gorm:"size:36;index" json:"reservation_product_id"`
 	EarlyProductID          *string        `gorm:"size:36;index" json:"early_product_id"`

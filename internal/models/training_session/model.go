@@ -26,13 +26,14 @@ import (
 )
 
 type TrainingSession struct {
-	ID        string         `gorm:"primaryKey;size:36" json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at"`
-	Tags      []string       `gorm:"type:varchar(128)[]" json:"tags"`
-	Images    []image.Image  `gorm:"polymorphic:Owner;" json:"images"`
-	Name      string         `gorm:"type:varchar(255)" json:"name"`
+	ID                  string         `gorm:"primaryKey;size:36" json:"id"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
+	DeletedAt           gorm.DeletedAt `json:"deleted_at"`
+	Tags                []string       `gorm:"type:varchar(128)[]" json:"tags"`
+	UploadedImageAmount int            `json:"uploaded_image_amount"`
+	Images              []image.Image  `gorm:"polymorphic:Owner;" json:"images"`
+	Name                string         `gorm:"type:varchar(255)" json:"name"`
 	// For concise, limited text. Brief description
 	ShortDescription string `gorm:"type:varchar(255)" json:"short_description"`
 	// For large text\Markdown content. Detailed description
