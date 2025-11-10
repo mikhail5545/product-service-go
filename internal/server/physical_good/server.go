@@ -62,7 +62,7 @@ func Register(s *grpc.Server, svc physicalgoodservice.Service) {
 func (s *Server) Get(ctx context.Context, req *physicalgoodpb.GetRequest) (*physicalgoodpb.GetResponse, error) {
 	details, err := s.service.Get(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.GetResponse{PhysicalGoodDetails: types.PhysicalGoodDetailsToProtobuf(details)}, nil
 }
@@ -75,7 +75,7 @@ func (s *Server) Get(ctx context.Context, req *physicalgoodpb.GetRequest) (*phys
 func (s *Server) GetWithDeleted(ctx context.Context, req *physicalgoodpb.GetWithDeletedRequest) (*physicalgoodpb.GetWithDeletedResponse, error) {
 	details, err := s.service.GetWithDeleted(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.GetWithDeletedResponse{PhysicalGoodDetails: types.PhysicalGoodDetailsToProtobuf(details)}, nil
 }
@@ -88,7 +88,7 @@ func (s *Server) GetWithDeleted(ctx context.Context, req *physicalgoodpb.GetWith
 func (s *Server) GetWithUnpublished(ctx context.Context, req *physicalgoodpb.GetWithUnpublishedRequest) (*physicalgoodpb.GetWithUnpublishedResponse, error) {
 	details, err := s.service.GetWithUnpublished(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.GetWithUnpublishedResponse{PhysicalGoodDetails: types.PhysicalGoodDetailsToProtobuf(details)}, nil
 }
@@ -99,7 +99,7 @@ func (s *Server) GetWithUnpublished(ctx context.Context, req *physicalgoodpb.Get
 func (s *Server) List(ctx context.Context, req *physicalgoodpb.ListRequest) (*physicalgoodpb.ListResponse, error) {
 	goods, total, err := s.service.List(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbgoods []*physicalgoodpb.PhysicalGoodDetails
 	for _, g := range goods {
@@ -114,7 +114,7 @@ func (s *Server) List(ctx context.Context, req *physicalgoodpb.ListRequest) (*ph
 func (s *Server) ListDeleted(ctx context.Context, req *physicalgoodpb.ListDeletedRequest) (*physicalgoodpb.ListDeletedResponse, error) {
 	goods, total, err := s.service.ListDeleted(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbgoods []*physicalgoodpb.PhysicalGoodDetails
 	for _, g := range goods {
@@ -129,7 +129,7 @@ func (s *Server) ListDeleted(ctx context.Context, req *physicalgoodpb.ListDelete
 func (s *Server) ListUnpublished(ctx context.Context, req *physicalgoodpb.ListUnpublishedRequest) (*physicalgoodpb.ListUnpublishedResponse, error) {
 	goods, total, err := s.service.ListUnpublished(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbgoods []*physicalgoodpb.PhysicalGoodDetails
 	for _, g := range goods {
@@ -144,7 +144,7 @@ func (s *Server) ListUnpublished(ctx context.Context, req *physicalgoodpb.ListUn
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Publish(ctx context.Context, req *physicalgoodpb.PublishRequest) (*physicalgoodpb.PublishResponse, error) {
 	if err := s.service.Publish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.PublishResponse{Id: req.GetId()}, nil
 }
@@ -156,7 +156,7 @@ func (s *Server) Publish(ctx context.Context, req *physicalgoodpb.PublishRequest
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Unpublish(ctx context.Context, req *physicalgoodpb.UnpublishRequest) (*physicalgoodpb.UnpublishResponse, error) {
 	if err := s.service.Unpublish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.UnpublishResponse{Id: req.GetId()}, nil
 }
@@ -175,7 +175,7 @@ func (s *Server) Create(ctx context.Context, req *physicalgoodpb.CreateRequest) 
 	}
 	res, err := s.service.Create(ctx, createReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.CreateResponse{Id: res.ID, ProductId: res.ProductID}, nil
 }
@@ -200,7 +200,7 @@ func (s *Server) Update(ctx context.Context, req *physicalgoodpb.UpdateRequest) 
 	updateReq.Amount = &a
 	res, err := s.service.Update(ctx, updateReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return types.PhysicalGoodToProtobufUpdate(&physicalgoodpb.UpdateResponse{Id: req.GetId()}, res), nil
 }
@@ -218,11 +218,11 @@ func (s *Server) AddImage(ctx context.Context, req *physicalgoodpb.AddImageReque
 		SecureURL:      req.GetSecureUrl(),
 		PublicID:       req.GetPublicId(),
 	}
-	resp, err := s.service.AddImage(ctx, addRequest)
+	err := s.service.AddImage(ctx, addRequest)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
-	return &physicalgoodpb.AddImageResponse{MediaServiceId: resp.MediaServiceID, OwnerId: resp.OwnerID}, nil
+	return &physicalgoodpb.AddImageResponse{MediaServiceId: req.MediaServiceId, OwnerId: req.OwnerId}, nil
 }
 
 // DeleteImage deletes an image from a physical good. It's called by media-service-go upon successful image deletion.
@@ -238,9 +238,46 @@ func (s *Server) DeleteImage(ctx context.Context, req *physicalgoodpb.DeleteImag
 	}
 	err := s.service.DeleteImage(ctx, deleteReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.DeleteImageResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
+}
+
+// AddImageBatch adds an image for a batch of physical goods. It's called by media-service-go
+// upon successful image uplaod.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the physical goods were found.
+func (s *Server) AddImageBatch(ctx context.Context, req *physicalgoodpb.AddImageBatchRequest) (*physicalgoodpb.AddImageBatchResponse, error) {
+	addReq := &imagemodel.AddBatchRequest{
+		MediaServiceID: req.GetMediaServiceId(),
+		URL:            req.GetUrl(),
+		SecureURL:      req.GetUrl(),
+		PublicID:       req.GetPublicId(),
+		OwnerIDs:       req.GetOwnerIds(),
+	}
+	affectedOwners, err := s.service.AddImageBatch(ctx, addReq)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &physicalgoodpb.AddImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
+}
+
+// DeleteImageBatch deletes an image from a batch of physical goods. It's called by media-service-go
+// upon successful image deletion.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the physical goods were found or the image was not found.
+func (s *Server) DeleteImageBatch(ctx context.Context, req *physicalgoodpb.DeleteImageBatchRequest) (*physicalgoodpb.DeleteImageBatchResponse, error) {
+	deleteReq := &imagemodel.DeleteBatchRequst{
+		MediaServiceID: req.GetMediaServiceId(),
+		OwnerIDs:       req.GetOwnerIds(),
+	}
+	affectedOwners, err := s.service.DeleteImageBatch(ctx, deleteReq)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &physicalgoodpb.DeleteImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
 }
 
 // Delete performs a soft-delete on a physical good and its associated product.
@@ -250,7 +287,7 @@ func (s *Server) DeleteImage(ctx context.Context, req *physicalgoodpb.DeleteImag
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Delete(ctx context.Context, req *physicalgoodpb.DeleteRequest) (*physicalgoodpb.DeleteResponse, error) {
 	if err := s.service.Delete(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.DeleteResponse{Id: req.GetId()}, nil
 }
@@ -262,7 +299,7 @@ func (s *Server) Delete(ctx context.Context, req *physicalgoodpb.DeleteRequest) 
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) DeletePermanent(ctx context.Context, req *physicalgoodpb.DeletePermanentRequest) (*physicalgoodpb.DeletePermanentResponse, error) {
 	if err := s.service.DeletePermanent(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.DeletePermanentResponse{Id: req.GetId()}, nil
 }
@@ -274,7 +311,7 @@ func (s *Server) DeletePermanent(ctx context.Context, req *physicalgoodpb.Delete
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Restore(ctx context.Context, req *physicalgoodpb.RestoreRequest) (*physicalgoodpb.RestoreResponse, error) {
 	if err := s.service.Restore(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &physicalgoodpb.RestoreResponse{Id: req.GetId()}, nil
 }

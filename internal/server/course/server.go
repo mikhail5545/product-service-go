@@ -62,7 +62,7 @@ func Register(s *grpc.Server, svc courseservice.Service) {
 func (s *Server) Get(ctx context.Context, req *coursepb.GetRequest) (*coursepb.GetResponse, error) {
 	details, err := s.service.Get(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &coursepb.GetResponse{CourseDetails: types.CourseDetaisToProtobuf(details)}, nil
@@ -76,7 +76,7 @@ func (s *Server) Get(ctx context.Context, req *coursepb.GetRequest) (*coursepb.G
 func (s *Server) GetWithDeleted(ctx context.Context, req *coursepb.GetWithDeletedRequest) (*coursepb.GetWithDeletedResponse, error) {
 	details, err := s.service.GetWithDeleted(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &coursepb.GetWithDeletedResponse{CourseDetails: types.CourseDetaisToProtobuf(details)}, nil
@@ -90,7 +90,7 @@ func (s *Server) GetWithDeleted(ctx context.Context, req *coursepb.GetWithDelete
 func (s *Server) GetWithUnpublished(ctx context.Context, req *coursepb.GetWithUnpublishedRequest) (*coursepb.GetWithUnpublishedResponse, error) {
 	details, err := s.service.GetWithUnpublished(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &coursepb.GetWithUnpublishedResponse{CourseDetails: types.CourseDetaisToProtobuf(details)}, nil
@@ -105,7 +105,7 @@ func (s *Server) GetWithUnpublished(ctx context.Context, req *coursepb.GetWithUn
 func (s *Server) GetReduced(ctx context.Context, req *coursepb.GetReducedRequest) (*coursepb.GetReducedResponse, error) {
 	details, err := s.service.GetReduced(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &coursepb.GetReducedResponse{CourseDetails: types.CourseDetaisToProtobuf(details)}, nil
@@ -120,7 +120,7 @@ func (s *Server) GetReduced(ctx context.Context, req *coursepb.GetReducedRequest
 func (s *Server) GetReducedWithDeleted(ctx context.Context, req *coursepb.GetReducedWithDeletedRequest) (*coursepb.GetReducedWithDeletedResponse, error) {
 	details, err := s.service.GetReducedWithDeleted(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &coursepb.GetReducedWithDeletedResponse{CourseDetails: types.CourseDetaisToProtobuf(details)}, nil
@@ -132,7 +132,7 @@ func (s *Server) GetReducedWithDeleted(ctx context.Context, req *coursepb.GetRed
 func (s *Server) List(ctx context.Context, req *coursepb.ListRequest) (*coursepb.ListResponse, error) {
 	courses, total, err := s.service.List(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbcourses []*coursepb.CourseDetails
 	for _, c := range courses {
@@ -148,7 +148,7 @@ func (s *Server) List(ctx context.Context, req *coursepb.ListRequest) (*coursepb
 func (s *Server) ListDeleted(ctx context.Context, req *coursepb.ListDeletedRequest) (*coursepb.ListDeletedResponse, error) {
 	courses, total, err := s.service.ListDeleted(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbcourses []*coursepb.CourseDetails
 	for _, c := range courses {
@@ -164,7 +164,7 @@ func (s *Server) ListDeleted(ctx context.Context, req *coursepb.ListDeletedReque
 func (s *Server) ListUnpublished(ctx context.Context, req *coursepb.ListUnpublishedRequest) (*coursepb.ListUnpublishedResponse, error) {
 	courses, total, err := s.service.ListUnpublished(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbcourses []*coursepb.CourseDetails
 	for _, c := range courses {
@@ -180,7 +180,7 @@ func (s *Server) ListUnpublished(ctx context.Context, req *coursepb.ListUnpublis
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Publish(ctx context.Context, req *coursepb.PublishRequest) (*coursepb.PublishResponse, error) {
 	if err := s.service.Publish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepb.PublishResponse{Id: req.GetId()}, nil
 }
@@ -192,7 +192,7 @@ func (s *Server) Publish(ctx context.Context, req *coursepb.PublishRequest) (*co
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Unpublish(ctx context.Context, req *coursepb.UnpublishRequest) (*coursepb.UnpublishResponse, error) {
 	if err := s.service.Unpublish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepb.UnpublishResponse{Id: req.GetId()}, nil
 }
@@ -211,7 +211,7 @@ func (s *Server) Create(ctx context.Context, req *coursepb.CreateRequest) (*cour
 	}
 	res, err := s.service.Create(ctx, createReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &coursepb.CreateResponse{Id: res.ID, ProductId: res.ProductID}, nil
@@ -237,7 +237,7 @@ func (s *Server) Update(ctx context.Context, req *coursepb.UpdateRequest) (*cour
 
 	res, err := s.service.Update(ctx, updateReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return types.CourseToProtobufUpdate(res), nil
@@ -256,11 +256,11 @@ func (s *Server) AddImage(ctx context.Context, req *coursepb.AddImageRequest) (*
 		SecureURL:      req.GetSecureUrl(),
 		PublicID:       req.GetPublicId(),
 	}
-	resp, err := s.service.AddImage(ctx, addRequest)
+	err := s.service.AddImage(ctx, addRequest)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
-	return &coursepb.AddImageResponse{MediaServiceId: resp.MediaServiceID, OwnerId: resp.OwnerID}, nil
+	return &coursepb.AddImageResponse{MediaServiceId: req.MediaServiceId, OwnerId: req.OwnerId}, nil
 }
 
 // DeleteImage deletes an image from a course. It's called by media-service-go upon successful image deletion.
@@ -276,9 +276,48 @@ func (s *Server) DeleteImage(ctx context.Context, req *coursepb.DeleteImageReque
 	}
 	err := s.service.DeleteImage(ctx, deleteReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepb.DeleteImageResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
+}
+
+// AddImageBatch adds an image for a batch of courses. It's called by media-service-go
+// upon successful image uplaod.
+//
+// Returns the number of affected courses.
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the courses were found.
+func (s *Server) AddImageBatch(ctx context.Context, req *coursepb.AddImageBatchRequest) (*coursepb.AddImageBatchResponse, error) {
+	addReq := &imagemodel.AddBatchRequest{
+		MediaServiceID: req.GetMediaServiceId(),
+		URL:            req.GetUrl(),
+		SecureURL:      req.GetUrl(),
+		PublicID:       req.GetPublicId(),
+		OwnerIDs:       req.GetOwnerIds(),
+	}
+	affectedOwners, err := s.service.AddImageBatch(ctx, addReq)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &coursepb.AddImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
+}
+
+// DeleteImageBatch deletes an image from a batch of courses. It's called by media-service-go
+// upon successful image deletion.
+//
+// Returns the number of affected courses.
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the courses were found or the image was not found.
+func (s *Server) DeleteImageBatch(ctx context.Context, req *coursepb.DeleteImageBatchRequest) (*coursepb.DeleteImageBatchResponse, error) {
+	deleteReq := &imagemodel.DeleteBatchRequst{
+		MediaServiceID: req.GetMediaServiceId(),
+		OwnerIDs:       req.GetOwnerIds(),
+	}
+	affectedOwners, err := s.service.DeleteImageBatch(ctx, deleteReq)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &coursepb.DeleteImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
 }
 
 // Delete performs a soft-delete on a course, its associated product, and all its course parts.
@@ -288,7 +327,7 @@ func (s *Server) DeleteImage(ctx context.Context, req *coursepb.DeleteImageReque
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Delete(ctx context.Context, req *coursepb.DeleteRequest) (*coursepb.DeleteResponse, error) {
 	if err := s.service.Delete(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepb.DeleteResponse{Id: req.GetId()}, nil
 }
@@ -300,7 +339,7 @@ func (s *Server) Delete(ctx context.Context, req *coursepb.DeleteRequest) (*cour
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) DeletePermanent(ctx context.Context, req *coursepb.DeletePermanentRequest) (*coursepb.DeletePermanentResponse, error) {
 	if err := s.service.DeletePermanent(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepb.DeletePermanentResponse{Id: req.GetId()}, nil
 }
@@ -312,7 +351,7 @@ func (s *Server) DeletePermanent(ctx context.Context, req *coursepb.DeletePerman
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Restore(ctx context.Context, req *coursepb.RestoreRequest) (*coursepb.RestoreResponse, error) {
 	if err := s.service.Restore(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepb.RestoreResponse{Id: req.GetId()}, nil
 }

@@ -19,9 +19,9 @@ package physicalgood
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
-	"net/http"
 	"testing"
 
 	"github.com/google/uuid"
@@ -87,7 +87,7 @@ func TestServer_Get(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Arrange
 		expectedDetails := &physicalgoodmodel.PhysicalGoodDetails{
-			PhysicalGood: physicalgoodmodel.PhysicalGood{
+			PhysicalGood: &physicalgoodmodel.PhysicalGood{
 				ID:   goodID,
 				Name: "Physical good name",
 			},
@@ -110,11 +110,7 @@ func TestServer_Get(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Get(gomock.Any(), goodID).Return(nil, serviceErr)
+		mockService.EXPECT().Get(gomock.Any(), goodID).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.Get(context.Background(), &physicalgoodpb.GetRequest{Id: goodID})
@@ -131,11 +127,7 @@ func TestServer_Get(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Get(gomock.Any(), invalidID).Return(nil, serviceErr)
+		mockService.EXPECT().Get(gomock.Any(), invalidID).Return(nil, physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Get(context.Background(), &physicalgoodpb.GetRequest{Id: invalidID})
@@ -151,11 +143,8 @@ func TestServer_Get(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Get(gomock.Any(), goodID).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().Get(gomock.Any(), goodID).Return(nil, svcErr)
 
 		// Act
 		res, err := client.Get(context.Background(), &physicalgoodpb.GetRequest{Id: goodID})
@@ -180,7 +169,7 @@ func TestServer_GetWithDeleted(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Arrange
 		expectedDetails := &physicalgoodmodel.PhysicalGoodDetails{
-			PhysicalGood: physicalgoodmodel.PhysicalGood{
+			PhysicalGood: &physicalgoodmodel.PhysicalGood{
 				ID:   goodID,
 				Name: "Physical good name",
 			},
@@ -203,11 +192,7 @@ func TestServer_GetWithDeleted(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), goodID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), goodID).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.GetWithDeleted(context.Background(), &physicalgoodpb.GetWithDeletedRequest{Id: goodID})
@@ -224,11 +209,7 @@ func TestServer_GetWithDeleted(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), invalidID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), invalidID).Return(nil, physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.GetWithDeleted(context.Background(), &physicalgoodpb.GetWithDeletedRequest{Id: invalidID})
@@ -244,11 +225,8 @@ func TestServer_GetWithDeleted(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), goodID).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), goodID).Return(nil, svcErr)
 
 		// Act
 		res, err := client.GetWithDeleted(context.Background(), &physicalgoodpb.GetWithDeletedRequest{Id: goodID})
@@ -273,7 +251,7 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Arrange
 		expectedDetails := &physicalgoodmodel.PhysicalGoodDetails{
-			PhysicalGood: physicalgoodmodel.PhysicalGood{
+			PhysicalGood: &physicalgoodmodel.PhysicalGood{
 				ID:   goodID,
 				Name: "Physical good name",
 			},
@@ -296,11 +274,7 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), goodID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), goodID).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.GetWithUnpublished(context.Background(), &physicalgoodpb.GetWithUnpublishedRequest{Id: goodID})
@@ -317,11 +291,7 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), invalidID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), invalidID).Return(nil, physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.GetWithUnpublished(context.Background(), &physicalgoodpb.GetWithUnpublishedRequest{Id: invalidID})
@@ -337,11 +307,8 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), goodID).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), goodID).Return(nil, svcErr)
 
 		// Act
 		res, err := client.GetWithUnpublished(context.Background(), &physicalgoodpb.GetWithUnpublishedRequest{Id: goodID})
@@ -371,7 +338,7 @@ func TestServer_List(t *testing.T) {
 		// Arrange
 		expectedDetails := []physicalgoodmodel.PhysicalGoodDetails{
 			{
-				PhysicalGood: physicalgoodmodel.PhysicalGood{
+				PhysicalGood: &physicalgoodmodel.PhysicalGood{
 					ID:   goodID_1,
 					Name: "Physical good 1 name",
 				},
@@ -379,7 +346,7 @@ func TestServer_List(t *testing.T) {
 				ProductID: productID_1,
 			},
 			{
-				PhysicalGood: physicalgoodmodel.PhysicalGood{
+				PhysicalGood: &physicalgoodmodel.PhysicalGood{
 					ID:   goodID_2,
 					Name: "Physical good 2 name",
 				},
@@ -408,11 +375,8 @@ func TestServer_List(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Failed to get physical goods",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().List(gomock.Any(), limit, offset).Return(nil, int64(0), serviceErr).Times(1)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().List(gomock.Any(), limit, offset).Return(nil, int64(0), svcErr).Times(1)
 
 		// Act
 		res, err := client.List(context.Background(), &physicalgoodpb.ListRequest{Limit: int32(limit), Offset: int32(offset)})
@@ -442,7 +406,7 @@ func TestServer_ListDeleted(t *testing.T) {
 		// Arrange
 		expectedDetails := []physicalgoodmodel.PhysicalGoodDetails{
 			{
-				PhysicalGood: physicalgoodmodel.PhysicalGood{
+				PhysicalGood: &physicalgoodmodel.PhysicalGood{
 					ID:   goodID_1,
 					Name: "Physical good 1 name",
 				},
@@ -450,7 +414,7 @@ func TestServer_ListDeleted(t *testing.T) {
 				ProductID: productID_1,
 			},
 			{
-				PhysicalGood: physicalgoodmodel.PhysicalGood{
+				PhysicalGood: &physicalgoodmodel.PhysicalGood{
 					ID:   goodID_2,
 					Name: "Physical good 2 name",
 				},
@@ -479,11 +443,8 @@ func TestServer_ListDeleted(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Failed to get physical goods",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().ListDeleted(gomock.Any(), limit, offset).Return(nil, int64(0), serviceErr).Times(1)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().ListDeleted(gomock.Any(), limit, offset).Return(nil, int64(0), svcErr).Times(1)
 
 		// Act
 		res, err := client.ListDeleted(context.Background(), &physicalgoodpb.ListDeletedRequest{Limit: int32(limit), Offset: int32(offset)})
@@ -513,7 +474,7 @@ func TestServer_ListUnpublished(t *testing.T) {
 		// Arrange
 		expectedDetails := []physicalgoodmodel.PhysicalGoodDetails{
 			{
-				PhysicalGood: physicalgoodmodel.PhysicalGood{
+				PhysicalGood: &physicalgoodmodel.PhysicalGood{
 					ID:   goodID_1,
 					Name: "Physical good 1 name",
 				},
@@ -521,7 +482,7 @@ func TestServer_ListUnpublished(t *testing.T) {
 				ProductID: productID_1,
 			},
 			{
-				PhysicalGood: physicalgoodmodel.PhysicalGood{
+				PhysicalGood: &physicalgoodmodel.PhysicalGood{
 					ID:   goodID_2,
 					Name: "Physical good 2 name",
 				},
@@ -550,11 +511,8 @@ func TestServer_ListUnpublished(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Failed to get physical goods",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().ListUnpublished(gomock.Any(), limit, offset).Return(nil, int64(0), serviceErr).Times(1)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().ListUnpublished(gomock.Any(), limit, offset).Return(nil, int64(0), svcErr).Times(1)
 
 		// Act
 		res, err := client.ListUnpublished(context.Background(), &physicalgoodpb.ListUnpublishedRequest{Limit: int32(limit), Offset: int32(offset)})
@@ -602,11 +560,8 @@ func TestServer_Create(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Failed to create physical good",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, svcErr)
 
 		// Act
 		res, err := client.Create(context.Background(), &physicalgoodpb.CreateRequest{
@@ -647,11 +602,7 @@ func TestServer_Publish(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Publish(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Publish(gomock.Any(), invalidID).Return(physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Publish(context.Background(), &physicalgoodpb.PublishRequest{Id: invalidID})
@@ -667,11 +618,7 @@ func TestServer_Publish(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Publish(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Publish(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.Publish(context.Background(), &physicalgoodpb.PublishRequest{Id: goodID})
@@ -707,11 +654,7 @@ func TestServer_Unpublish(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Unpublish(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Unpublish(gomock.Any(), invalidID).Return(physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Unpublish(context.Background(), &physicalgoodpb.UnpublishRequest{Id: invalidID})
@@ -727,11 +670,7 @@ func TestServer_Unpublish(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Unpublish(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Unpublish(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.Unpublish(context.Background(), &physicalgoodpb.UnpublishRequest{Id: goodID})
@@ -784,11 +723,7 @@ func TestServer_Update(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid request payload",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr).Times(1)
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, physicalgoodservice.ErrInvalidArgument).Times(1)
 
 		// Act
 		res, err := client.Update(context.Background(), &physicalgoodpb.UpdateRequest{
@@ -809,11 +744,7 @@ func TestServer_Update(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.Update(context.Background(), &physicalgoodpb.UpdateRequest{
@@ -834,11 +765,8 @@ func TestServer_Update(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, svcErr)
 
 		// Act
 		res, err := client.Update(context.Background(), &physicalgoodpb.UpdateRequest{
@@ -879,11 +807,7 @@ func TestServer_Delete(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Delete(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Delete(gomock.Any(), invalidID).Return(physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Delete(context.Background(), &physicalgoodpb.DeleteRequest{Id: invalidID})
@@ -899,11 +823,7 @@ func TestServer_Delete(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Delete(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Delete(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.Delete(context.Background(), &physicalgoodpb.DeleteRequest{Id: goodID})
@@ -939,11 +859,7 @@ func TestServer_DeletePermanent(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().DeletePermanent(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().DeletePermanent(gomock.Any(), invalidID).Return(physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.DeletePermanent(context.Background(), &physicalgoodpb.DeletePermanentRequest{Id: invalidID})
@@ -959,11 +875,7 @@ func TestServer_DeletePermanent(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().DeletePermanent(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().DeletePermanent(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.DeletePermanent(context.Background(), &physicalgoodpb.DeletePermanentRequest{Id: goodID})
@@ -999,11 +911,7 @@ func TestServer_Restore(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Invalid physical good ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Restore(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Restore(gomock.Any(), invalidID).Return(physicalgoodservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Restore(context.Background(), &physicalgoodpb.RestoreRequest{Id: invalidID})
@@ -1019,11 +927,7 @@ func TestServer_Restore(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Restore(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Restore(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		res, err := client.Restore(context.Background(), &physicalgoodpb.RestoreRequest{Id: goodID})

@@ -59,7 +59,7 @@ func Register(s *grpc.Server, svc productservice.Service) {
 func (s *Server) Get(ctx context.Context, req *productpb.GetRequest) (*productpb.GetResponse, error) {
 	product, err := s.service.Get(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &productpb.GetResponse{Product: types.ProductToProtobuf(product)}, nil
 }
@@ -70,7 +70,7 @@ func (s *Server) Get(ctx context.Context, req *productpb.GetRequest) (*productpb
 func (s *Server) List(ctx context.Context, req *productpb.ListRequest) (*productpb.ListResponse, error) {
 	products, total, err := s.service.List(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbProducts []*productpb.Product
 	for _, product := range products {
@@ -86,7 +86,7 @@ func (s *Server) List(ctx context.Context, req *productpb.ListRequest) (*product
 func (s *Server) ListByDetailsType(ctx context.Context, req *productpb.ListByDetailsTypeRequest) (*productpb.ListByDetailsTypeResponse, error) {
 	products, total, err := s.service.ListByDetailsType(ctx, req.GetDetailsType(), int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbProducts []*productpb.Product
 	for _, product := range products {
