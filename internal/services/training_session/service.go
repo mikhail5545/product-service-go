@@ -29,7 +29,7 @@ import (
 	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	"gorm.io/gorm"
 )
 
@@ -130,6 +130,8 @@ type Service interface {
 	//   - The training session (owner) is not found ([imageservice.ErrOwnerNotFound]).
 	//   - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
 	//   - A database/internal error occurs.
+	//
+	// Deprecated: use generic [image.Add] instead. It handles add operations for all services.
 	AddImage(ctx context.Context, req *imagemodel.AddRequest) error
 	// DeleteImage removes an image from a training session. It's called by media-service-go upon successful image deletion.
 	// It uses trainingSessionOwnerRepoAdapter to call [imageservice.DeleteImage] and delete an image from the training session.
@@ -139,6 +141,8 @@ type Service interface {
 	//   - The training session (owner) is not found ([imageservice.ErrOwnerNotFound]).
 	//   - The image is not found on training session (owner) ([imageservice.ErrImageNotFoundOnOwner]).
 	//   - A database/internal error occurs.
+	//
+	// Deprecated: use generic [image.Delete] instead. It handles delete operations for all services.
 	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
 	// AddImageBatch adds an image for a batch of training sessions. It uses trainingSessionOwnerRepoAdapter
 	// to call [imageservice.AddImageBatch] and append images to the training sessions. It's called by media-service-go
@@ -147,6 +151,8 @@ type Service interface {
 	// It returns the number of affected training sessions.
 	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no training sessions (owners) are not found ([imageservice.ErrOwnersNotFound])
 	// or a database/internal error occurs.
+	//
+	// Deprecated: use generic [image.AddBatch] instead. It handles batch add operations for all services.
 	AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error)
 	// DeleteImageBatch removes an image from a batch of training sessions. It uses trainingSessionOwnerRepoAdapter
 	// to call [imageservice.DeleteImageBatch] and append images to the training sessions.
@@ -154,6 +160,8 @@ type Service interface {
 	// It returns the number of affected training sessions.
 	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no training sessions (owners) are not found ([imageservice.ErrOwnersNotFound]),
 	// no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+	//
+	// Deprecated: use generic [image.DeleteBatch] instead. It handles batch delete operations for all services.
 	DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error)
 }
 
@@ -579,8 +587,10 @@ func (s *service) Update(ctx context.Context, req *trainingsessionmodel.UpdateRe
 //   - The training session (owner) is not found ([imageservice.ErrOwnerNotFound]).
 //   - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
 //   - A database/internal error occurs.
+//
+// Deprecated: use generic [image.Add] instead. It handles add operations for all services.
 func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) error {
-	ownerRepoAdapter := newTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
+	ownerRepoAdapter := NewTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
 	return s.ImageSvc.AddImage(ctx, req, ownerRepoAdapter)
 }
 
@@ -592,8 +602,10 @@ func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) erro
 //   - The training session (owner) is not found ([imageservice.ErrOwnerNotFound]).
 //   - The image is not found on training session (owner) ([imageservice.ErrImageNotFoundOnOwner]).
 //   - A database/internal error occurs.
+//
+// Deprecated: use generic [image.Delete] instead. It handles delete operations for all services.
 func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
-	ownerRepoAdapter := newTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
+	ownerRepoAdapter := NewTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
 	return s.ImageSvc.DeleteImage(ctx, req, ownerRepoAdapter)
 }
 
@@ -604,9 +616,11 @@ func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest
 // It returns the number of affected training sessions.
 // Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no training sessions (owners) are not found ([imageservice.ErrOwnersNotFound])
 // or a database/internal error occurs.
+//
+// Deprecated: use generic [image.AddBatch] instead. It handles batch add operations for all services.
 func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error) {
 	// Use the adapter to bridge the specific course repository to the generic owner repository interface.
-	ownerRepoAdapter := newTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
+	ownerRepoAdapter := NewTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
 	return s.ImageSvc.AddImageBatch(ctx, req, ownerRepoAdapter)
 }
 
@@ -616,8 +630,10 @@ func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchReq
 // It returns the number of affected training sessions.
 // Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no training sessions (owners) are not found ([imageservice.ErrOwnersNotFound]),
 // no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+//
+// Deprecated: use generic [image.DeleteBatch] instead. It handles batch delete operations for all services.
 func (s *service) DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error) {
-	ownerRepoAdapter := newTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
+	ownerRepoAdapter := NewTrainingSessionOwnerRepoAdapter(s.TrainingSessionRepo)
 	return s.ImageSvc.DeleteImageBatch(ctx, req, ownerRepoAdapter)
 }
 

@@ -34,8 +34,8 @@ type trainingSessionOwnerRepoAdapter struct {
 	repo trainingsessionrepo.Repository
 }
 
-// newTrainingSessionOwnerRepoAdapter creates a new adapter.
-func newTrainingSessionOwnerRepoAdapter(repo trainingsessionrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
+// NewTrainingSessionOwnerRepoAdapter creates a new adapter.
+func NewTrainingSessionOwnerRepoAdapter(repo trainingsessionrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
 	return &trainingSessionOwnerRepoAdapter{repo: repo}
 }
 

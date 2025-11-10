@@ -31,7 +31,7 @@ import (
 	coursemodel "github.com/mikhail5545/product-service-go/internal/models/course"
 	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	"gorm.io/gorm"
 )
 
@@ -151,6 +151,8 @@ type Service interface {
 	//   - The course (owner) is not found ([imageservice.ErrOwnerNotFound]).
 	//   - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
 	//   - A database/internal error occurs.
+	//
+	// Deprecated: use [image.Add] instead, it performs adding of an image for all services (generic method).
 	AddImage(ctx context.Context, req *imagemodel.AddRequest) error
 	// DeleteImage removes an image from a course. It's called by media-service-go upon successful image deletion.
 	// It uses courseOwnerRepoAdapter to call [imageservice.DeleteImage] and delete an image from the course.
@@ -160,6 +162,8 @@ type Service interface {
 	//   - The course (owner) is not found ([imageservice.ErrOwnerNotFound]).
 	//   - The image is not found on course (owner) ([imageservice.ErrImageNotFoundOnOwner]).
 	//   - A database/internal error occurs.
+	//
+	// Deprecated: use [image.Delete] instead, it handles image deletion for all services (generic method).
 	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
 	// AddImageBatch adds an image for a batch of courses. It uses courseOwnerRepoAdapter
 	// to call [imageservice.AddImageBatch] and append images to the course. It's called by media-service-go
@@ -168,6 +172,10 @@ type Service interface {
 	// It returns a number of affected courses.
 	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no courses (owners) are not found ([imageservice.ErrOwnersNotFound])
 	// or a database/internal error occurs.
+	//
+	// Deprecated: use generic function instead
+	//
+	// Deprecated: use [image.AddBatch] instead, it handles image batch add for all services (generic method).
 	AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error)
 	// DeleteImageBatch removes an image from a batch of courses. It uses courseOwnerRepoAdapter
 	// to call [imageservice.DeleteImageBatch] and append images to the course.
@@ -175,6 +183,8 @@ type Service interface {
 	// It returns a number of affected courses.
 	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no courses (owners) are not found ([imageservice.ErrOwnersNotFound]),
 	// no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+	//
+	// Deprecated: use [image.DeleteBatch] instead, it handles image batch delete for all services (generic method).
 	DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error)
 }
 
@@ -669,8 +679,10 @@ func (s *service) Update(ctx context.Context, req *coursemodel.UpdateRequest) (m
 //   - The course (owner) is not found ([imageservice.ErrOwnerNotFound]).
 //   - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
 //   - A database/internal error occurs.
+//
+// Deprecated: use [image_router.AddImage] instead, it performs adding of an image for all services (generic method).
 func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) error {
-	ownerRepoAdapter := newCourseOwnerRepoAdapter(s.CourseRepo)
+	ownerRepoAdapter := NewOwnerRepoAdapter(s.CourseRepo)
 	return s.ImageSvc.AddImage(ctx, req, ownerRepoAdapter)
 }
 
@@ -682,8 +694,10 @@ func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) erro
 //   - The course (owner) is not found ([imageservice.ErrOwnerNotFound]).
 //   - The image is not found on course (owner) ([imageservice.ErrImageNotFoundOnOwner]).
 //   - A database/internal error occurs.
+//
+// Deprecated: use [image_router.DeleteImage] instead, it handles image deletion for all services (generic method).
 func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
-	ownerRepoAdapter := newCourseOwnerRepoAdapter(s.CourseRepo)
+	ownerRepoAdapter := NewOwnerRepoAdapter(s.CourseRepo)
 	return s.ImageSvc.DeleteImage(ctx, req, ownerRepoAdapter)
 }
 
@@ -693,9 +707,11 @@ func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest
 //
 // It returns a number of affected courses.
 // Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no courses (owners) are not found ([imageservice.ErrOwnersNotFound])
-// or a database/internal error occurs.
+// or a database/internal error occurs.\
+//
+// Deprecated: use [image_router.AddImageBatch] instead, it handles image batch add for all services (generic method).
 func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error) {
-	ownerRepoAdapter := newCourseOwnerRepoAdapter(s.CourseRepo)
+	ownerRepoAdapter := NewOwnerRepoAdapter(s.CourseRepo)
 	return s.ImageSvc.AddImageBatch(ctx, req, ownerRepoAdapter)
 }
 
@@ -705,8 +721,10 @@ func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchReq
 // It returns a number of affected courses.
 // Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no courses (owners) are not found ([imageservice.ErrOwnersNotFound]),
 // no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+//
+// Deprecated: use [image_router.DeleteImageBatch] instead, it handles image batch delete for all services (generic method).
 func (s *service) DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error) {
-	ownerRepoAdapter := newCourseOwnerRepoAdapter(s.CourseRepo)
+	ownerRepoAdapter := NewOwnerRepoAdapter(s.CourseRepo)
 	return s.ImageSvc.DeleteImageBatch(ctx, req, ownerRepoAdapter)
 }
 

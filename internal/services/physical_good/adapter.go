@@ -34,8 +34,8 @@ type physicalGoodOwnerRepoAdapter struct {
 	repo physicalgoodrepo.Repository
 }
 
-// newPhysicalGoodOwnerRepoAdapter creates a new adapter.
-func newPhysicalGoodOwnerRepoAdapter(repo physicalgoodrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
+// NewPhysicalGoodOwnerRepoAdapter creates a new adapter.
+func NewPhysicalGoodOwnerRepoAdapter(repo physicalgoodrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
 	return &physicalGoodOwnerRepoAdapter{repo: repo}
 }
 

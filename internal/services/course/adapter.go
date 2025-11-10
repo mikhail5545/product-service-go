@@ -37,8 +37,8 @@ type courseOwnerRepoAdapter struct {
 	repo courserepo.Repository
 }
 
-// newCourseOwnerRepoAdapter creates a new adapter.
-func newCourseOwnerRepoAdapter(repo courserepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
+// NewOwnerRepoAdapter creates a new adapter.
+func NewOwnerRepoAdapter(repo courserepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
 	return &courseOwnerRepoAdapter{repo: repo}
 }
 

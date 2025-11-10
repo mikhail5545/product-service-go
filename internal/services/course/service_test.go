@@ -27,7 +27,7 @@ import (
 	"github.com/mikhail5545/product-service-go/internal/models/course"
 	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	coursemock "github.com/mikhail5545/product-service-go/internal/test/database/course_mock"
 	coursepartmock "github.com/mikhail5545/product-service-go/internal/test/database/course_part_mock"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"

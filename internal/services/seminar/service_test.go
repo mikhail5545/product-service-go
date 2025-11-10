@@ -30,7 +30,7 @@ import (
 	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
 	"github.com/mikhail5545/product-service-go/internal/models/seminar"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"
 	seminarmock "github.com/mikhail5545/product-service-go/internal/test/database/seminar_mock"
 	imageservicemock "github.com/mikhail5545/product-service-go/internal/test/services/image_mock"

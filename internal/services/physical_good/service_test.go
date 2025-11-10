@@ -27,7 +27,7 @@ import (
 	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgood "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	physicalgoodmock "github.com/mikhail5545/product-service-go/internal/test/database/physical_good_mock"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"
 

@@ -29,7 +29,7 @@ import (
 	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	"gorm.io/gorm"
 )
 
@@ -130,6 +130,8 @@ type Service interface {
 	// - The physical good (owner) is not found ([imageservice.ErrOwnerNotFound]).
 	// - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
 	// - A database/internal error occurs.
+	//
+	// Deprecated: use generic [image.Add] instead. It handles add operations for all services.
 	AddImage(ctx context.Context, req *imagemodel.AddRequest) error
 	// DeleteImage removes an image from a physical good. It's called by media-service-go upon successful image deletion.
 	// It uses physicalGoodOwnerRepoAdapter to call [imageservice.DeleteImage] and delete an image from the physical good.
@@ -139,6 +141,8 @@ type Service interface {
 	//   - The physical good (owner) is not found ([imageservice.ErrOwnerNotFound]).
 	//   - The image is not found on physical good (owner) ([imageservice.ErrImageNotFoundOnOwner]).
 	//   - A database/internal error occurs.
+	//
+	// Deprecated: use generic [image.Delete] instead. It handles delete operations for all services.
 	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
 	// AddImageBatch adds an image for a batch of physical goods. It uses seminarOwnerRepoAdapter
 	// to call [imageservice.AddImageBatch] and append images to the seminar. It's called by media-service-go
@@ -147,6 +151,8 @@ type Service interface {
 	// It returns the number of affected physical goods.
 	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no physical goods (owners) are not found ([imageservice.ErrOwnersNotFound])
 	// or a database/internal error occurs.
+	//
+	// Deprecated: use generic [image.AddBatch] instead. It handles batch add operations for all services.
 	AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error)
 	// DeleteImageBatch removes an image from a batch of physical goods. It uses seminarOwnerRepoAdapter
 	// to call [imageservice.DeleteImageBatch] and append images to the seminar.
@@ -154,6 +160,8 @@ type Service interface {
 	// It returns the number of affected physical goods.
 	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no physical goods (owners) are not found ([imageservice.ErrOwnersNotFound]),
 	// no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+	//
+	// Deprecated: use generic [image.DeleteBatch] instead. It handles batch delete operations for all services.
 	DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error)
 }
 
@@ -571,8 +579,10 @@ func (s *service) Update(ctx context.Context, req *physicalgoodmodel.UpdateReque
 // - The physical good (owner) is not found ([imageservice.ErrOwnerNotFound]).
 // - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
 // - A database/internal error occurs.
+//
+// Deprecated: use generic [image.Add] instead. It handles add operations for all services.
 func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) error {
-	ownerRepoAdapter := newPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
+	ownerRepoAdapter := NewPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
 	return s.ImageSvc.AddImage(ctx, req, ownerRepoAdapter)
 }
 
@@ -584,8 +594,10 @@ func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) erro
 //   - The physical good (owner) is not found ([imageservice.ErrOwnerNotFound]).
 //   - The image is not found on physical good (owner) ([imageservice.ErrImageNotFoundOnOwner]).
 //   - A database/internal error occurs.
+//
+// Deprecated: use generic [image.Delete] instead. It handles delete operations for all services.
 func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
-	ownerRepoAdapter := newPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
+	ownerRepoAdapter := NewPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
 	return s.ImageSvc.DeleteImage(ctx, req, ownerRepoAdapter)
 }
 
@@ -596,9 +608,11 @@ func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest
 // It returns the number of affected physical goods.
 // Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no physical goods (owners) are not found ([imageservice.ErrOwnersNotFound])
 // or a database/internal error occurs.
+//
+// Deprecated: use generic [image.AddBatch] instead. It handles batch add operations for all services.
 func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error) {
 	// Use the adapter to bridge the specific course repository to the generic owner repository interface.
-	ownerRepoAdapter := newPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
+	ownerRepoAdapter := NewPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
 	return s.ImageSvc.AddImageBatch(ctx, req, ownerRepoAdapter)
 }
 
@@ -608,8 +622,10 @@ func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchReq
 // It returns the number of affected physical goods.
 // Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no physical goods (owners) are not found ([imageservice.ErrOwnersNotFound]),
 // no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+//
+// Deprecated: use generic [image.DeleteBatch] instead. It handles batch delete operations for all services.
 func (s *service) DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error) {
-	ownerRepoAdapter := newPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
+	ownerRepoAdapter := NewPhysicalGoodOwnerRepoAdapter(s.PhysicalGoodRepo)
 	return s.ImageSvc.DeleteImageBatch(ctx, req, ownerRepoAdapter)
 }
 
