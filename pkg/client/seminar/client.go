@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"log"
 
-	seminarpb "github.com/mikhail5545/proto-go/proto/seminar/v0"
+	seminarpb "github.com/mikhail5545/proto-go/proto/product_service/seminar/v0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

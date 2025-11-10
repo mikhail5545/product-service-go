@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"log"
 
-	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/product_service/training_session/v0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

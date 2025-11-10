@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"log"
 
-	physicalgoodpb "github.com/mikhail5545/proto-go/proto/physical_good/v0"
+	physicalgoodpb "github.com/mikhail5545/proto-go/proto/product_service/physical_good/v0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
