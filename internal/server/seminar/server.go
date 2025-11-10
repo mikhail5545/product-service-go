@@ -30,7 +30,7 @@ import (
 	seminarservice "github.com/mikhail5545/product-service-go/internal/services/seminar"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
-	seminarpb "github.com/mikhail5545/proto-go/proto/seminar/v0"
+	seminarpb "github.com/mikhail5545/proto-go/proto/product_service/seminar/v0"
 	"google.golang.org/grpc"
 )
 

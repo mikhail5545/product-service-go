@@ -30,7 +30,7 @@ import (
 	trainingsessionservice "github.com/mikhail5545/product-service-go/internal/services/training_session"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
-	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/product_service/training_session/v0"
 	"google.golang.org/grpc"
 )
 

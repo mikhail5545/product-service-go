@@ -29,7 +29,7 @@ import (
 	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	trainingsessionservice "github.com/mikhail5545/product-service-go/internal/services/training_session"
 	trainingsessionmock "github.com/mikhail5545/product-service-go/internal/test/services/training_session_mock"
-	trainingsessionpb "github.com/mikhail5545/proto-go/proto/training_session/v0"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/product_service/training_session/v0"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"

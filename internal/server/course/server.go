@@ -30,7 +30,7 @@ import (
 	courseservice "github.com/mikhail5545/product-service-go/internal/services/course"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
-	coursepb "github.com/mikhail5545/proto-go/proto/course/v0"
+	coursepb "github.com/mikhail5545/proto-go/proto/product_service/course/v0"
 	"google.golang.org/grpc"
 )
 

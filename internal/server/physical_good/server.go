@@ -30,7 +30,7 @@ import (
 	physicalgoodservice "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
-	physicalgoodpb "github.com/mikhail5545/proto-go/proto/physical_good/v0"
+	physicalgoodpb "github.com/mikhail5545/proto-go/proto/product_service/physical_good/v0"
 	"google.golang.org/grpc"
 )
 
