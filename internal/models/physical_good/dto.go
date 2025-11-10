@@ -19,7 +19,7 @@
 package physicalgood
 
 type PhysicalGoodDetails struct {
-	PhysicalGood
+	*PhysicalGood
 	Price     float32
 	ProductID string
 }

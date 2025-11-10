@@ -46,3 +46,11 @@ type TrainingSession struct {
 	DurationMinutes int    `json:"duration_minutes"`
 	Format          string `gorm:"size:50" json:"format,omitempty"`
 }
+
+func (ts TrainingSession) GetUploadedImageAmount() int {
+	return ts.UploadedImageAmount
+}
+
+func (ts TrainingSession) SetUploadedImageAmount(amount int) {
+	ts.UploadedImageAmount = amount
+}

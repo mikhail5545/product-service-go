@@ -47,3 +47,11 @@ type PhysicalGood struct {
 	Images              []image.Image `gorm:"polymorphic:Owner;" json:"images"`
 	ShippingRequired    bool          `json:"shipping_required"`
 }
+
+func (g PhysicalGood) GetUploadedImageAmount() int {
+	return g.UploadedImageAmount
+}
+
+func (g PhysicalGood) SetUploadedImageAmount(amount int) {
+	g.UploadedImageAmount = amount
+}

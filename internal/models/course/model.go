@@ -47,3 +47,11 @@ type Course struct {
 	Images              []image.Image            `gorm:"polymorphic:Owner;" json:"images"`
 	CourseParts         []*coursepart.CoursePart `gorm:"foreignKey:CourseID" json:"course_parts"` // Обратная связь
 }
+
+func (c Course) GetUploadedImageAmount() int {
+	return c.UploadedImageAmount
+}
+
+func (c Course) SetUploadedImageAmount(amount int) {
+	c.UploadedImageAmount = amount
+}

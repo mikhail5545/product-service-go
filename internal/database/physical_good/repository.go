@@ -20,6 +20,8 @@ package physicalgood
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
@@ -56,6 +58,8 @@ type Repository interface {
 	GetWithUnpublished(ctx context.Context, id string) (*physicalgoodmodel.PhysicalGood, error)
 	// ListUnpublished retrieves a paginated list of all unpublished physical good records in the database.
 	ListUnpublished(ctx context.Context, limit, offset int) ([]physicalgoodmodel.PhysicalGood, error)
+	// ListWithUnpublishedByIDs retrieves physical good records by ids from database including unpublished ones.
+	ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]physicalgoodmodel.PhysicalGood, error)
 	// CountUnpublished counts the total number of all unpublished physical good records in the database.
 	CountUnpublished(ctx context.Context) (int64, error)
 
@@ -67,10 +71,28 @@ type Repository interface {
 	SetInStock(ctx context.Context, id string, inStock bool) (int64, error)
 	// Update performs partial update of a physical good record using updates.
 	Update(ctx context.Context, ts *physicalgoodmodel.PhysicalGood, updates any) (int64, error)
+	// BatchUpdate performs partial update for a batch of physical good records in the database.
+	// Field that needs to be updated must be populated in all physical good records.
+	// Opt param indicates which field needs to be updated:
+	//
+	//	- 0: Name
+	// 	- 1: ShortDescription
+	// 	- 2: UploadedImageCount
+	BatchUpdate(ctx context.Context, updates []physicalgoodmodel.PhysicalGood, opt uint) (int64, error)
 	// AddImage adds a new image for the physical good record in the database.
 	AddImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error
+	// AddImageBatch adds a new image (single) for the many physical good records in the database.
+	AddImageBatch(ctx context.Context, goods []physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error
 	// DeleteImage deletes an image from the physical good record.
 	DeleteImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, mediaSvcID string) error
+	// FindOwnerIDsByImageID finds all physical good IDs associated with a given image media service ID.
+	FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error)
+	// DecrementImageCount decrements the uploaded_image_amount for the given physical good IDs.
+	DecrementImageCount(ctx context.Context, goodIDs []string) (int64, error)
+	// DeleteImageBatch deletes an image (single) from many physical good records in the database.
+	// Note: This only removes the association. The caller is responsible for updating any related counters
+	// within the same transaction to ensure data consistency.
+	DeleteImageBatch(ctx context.Context, goods []physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error
 	// Delete performs soft-delete of a physical good record.
 	Delete(ctx context.Context, id string) (int64, error)
 	// DeletePermanent performs permanent delete of a physical good record.
@@ -185,6 +207,13 @@ func (r *gormRepository) ListUnpublished(ctx context.Context, limit, offset int)
 	return goods, err
 }
 
+// ListWithUnpublishedByIDs retrieves physical good records by ids from database including unpublished ones.
+func (r *gormRepository) ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]physicalgoodmodel.PhysicalGood, error) {
+	var goods []physicalgoodmodel.PhysicalGood
+	err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&goods).Error
+	return goods, err
+}
+
 // CountUnpublished counts the total number of all unpublished physical good records in the database.
 func (r *gormRepository) CountUnpublished(ctx context.Context) (int64, error) {
 	var count int64
@@ -211,14 +240,94 @@ func (r *gormRepository) Update(ctx context.Context, good *physicalgoodmodel.Phy
 	return res.RowsAffected, res.Error
 }
 
+// BatchUpdate performs partial update for a batch of physical good records in the database.
+// Field that needs to be updated must be populated in all physical good records.
+// Opt param indicates which field needs to be updated:
+//
+//   - 0: Name
+//   - 1: ShortDescription
+//   - 2: UploadedImageCount
+func (r *gormRepository) BatchUpdate(ctx context.Context, updates []physicalgoodmodel.PhysicalGood, opt uint) (int64, error) {
+	if len(updates) == 0 {
+		return 0, nil
+	}
+
+	var fieldName string
+	var caseClauses []string
+	var ids []string
+
+	switch opt {
+	case 0:
+		fieldName = "name"
+		for _, u := range updates {
+			ids = append(ids, u.ID)
+			caseClauses = append(caseClauses, fmt.Sprintf("WHEN '%s' THEN '%s'", u.ID, u.Name))
+		}
+	case 1:
+		fieldName = "short_description"
+		for _, u := range updates {
+			ids = append(ids, u.ID)
+			caseClauses = append(caseClauses, fmt.Sprintf("WHEN '%s' THEN '%s'", u.ID, u.ShortDescription))
+		}
+	case 2:
+		fieldName = "uploaded_image_amount"
+		for _, u := range updates {
+			ids = append(ids, u.ID)
+			caseClauses = append(caseClauses, fmt.Sprintf("WHEN '%s' THEN %d", u.ID, u.UploadedImageAmount))
+		}
+	default:
+		return 0, nil
+	}
+
+	query := fmt.Sprintf(
+		`UPDATE physical goods SET %s = (CASE id %s END) WHERE id IN (%s)`,
+		fieldName,
+		strings.Join(caseClauses, " "),
+		"'"+strings.Join(ids, "','")+"'",
+	)
+
+	res := r.db.WithContext(ctx).Exec(query)
+	return res.RowsAffected, res.Error
+}
+
+// FindOwnerIDsByImageID finds all physical good IDs associated with a given image media service ID within a specific set of owners.
+func (r *gormRepository) FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error) {
+	var affectedGoodIDs []string
+	joinTable := r.db.WithContext(ctx).Model(&physicalgoodmodel.PhysicalGood{}).Association("Images").Relationship.JoinTable
+	err := r.db.WithContext(ctx).Table(joinTable.Table).
+		Where("image_media_service_id = ?", mediaSvcID).
+		Where("physical_good_id IN ?", ownerIDs).
+		Pluck("physical_good_id", &affectedGoodIDs).Error
+	return affectedGoodIDs, err
+}
+
+// DecrementImageCount decrements the uploaded_image_amount for the given physical good IDs.
+func (r *gormRepository) DecrementImageCount(ctx context.Context, goodIDs []string) (int64, error) {
+	res := r.db.WithContext(ctx).
+		Model(&physicalgoodmodel.PhysicalGood{}).
+		Where("id IN ?", goodIDs).
+		UpdateColumn("uploaded_image_amount", gorm.Expr("uploaded_image_amount - 1"))
+	return res.RowsAffected, res.Error
+}
+
 // AddImage adds a new image for the physical good record in the database.
 func (r *gormRepository) AddImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error {
 	return r.db.WithContext(ctx).Model(good).Association("Images").Append(image)
 }
 
+// AddImageBatch adds a new image (single) for the many physical good records in the database.
+func (r *gormRepository) AddImageBatch(ctx context.Context, goods []physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(&goods).Association("Images").Append(image)
+}
+
 // DeleteImage deletes an image from the physical good record.
 func (r *gormRepository) DeleteImage(ctx context.Context, good *physicalgoodmodel.PhysicalGood, mediaSvcID string) error {
 	return r.db.WithContext(ctx).Model(good).Association("Images").Delete(&imagemodel.Image{MediaServiceID: mediaSvcID})
+}
+
+// DeleteImageBatch deletes an image (single) from many physical good records in the database.
+func (r *gormRepository) DeleteImageBatch(ctx context.Context, goods []physicalgoodmodel.PhysicalGood, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(&goods).Association("Images").Delete(image)
 }
 
 // Delete performs soft-delete of a physical good record.

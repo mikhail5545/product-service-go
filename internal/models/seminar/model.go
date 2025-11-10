@@ -50,3 +50,11 @@ type Seminar struct {
 	// 	- InStock = false -> not available in the catalogue, archived
 	InStock bool `json:"in_stock"`
 }
+
+func (s Seminar) GetUploadedImageAmount() int {
+	return s.UploadedImageAmount
+}
+
+func (s Seminar) SetUploadedImageAmount(amount int) {
+	s.UploadedImageAmount = amount
+}
