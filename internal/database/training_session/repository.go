@@ -20,7 +20,10 @@ package trainingsession
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	tsmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	"gorm.io/gorm"
 )
@@ -55,6 +58,8 @@ type Repository interface {
 	GetWithUnpublished(ctx context.Context, id string) (*tsmodel.TrainingSession, error)
 	// ListUnpublished retrieves a paginated list of all unpublished (but not soft-deleted) training session records from the database.
 	ListUnpublished(ctx context.Context, limit, offset int) ([]tsmodel.TrainingSession, error)
+	// ListWithUnpublishedByIDs retrieves training session records by ids from database including unpublished ones.
+	ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]tsmodel.TrainingSession, error)
 	// CountUnpublished counts the total number of all unpublished (but not soft-deleted) training session records in the database.
 	CountUnpublished(ctx context.Context) (int64, error)
 
@@ -66,6 +71,28 @@ type Repository interface {
 	SetInStock(ctx context.Context, id string, inStock bool) (int64, error)
 	// Update performs a partial update of a training session record using the provided updates map.
 	Update(ctx context.Context, ts *tsmodel.TrainingSession, updates any) (int64, error)
+	// BatchUpdate performs partial update for a batch of training session records in the database.
+	// Field that needs to be updated must be populated in all training session records.
+	// Opt param indicates which field needs to be updated:
+	//
+	//   - 0: Name
+	//   - 1: ShortDescription
+	//   - 2: UploadedImageCount
+	BatchUpdate(ctx context.Context, updates []tsmodel.TrainingSession, opt uint) (int64, error)
+	// FindOwnerIDsByImageID finds all training session IDs associated with a given image media service ID within a specific set of owners.
+	FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error)
+	// DecrementImageCount decrements the uploaded_image_amount for the given training session IDs.
+	DecrementImageCount(ctx context.Context, tsIDs []string) (int64, error)
+	// AddImage adds a new image for the training session record in the database.
+	AddImage(ctx context.Context, ts *tsmodel.TrainingSession, image *imagemodel.Image) error
+	// AddImageBatch adds a new image (single) for the many training session records in the database.
+	AddImageBatch(ctx context.Context, ts []tsmodel.TrainingSession, image *imagemodel.Image) error
+	// DeleteImage deletes an image from the training session record.
+	DeleteImage(ctx context.Context, ts *tsmodel.TrainingSession, mediaSvcID string) error
+	// DeleteImageBatch deletes an image (single) from many training session records in the database.
+	// Note: This only removes the association. The caller is responsible for updating any related counters
+	// within the same transaction to ensure data consistency.
+	DeleteImageBatch(ctx context.Context, ts []tsmodel.TrainingSession, image *imagemodel.Image) error
 	// Delete performs a soft-delete of a training session record.
 	Delete(ctx context.Context, id string) (int64, error)
 	// DeletePermanent performs a permanent delete of a training session record.
@@ -108,7 +135,7 @@ func (r *gormRepository) WithTx(tx *gorm.DB) Repository {
 // Get retrieves a single published and not soft-deleted training session record from the database.
 func (r *gormRepository) Get(ctx context.Context, id string) (*tsmodel.TrainingSession, error) {
 	var ts tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Where("in_stock = ?", true).First(&ts, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Preload("Images").Where("in_stock = ?", true).First(&ts, "id = ?", id).Error
 	return &ts, err
 }
 
@@ -122,7 +149,7 @@ func (r *gormRepository) Select(ctx context.Context, id string, fields ...string
 // List retrieves a paginated list of all published and not soft-deleted training session records in the database.
 func (r *gormRepository) List(ctx context.Context, limit, offset int) ([]tsmodel.TrainingSession, error) {
 	var ts []tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Where("in_stock = ?", true).Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
+	err := r.db.WithContext(ctx).Where("in_stock = ?", true).Preload("Images").Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
 	return ts, err
 }
 
@@ -138,14 +165,14 @@ func (r *gormRepository) Count(ctx context.Context) (int64, error) {
 // GetWithDeleted retrieves a single training session record from the database, including soft-deleted ones.
 func (r *gormRepository) GetWithDeleted(ctx context.Context, id string) (*tsmodel.TrainingSession, error) {
 	var ts tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Unscoped().First(&ts, id).Error
+	err := r.db.WithContext(ctx).Unscoped().Preload("Images").First(&ts, id).Error
 	return &ts, err
 }
 
 // ListDeleted retrieves a paginated list of all soft-deleted training session records in the database.
 func (r *gormRepository) ListDeleted(ctx context.Context, limit, offset int) ([]tsmodel.TrainingSession, error) { // Corrected comment
 	var ts []tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
+	err := r.db.WithContext(ctx).Unscoped().Where("deleted_at IS NOT NULL").Preload("Images").Limit(limit).Offset(offset).Order("created_at desc").Find(&ts).Error
 	return ts, err
 }
 
@@ -164,7 +191,7 @@ func (r *gormRepository) CountDeleted(ctx context.Context) (int64, error) {
 // GetWithUnpublished retrieves a single training session record from the database, including unpublished ones (but not soft-deleted).
 func (r *gormRepository) GetWithUnpublished(ctx context.Context, id string) (*tsmodel.TrainingSession, error) {
 	var ts tsmodel.TrainingSession
-	err := r.db.WithContext(ctx).First(&ts, id).Error
+	err := r.db.WithContext(ctx).Preload("Images").First(&ts, id).Error
 	return &ts, err
 }
 
@@ -173,10 +200,18 @@ func (r *gormRepository) ListUnpublished(ctx context.Context, limit, offset int)
 	var ts []tsmodel.TrainingSession
 	err := r.db.WithContext(ctx).
 		Model(&tsmodel.TrainingSession{}).
+		Preload("Images").
 		Where("in_stock = ?", false).
 		Order("created_at DESC").
 		Limit(limit).Offset(offset).
 		Find(&ts).Error
+	return ts, err
+}
+
+// ListWithUnpublishedByIDs retrieves training session records by ids from database including unpublished ones.
+func (r *gormRepository) ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]tsmodel.TrainingSession, error) {
+	var ts []tsmodel.TrainingSession
+	err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&ts).Error
 	return ts, err
 }
 
@@ -198,6 +233,96 @@ func (r *gormRepository) Create(ctx context.Context, ts *tsmodel.TrainingSession
 func (r *gormRepository) Update(ctx context.Context, ts *tsmodel.TrainingSession, updates any) (int64, error) {
 	res := r.db.WithContext(ctx).Model(ts).Updates(updates)
 	return res.RowsAffected, res.Error
+}
+
+// BatchUpdate performs partial update for a batch of training session records in the database.
+// Field that needs to be updated must be populated in all training session records.
+// Opt param indicates which field needs to be updated:
+//
+//   - 0: Name
+//   - 1: ShortDescription
+//   - 2: UploadedImageCount
+func (r *gormRepository) BatchUpdate(ctx context.Context, updates []tsmodel.TrainingSession, opt uint) (int64, error) {
+	if len(updates) == 0 {
+		return 0, nil
+	}
+
+	var fieldName string
+	var caseClauses []string
+	var ids []string
+
+	switch opt {
+	case 0:
+		fieldName = "name"
+		for _, u := range updates {
+			ids = append(ids, u.ID)
+			caseClauses = append(caseClauses, fmt.Sprintf("WHEN '%s' THEN '%s'", u.ID, u.Name))
+		}
+	case 1:
+		fieldName = "short_description"
+		for _, u := range updates {
+			ids = append(ids, u.ID)
+			caseClauses = append(caseClauses, fmt.Sprintf("WHEN '%s' THEN '%s'", u.ID, u.ShortDescription))
+		}
+	case 2:
+		fieldName = "uploaded_image_amount"
+		for _, u := range updates {
+			ids = append(ids, u.ID)
+			caseClauses = append(caseClauses, fmt.Sprintf("WHEN '%s' THEN %d", u.ID, u.UploadedImageAmount))
+		}
+	default:
+		return 0, nil
+	}
+
+	query := fmt.Sprintf(
+		`UPDATE training_sessions SET %s = (CASE id %s END) WHERE id IN (%s)`,
+		fieldName,
+		strings.Join(caseClauses, " "),
+		"'"+strings.Join(ids, "','")+"'",
+	)
+
+	res := r.db.WithContext(ctx).Exec(query)
+	return res.RowsAffected, res.Error
+}
+
+// FindOwnerIDsByImageID finds all training session IDs associated with a given image media service ID within a specific set of owners.
+func (r *gormRepository) FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error) {
+	var affectedIrainingSessionIDs []string
+	joinTable := r.db.WithContext(ctx).Model(&tsmodel.TrainingSession{}).Association("Images").Relationship.JoinTable
+	err := r.db.WithContext(ctx).Table(joinTable.Table).
+		Where("image_media_service_id = ?", mediaSvcID).
+		Where("training_session_id IN ?", ownerIDs).
+		Pluck("training_session_id", &affectedIrainingSessionIDs).Error
+	return affectedIrainingSessionIDs, err
+}
+
+// DecrementImageCount decrements the uploaded_image_amount for the given training session IDs.
+func (r *gormRepository) DecrementImageCount(ctx context.Context, tsIDs []string) (int64, error) {
+	res := r.db.WithContext(ctx).
+		Model(&tsmodel.TrainingSession{}).
+		Where("id IN ?", tsIDs).
+		UpdateColumn("uploaded_image_amount", gorm.Expr("uploaded_image_amount - 1"))
+	return res.RowsAffected, res.Error
+}
+
+// AddImage adds a new image for the training session record in the database.
+func (r *gormRepository) AddImage(ctx context.Context, ts *tsmodel.TrainingSession, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(ts).Association("Images").Append(image)
+}
+
+// AddImageBatch adds a new image (single) for the many training session records in the database.
+func (r *gormRepository) AddImageBatch(ctx context.Context, ts []tsmodel.TrainingSession, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(&ts).Association("Images").Append(image)
+}
+
+// DeleteImage deletes an image from the training session record.
+func (r *gormRepository) DeleteImage(ctx context.Context, ts *tsmodel.TrainingSession, mediaSvcID string) error {
+	return r.db.WithContext(ctx).Model(ts).Association("Images").Delete(&imagemodel.Image{MediaServiceID: mediaSvcID})
+}
+
+// DeleteImageBatch deletes an image (single) from many training session records in the database.
+func (r *gormRepository) DeleteImageBatch(ctx context.Context, ts []tsmodel.TrainingSession, image *imagemodel.Image) error {
+	return r.db.WithContext(ctx).Model(&ts).Association("Images").Delete(image)
 }
 
 // SetInStock sets a new value for the training session's InStock field.

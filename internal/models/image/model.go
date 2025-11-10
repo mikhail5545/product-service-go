@@ -18,9 +18,8 @@
 package image
 
 type Image struct {
-	PublicURL    string `json:"url"`
-	SecureURL    string `json:"secure_url"`
-	CloudinaryID string `json:"cloudinary_id"`
-	IsPrimary    bool   `json:"is_primary"`
-	Order        int    `json:"order"`
+	PublicID       string `json:"public_id"`
+	URL            string `json:"url"`
+	SecureURL      string `json:"secure_url"`
+	MediaServiceID string `json:"media_service_id"` // External id (uuid) for media-service-go operations (image upload, delete, etc.).
 }

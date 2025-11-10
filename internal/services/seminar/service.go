@@ -23,13 +23,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
 	seminarrepo "github.com/mikhail5545/product-service-go/internal/database/seminar"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
 	"gorm.io/gorm"
 )
 
@@ -41,40 +42,46 @@ type Service interface {
 	// along with all of its associated products details (prices and product IDs).
 	//
 	// Returns a SeminarDetails struct containing the combined information.
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the record is not found (ErrNotFound),
+	// or a database/internal error occurs.
 	Get(ctx context.Context, id string) (*seminarmodel.SeminarDetails, error)
 	// GetWithDeleted retrieves a single seminar record from the database, including soft-deleted ones,
 	// along with all of its associated products details.
 	//
 	// Returns a SeminarDetails struct containing the combined information.
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the record is not found (ErrNotFound),
+	// or a database/internal error occurs.
 	GetWithDeleted(ctx context.Context, id string) (*seminarmodel.SeminarDetails, error)
 	// GetWithUnpublished retrieves a single seminar record from the database, including unpublished ones (but not soft-deleted),
 	// along with all of its associated products details.
 	//
 	// Returns a SeminarDetails struct containing the combined information.
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the record is not found (ErrNotFound),
+	// or a database/internal error occurs.
 	GetWithUnpublished(ctx context.Context, id string) (*seminarmodel.SeminarDetails, error)
 	// List retrieves a paginated list of all published and not soft-deleted seminar records.
 	// Each record is returned with its associated products details.
+	// It will skip seminars with missing product IDs or with incomplete product data from
+	// the database.
 	//
 	// Returns a slice of SeminarDetails, the total count of such records, and an error if one occurs.
-	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if a database/internal error occurs.
 	List(ctx context.Context, limit, offset int) ([]seminarmodel.SeminarDetails, int64, error)
 	// ListDeleted retrieves a paginated list of all soft-deleted seminar records.
 	// Each record is returned with its associated products details.
+	// It will skip seminars with missing product IDs or with incomplete product data from
+	// the database.
 	//
 	// Returns a slice of SeminarDetails, the total count of such records, and an error if one occurs.
-	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if a database/internal error occurs.
 	ListDeleted(ctx context.Context, limit, offset int) ([]seminarmodel.SeminarDetails, int64, error)
 	// ListUnpublished retrieves a paginated list of all unpublished (but not soft-deleted) seminar records.
 	// Each record is returned with its associated products details.
+	// It will skip seminars with missing product IDs or with incomplete product data from
+	// the database.
 	//
 	// Returns a slice of SeminarDetails, the total count of such records, and an error if one occurs.
-	// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if a database/internal error occurs.
 	ListUnpublished(ctx context.Context, limit, offset int) ([]seminarmodel.SeminarDetails, int64, error)
 	// Create creates a new Seminar record and all of its associated Product records in the database.
 	// It validates the request payload to ensure all required fields are present.
@@ -82,19 +89,19 @@ type Service interface {
 	//
 	// Returns a CreateResponse containing the newly created SeminarID, ReservationProductID, EarlyProductID,
 	// LateProductID, EarlySurchargeProductID, LateSurchargeProductID.
-	// Returns an error if the request payload is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the request payload is invalid (ErrInvalidArgument) or a database/internal error occurs.
 	Create(ctx context.Context, req *seminarmodel.CreateRequest) (*seminarmodel.CreateResponse, error)
 	// Publish sets the `InStock` field to true for a seminar and all of its associated products,
 	// making it available in the catalog.
 	//
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+	// or a database/internal error occurs.
 	Publish(ctx context.Context, id string) error
 	// Unpublish sets the `InStock` field to false for a seminar and all of its associated products,
 	// archiving it from the catalog.
 	//
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+	// or a database/internal error occurs.
 	Unpublish(ctx context.Context, id string) error
 	// Update performs a partial update of a seminar and all of its related products.
 	// The request should contain the seminar's ID and the fields to be updated.
@@ -103,27 +110,60 @@ type Service interface {
 	// Returns a map containing the fields that were actually changed, nested under "seminar", "reservation_product",
 	// "early_product", "late_product", "early_surcharge_product", "late_surcharge_product" keys.
 	// Example: `{"seminar": {"name": "new name"}, "early_product": {"price": 99.99}}`
-	// Returns an error if the request payload is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the request payload is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+	// or a database/internal error occurs.
 	Update(ctx context.Context, req *seminarmodel.UpdateRequest) (map[string]any, error)
 	// Delete performs a soft-delete of a seminar and all of its related product records.
 	// It also unpublishes all records, meaning they must be manually published again after restoration.
 	//
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+	// or a database/internal error occurs.
 	Delete(ctx context.Context, id string) error
 	// DeletePermanent performs a complete delete of a seminar and its related product records.
 	//
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+	// or a database/internal error occurs.
 	DeletePermanent(ctx context.Context, id string) error
 	// Restore performs a restore of a seminar and its related product records.
 	// Seminar and its related product records are not being published. This should be
 	// done manually.
 	//
-	// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
+	// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+	// or a database/internal error occurs.
 	Restore(ctx context.Context, id string) error
+	// AddImage adds a new image to a seminar. It's called by media-service-go upon successful image upload.
+	// It uses seminarOwnerRepoAdapter to call [imageservice.AddImage] and add an image to the seminar.
+	//
+	// Returns an error if:
+	// 	- The request payload is invalid ([imageservice.ErrInvalidArgument]).
+	// 	- The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
+	// 	- The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
+	// 	- A database/internal error occurs.
+	AddImage(ctx context.Context, req *imagemodel.AddRequest) error
+	// DeleteImage removes an image from a seminar. It's called by media-service-go upon successful image deletion.
+	// It uses seminarOwnerRepoAdapter to call [imageservice.DeleteImage] and delete an image from the seminar.
+	//
+	// Returns an error if:
+	//   - The request payload is invalid ([imageservice.ErrInvalidArgument]).
+	//   - The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
+	//   - The image is not found on seminar (owner) ([imageservice.ErrImageNotFoundOnOwner]).
+	//   - A database/internal error occurs.
+	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
+	// AddImageBatch adds an image for a batch of seminars. It uses seminarOwnerRepoAdapter
+	// to call [imageservice.AddImageBatch] and append images to the seminar. It's called by media-service-go
+	// upon successfull context change.
+	//
+	// It returns the number of affected seminars.
+	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound])
+	// or a database/internal error occurs.
+	AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error)
+	// DeleteImageBatch removes an image from a batch of seminars. It uses seminarOwnerRepoAdapter
+	// to call [imageservice.DeleteImageBatch] and append images to the seminar.
+	//
+	// It returns the number of affected seminars.
+	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound]),
+	// no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+	DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error)
 }
 
 // service provides service-layer business logic for seminar models.
@@ -132,32 +172,15 @@ type Service interface {
 type service struct {
 	SeminarRepo seminarrepo.Repository
 	ProductRepo productrepo.Repository
-}
-
-// Error represents seminar service error.
-type Error struct {
-	Msg  string
-	Err  error
-	Code int
-}
-
-func (e *Error) Error() string {
-	return fmt.Sprintf("%s: %v", e.Msg, e.Err)
-}
-
-func (e *Error) Unwrap() error {
-	return e.Err
-}
-
-func (e *Error) GetCode() int {
-	return e.Code
+	ImageSvc    imageservice.Service
 }
 
 // New creates a new service instance with provided seminar and product repositories.
-func New(sr seminarrepo.Repository, pr productrepo.Repository) Service {
+func New(sr seminarrepo.Repository, pr productrepo.Repository, is imageservice.Service) Service {
 	return &service{
 		SeminarRepo: sr,
 		ProductRepo: pr,
+		ImageSvc:    is,
 	}
 }
 
@@ -165,26 +188,22 @@ func New(sr seminarrepo.Repository, pr productrepo.Repository) Service {
 // along with all of its associated products details (prices and product IDs).
 //
 // Returns a SeminarDetails struct containing the combined information.
-// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the record is not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) Get(ctx context.Context, id string) (*seminarmodel.SeminarDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid seminar ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	seminar, err := s.SeminarRepo.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to retrieve seminar", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve seminar: %w", err)
 	}
 
 	if seminar.ReservationProductID == nil || seminar.EarlyProductID == nil || seminar.LateProductID == nil || seminar.EarlySurchargeProductID == nil || seminar.LateSurchargeProductID == nil {
-		return nil, &Error{
-			Msg:  "seminar record is missing one or more required product IDs",
-			Err:  errors.New("incomplete seminar data"),
-			Code: http.StatusInternalServerError,
-		}
+		return nil, ErrIncompleteData
 	}
 
 	productIDs := []string{
@@ -197,10 +216,10 @@ func (s *service) Get(ctx context.Context, id string) (*seminarmodel.SeminarDeta
 
 	products, err := s.ProductRepo.SelectByIDs(ctx, productIDs, "price")
 	if err != nil {
-		return nil, &Error{Msg: "failed to get seminar products", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to get seminar products: %w", err)
 	}
 	if len(products) != 5 {
-		return nil, &Error{Msg: "could not find all products for seminar", Err: err, Code: http.StatusNotFound}
+		return nil, ErrProductsNotFound
 	}
 
 	productMap := make(map[string]*productmodel.Product, len(products))
@@ -225,26 +244,22 @@ func (s *service) Get(ctx context.Context, id string) (*seminarmodel.SeminarDeta
 // along with all of its associated products details.
 //
 // Returns a SeminarDetails struct containing the combined information.
-// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the record is not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) GetWithDeleted(ctx context.Context, id string) (*seminarmodel.SeminarDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid seminar ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	seminar, err := s.SeminarRepo.GetWithDeleted(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to retrieve seminar", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve seminar: %w", err)
 	}
 
 	if seminar.ReservationProductID == nil || seminar.EarlyProductID == nil || seminar.LateProductID == nil || seminar.EarlySurchargeProductID == nil || seminar.LateSurchargeProductID == nil {
-		return nil, &Error{
-			Msg:  "seminar record is missing one or more required product IDs",
-			Err:  errors.New("incomplete seminar data"),
-			Code: http.StatusInternalServerError,
-		}
+		return nil, ErrIncompleteData
 	}
 
 	productIDs := []string{
@@ -257,10 +272,10 @@ func (s *service) GetWithDeleted(ctx context.Context, id string) (*seminarmodel.
 
 	products, err := s.ProductRepo.SelectWithDeletedByIDs(ctx, productIDs, "price")
 	if err != nil {
-		return nil, &Error{Msg: "failed to get seminar products", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to get seminar products: %w", err)
 	}
 	if len(products) != 5 {
-		return nil, &Error{Msg: "could not find all products for seminar", Err: err, Code: http.StatusNotFound}
+		return nil, ErrProductsNotFound
 	}
 
 	productMap := make(map[string]*productmodel.Product, len(products))
@@ -285,26 +300,22 @@ func (s *service) GetWithDeleted(ctx context.Context, id string) (*seminarmodel.
 // along with all of its associated products details.
 //
 // Returns a SeminarDetails struct containing the combined information.
-// Returns an error if the ID is invalid (http.StatusBadRequest), the record is not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the record is not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) GetWithUnpublished(ctx context.Context, id string) (*seminarmodel.SeminarDetails, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid seminar ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	seminar, err := s.SeminarRepo.GetWithUnpublished(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to retrieve seminar", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve seminar: %w", err)
 	}
 
 	if seminar.ReservationProductID == nil || seminar.EarlyProductID == nil || seminar.LateProductID == nil || seminar.EarlySurchargeProductID == nil || seminar.LateSurchargeProductID == nil {
-		return nil, &Error{
-			Msg:  "seminar record is missing one or more required product IDs",
-			Err:  errors.New("incomplete seminar data"),
-			Code: http.StatusInternalServerError,
-		}
+		return nil, ErrIncompleteData
 	}
 
 	productIDs := []string{
@@ -317,10 +328,10 @@ func (s *service) GetWithUnpublished(ctx context.Context, id string) (*seminarmo
 
 	products, err := s.ProductRepo.SelectWithUnpublishedByIDs(ctx, productIDs, "price")
 	if err != nil {
-		return nil, &Error{Msg: "failed to get seminar products", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to get seminar products: %w", err)
 	}
 	if len(products) != 5 {
-		return nil, &Error{Msg: "could not find all products for seminar", Err: err, Code: http.StatusNotFound}
+		return nil, ErrProductsNotFound
 	}
 
 	productMap := make(map[string]*productmodel.Product, len(products))
@@ -364,13 +375,15 @@ func hasMissingProducts(productMap map[string]*productmodel.Product, seminar *se
 
 // List retrieves a paginated list of all published and not soft-deleted seminar records.
 // Each record is returned with its associated products details.
+// It will skip seminars with missing product IDs or with incomplete product data from
+// the database.
 //
 // Returns a slice of SeminarDetails, the total count of such records, and an error if one occurs.
-// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if a database/internal error occurs.
 func (s *service) List(ctx context.Context, limit, offset int) ([]seminarmodel.SeminarDetails, int64, error) {
 	seminars, err := s.SeminarRepo.List(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to retrieve seminars", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve seminars: %w", err)
 	}
 
 	// Collect all product IDs from all seminars
@@ -396,7 +409,7 @@ func (s *service) List(ctx context.Context, limit, offset int) ([]seminarmodel.S
 	// Fetch all products in a single query
 	products, err := s.ProductRepo.SelectByIDs(ctx, productIDs, "price")
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to retrieve products", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve products: %w", err)
 	}
 
 	// Create a map for quick product lookup by ID
@@ -425,20 +438,22 @@ func (s *service) List(ctx context.Context, limit, offset int) ([]seminarmodel.S
 	}
 	total, err := s.SeminarRepo.Count(ctx)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to count seminars", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to count seminars: %w", err)
 	}
 	return allDetails, total, nil
 }
 
 // ListUnpublished retrieves a paginated list of all unpublished (but not soft-deleted) seminar records.
 // Each record is returned with its associated products details.
+// It will skip seminars with missing product IDs or with incomplete product data from
+// the database.
 //
 // Returns a slice of SeminarDetails, the total count of such records, and an error if one occurs.
-// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if a database/internal error occurs.
 func (s *service) ListUnpublished(ctx context.Context, limit, offset int) ([]seminarmodel.SeminarDetails, int64, error) {
 	seminars, err := s.SeminarRepo.ListUnpublished(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to retrieve seminars", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve seminars: %w", err)
 	}
 
 	// Collect all product IDs from all seminars
@@ -464,7 +479,7 @@ func (s *service) ListUnpublished(ctx context.Context, limit, offset int) ([]sem
 	// Fetch all products in a single query
 	products, err := s.ProductRepo.SelectWithUnpublishedByIDs(ctx, productIDs, "price")
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to retrieve products", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve products: %w", err)
 	}
 
 	// Create a map for quick product lookup by ID
@@ -493,20 +508,22 @@ func (s *service) ListUnpublished(ctx context.Context, limit, offset int) ([]sem
 	}
 	total, err := s.SeminarRepo.CountUnpublished(ctx)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to count seminars", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to count seminars: %w", err)
 	}
 	return allDetails, total, nil
 }
 
 // ListDeleted retrieves a paginated list of all soft-deleted seminar records.
 // Each record is returned with its associated products details.
+// It will skip seminars with missing product IDs or with incomplete product data from
+// the database.
 //
 // Returns a slice of SeminarDetails, the total count of such records, and an error if one occurs.
-// Returns an error if a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if a database/internal error occurs.
 func (s *service) ListDeleted(ctx context.Context, limit, offset int) ([]seminarmodel.SeminarDetails, int64, error) {
 	seminars, err := s.SeminarRepo.ListDeleted(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to retrieve seminars", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve seminars: %w", err)
 	}
 
 	// Collect all product IDs from all seminars
@@ -532,7 +549,7 @@ func (s *service) ListDeleted(ctx context.Context, limit, offset int) ([]seminar
 	// Fetch all products in a single query
 	products, err := s.ProductRepo.SelectWithDeletedByIDs(ctx, productIDs, "price")
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to retrieve products", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve products: %w", err)
 	}
 
 	// Create a map for quick product lookup by ID
@@ -561,7 +578,7 @@ func (s *service) ListDeleted(ctx context.Context, limit, offset int) ([]seminar
 	}
 	total, err := s.SeminarRepo.CountDeleted(ctx)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to count seminars", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to count seminars: %w", err)
 	}
 	return allDetails, total, nil
 }
@@ -572,7 +589,7 @@ func (s *service) ListDeleted(ctx context.Context, limit, offset int) ([]seminar
 //
 // Returns a CreateResponse containing the newly created SeminarID, ReservationProductID, EarlyProductID,
 // LateProductID, EarlySurchargeProductID, LateSurchargeProductID.
-// Returns an error if the request payload is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the request payload is invalid (ErrInvalidArgument) or a database/internal error occurs.
 func (s *service) Create(ctx context.Context, req *seminarmodel.CreateRequest) (*seminarmodel.CreateResponse, error) {
 	seminar := &seminarmodel.Seminar{}
 	err := s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
@@ -580,11 +597,7 @@ func (s *service) Create(ctx context.Context, req *seminarmodel.CreateRequest) (
 		txProductRepo := s.ProductRepo.WithTx(tx)
 
 		if err := req.Validate(); err != nil {
-			return &Error{
-				Msg:  "Invalid request payload",
-				Err:  err,
-				Code: http.StatusBadRequest,
-			}
+			return fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 		}
 
 		seminar.ID = uuid.New().String()
@@ -610,7 +623,7 @@ func (s *service) Create(ctx context.Context, req *seminarmodel.CreateRequest) (
 		}
 
 		if err := txProductRepo.CreateBatch(ctx, products...); err != nil {
-			return &Error{Msg: "Failed to create seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to create seminar products: %w", err)
 		}
 
 		productIDMap := map[float32]*string{
@@ -628,7 +641,7 @@ func (s *service) Create(ctx context.Context, req *seminarmodel.CreateRequest) (
 		seminar.LateSurchargeProductID = productIDMap[req.LateSurchargePrice]
 
 		if err := txSeminarRepo.Create(ctx, seminar); err != nil {
-			return &Error{Msg: "Failed to create seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to create seminar: %w", err)
 		}
 		return nil
 	})
@@ -648,26 +661,27 @@ func (s *service) Create(ctx context.Context, req *seminarmodel.CreateRequest) (
 // Publish sets the `InStock` field to true for a seminar and all of its associated products,
 // making it available in the catalog.
 //
-// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) Publish(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "Invalid seminar ID", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: invalid seminar ID: %w", ErrInvalidArgument, err)
 	}
 	return s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txSeminarRepo := s.SeminarRepo.WithTx(tx)
 		txProductRepo := s.ProductRepo.WithTx(tx)
 		ra, err := txSeminarRepo.SetInStock(ctx, id, true)
 		if err != nil {
-			return &Error{Msg: "Failed to publish seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to publish seminar: %w", err)
 		} else if ra == 0 {
-			return &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+			return ErrNotFound
 		}
 		ra, err = txProductRepo.SetInStockByDetailsID(ctx, id, true)
 		if err != nil {
-			return &Error{Msg: "Failed to publish seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to publish seminar products: %w", err)
 		} else if ra != 5 {
-			return &Error{Msg: "Failed to publish all seminar products", Err: err, Code: http.StatusInternalServerError}
+			// This indicates a data integrity issue.
+			return fmt.Errorf("failed to publish all 5 seminar products, only %d were updated", ra)
 		}
 		return nil
 	})
@@ -676,26 +690,27 @@ func (s *service) Publish(ctx context.Context, id string) error {
 // Unpublish sets the `InStock` field to false for a seminar and all of its associated products,
 // archiving it from the catalog.
 //
-// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) Unpublish(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "Invalid seminar ID", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: invalid seminar ID: %w", ErrInvalidArgument, err)
 	}
 	return s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txSeminarRepo := s.SeminarRepo.WithTx(tx)
 		txProductRepo := s.ProductRepo.WithTx(tx)
 		ra, err := txSeminarRepo.SetInStock(ctx, id, false)
 		if err != nil {
-			return &Error{Msg: "Failed to unpublish seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to unpublish seminar: %w", err)
 		} else if ra == 0 {
-			return &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+			return ErrNotFound
 		}
 		ra, err = txProductRepo.SetInStockByDetailsID(ctx, id, false)
 		if err != nil {
-			return &Error{Msg: "Failed to unpublish seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to unpublish seminar products: %w", err)
 		} else if ra != 5 {
-			return &Error{Msg: "Failed to unpublish all seminar products", Err: err, Code: http.StatusInternalServerError}
+			// This indicates a data integrity issue.
+			return fmt.Errorf("failed to unpublish all 5 seminar products, only %d were updated", ra)
 		}
 		return nil
 	})
@@ -708,8 +723,8 @@ func (s *service) Unpublish(ctx context.Context, id string) error {
 // Returns a map containing the fields that were actually changed, nested under "seminar", "reservation_product",
 // "early_product", "late_product", "early_surcharge_product", "late_surcharge_product" keys.
 // Example: `{"seminar": {"name": "new name"}, "early_product": {"price": 99.99}}`
-// Returns an error if the request payload is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the request payload is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (map[string]any, error) {
 	allUpdates := make(map[string]any)
 	err := s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
@@ -717,24 +732,20 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 		txProductRepo := s.ProductRepo.WithTx(tx)
 
 		if err := req.Validate(); err != nil {
-			validationMsg, err := json.Marshal(err)
-			return &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
+			validationMsg, _ := json.Marshal(err)
+			return fmt.Errorf("%w: %s", ErrInvalidArgument, string(validationMsg))
 		}
 
 		seminar, err := txSeminarRepo.Get(ctx, req.ID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{Msg: "seminar not found", Err: err, Code: http.StatusNotFound}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{Msg: "failed to find seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to find seminar: %w", err)
 		}
 
 		if seminar.ReservationProductID == nil || seminar.EarlyProductID == nil || seminar.LateProductID == nil || seminar.EarlySurchargeProductID == nil || seminar.LateSurchargeProductID == nil {
-			return &Error{
-				Msg:  "seminar record is missing one or more required product IDs",
-				Err:  errors.New("incomplete seminar data"),
-				Code: http.StatusInternalServerError,
-			}
+			return ErrIncompleteData
 		}
 
 		productIDs := []string{
@@ -747,10 +758,10 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 
 		products, err := txProductRepo.SelectByIDs(ctx, productIDs, "id", "price", "details_id")
 		if err != nil {
-			return &Error{Msg: "failed to get seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to get seminar products: %w", err)
 		}
 		if len(products) != 5 {
-			return &Error{Msg: "could not find all products for seminar", Err: err, Code: http.StatusNotFound}
+			return ErrProductsNotFound
 		}
 
 		productMap := make(map[string]*productmodel.Product, len(products))
@@ -791,7 +802,7 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 		) (map[string]any, error) {
 			if currentProduct == nil {
 				// This case should be prevented by earlier checks, but as a safeguard:
-				return nil, &Error{Msg: "product to update not found", Err: errors.New("nil product pointer"), Code: http.StatusNotFound}
+				return nil, fmt.Errorf("%w: product to update not found", ErrNotFound)
 			}
 
 			productUpdates := make(map[string]any)
@@ -809,7 +820,7 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 
 		// Check if seminar has missing products
 		if hasMissingProducts(productMap, seminar) {
-			return &Error{Msg: "Cannot find all seminar products", Err: nil, Code: http.StatusNotFound}
+			return ErrProductsNotFound
 		}
 
 		// productReq represents product type as key and struct of new product price, product retrieved from the database
@@ -843,11 +854,7 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 		for key, p := range productReq {
 			pu, err := updateProduct(p.price, p.product)
 			if err != nil {
-				return &Error{
-					Msg:  fmt.Sprintf("Failed to update %s", key),
-					Err:  err,
-					Code: http.StatusInternalServerError,
-				}
+				return fmt.Errorf("failed to update %s: %w", key, err)
 			}
 			if len(pu) > 0 {
 				allUpdates[key] = pu
@@ -856,11 +863,7 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 
 		if len(seminarUpdates) > 0 {
 			if _, err := txSeminarRepo.Update(ctx, seminar, seminarUpdates); err != nil {
-				return &Error{
-					Msg:  "Failed to update seminar",
-					Err:  err,
-					Code: http.StatusInternalServerError,
-				}
+				return fmt.Errorf("failed to update seminar: %w", err)
 			}
 			allUpdates["seminar"] = seminarUpdates
 		}
@@ -872,14 +875,63 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 	return allUpdates, nil
 }
 
+// AddImage adds a new image to a seminar. It's called by media-service-go upon successful image upload.
+// It uses seminarOwnerRepoAdapter to call [imageservice.AddImage] and add an image to the seminar.
+//
+// Returns an error if:
+//   - The request payload is invalid ([imageservice.ErrInvalidArgument]).
+//   - The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
+//   - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
+//   - A database/internal error occurs.
+func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) error {
+	ownerRepoAdapter := newSeminarOwnerRepoAdapter(s.SeminarRepo)
+	return s.ImageSvc.AddImage(ctx, req, ownerRepoAdapter)
+}
+
+// DeleteImage removes an image from a seminar. It's called by media-service-go upon successful image deletion.
+// It uses seminarOwnerRepoAdapter to call [imageservice.DeleteImage] and delete an image from the seminar.
+//
+// Returns an error if:
+//   - The request payload is invalid ([imageservice.ErrInvalidArgument]).
+//   - The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
+//   - The image is not found on seminar (owner) ([imageservice.ErrImageNotFoundOnOwner]).
+//   - A database/internal error occurs.
+func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
+	ownerRepoAdapter := newSeminarOwnerRepoAdapter(s.SeminarRepo)
+	return s.ImageSvc.DeleteImage(ctx, req, ownerRepoAdapter)
+}
+
+// AddImageBatch adds an image for a batch of seminars. It uses seminarOwnerRepoAdapter
+// to call [imageservice.AddImageBatch] and append images to the seminar. It's called by media-service-go
+// upon successfull context change.
+//
+// It returns the number of affected seminars.
+// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound])
+// or a database/internal error occurs.
+func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error) {
+	ownerRepoAdapter := newSeminarOwnerRepoAdapter(s.SeminarRepo)
+	return s.ImageSvc.AddImageBatch(ctx, req, ownerRepoAdapter)
+}
+
+// DeleteImageBatch removes an image from a batch of seminars. It uses seminarOwnerRepoAdapter
+// to call [imageservice.DeleteImageBatch] and append images to the seminar.
+//
+// It returns the number of affected seminars.
+// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound]),
+// no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
+func (s *service) DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error) {
+	ownerRepoAdapter := newSeminarOwnerRepoAdapter(s.SeminarRepo)
+	return s.ImageSvc.DeleteImageBatch(ctx, req, ownerRepoAdapter)
+}
+
 // Delete performs a soft-delete of a seminar and all of its related product records.
 // It also unpublishes all records, meaning they must be manually published again after restoration.
 //
-// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) Delete(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "invalid seminar id", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: invalid seminar ID: %w", ErrInvalidArgument, err)
 	}
 	return s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txSeminarRepo := s.SeminarRepo.WithTx(tx)
@@ -888,28 +940,28 @@ func (s *service) Delete(ctx context.Context, id string) error {
 		// Check if seminar exists
 		if _, err := txSeminarRepo.GetWithUnpublished(ctx, id); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{Msg: "Seminar not found", Err: err, Code: http.StatusNotFound}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{Msg: "Failed to get seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to get seminar: %w", err)
 		}
 
 		// Unpublish all instances
 		if _, err := txSeminarRepo.SetInStock(ctx, id, false); err != nil {
-			return &Error{Msg: "failed to unpublish seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to unpublish seminar: %w", err)
 		}
 		ra, err := txProductRepo.SetInStockByDetailsID(ctx, id, false)
 		if err != nil {
-			return &Error{Msg: "failed to unpublish seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to unpublish seminar products: %w", err)
 		} else if ra != 5 {
-			return &Error{Msg: "failed to unpublish all seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to unpublish all 5 seminar products, only %d were updated", ra)
 		}
 
 		// Delete all instances
 		if _, err = txSeminarRepo.Delete(ctx, id); err != nil {
-			return &Error{Msg: "failed to delete seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to delete seminar: %w", err)
 		}
 		if _, err = txProductRepo.DeleteByDetailsID(ctx, id); err != nil {
-			return &Error{Msg: "failed to delete seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to delete seminar products: %w", err)
 		}
 		return nil
 	})
@@ -917,11 +969,11 @@ func (s *service) Delete(ctx context.Context, id string) error {
 
 // DeletePermanent performs a complete delete of a seminar and its related product records.
 //
-// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) DeletePermanent(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "invalid seminar id", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: invalid seminar ID: %w", ErrInvalidArgument, err)
 	}
 	return s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txSeminarRepo := s.SeminarRepo.WithTx(tx)
@@ -929,16 +981,16 @@ func (s *service) DeletePermanent(ctx context.Context, id string) error {
 
 		ra, err := txSeminarRepo.DeletePermanent(ctx, id)
 		if err != nil {
-			return &Error{Msg: "failed to delete seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to delete seminar: %w", err)
 		} else if ra == 0 {
-			return &Error{Msg: "seminar not found", Err: err, Code: http.StatusNotFound}
+			return ErrNotFound
 		}
 
 		ra, err = txProductRepo.DeletePermanentByDetailsID(ctx, id)
 		if err != nil {
-			return &Error{Msg: "failed to delete seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to delete seminar products: %w", err)
 		} else if ra != 5 {
-			return &Error{Msg: "failed to delete all seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to delete all 5 seminar products, only %d were updated", ra)
 		}
 		return nil
 	})
@@ -948,26 +1000,26 @@ func (s *service) DeletePermanent(ctx context.Context, id string) error {
 // Seminar and its related product records are not being published. This should be
 // done manually.
 //
-// Returns an error if the ID is invalid (http.StatusBadRequest), the records are not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
+// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
+// or a database/internal error occurs.
 func (s *service) Restore(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "invalid seminar id", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: invalid seminar ID: %w", ErrInvalidArgument, err)
 	}
 	return s.SeminarRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txSeminarRepo := s.SeminarRepo.WithTx(tx)
 		txProductRepo := s.ProductRepo.WithTx(tx)
 		ra, err := txSeminarRepo.Restore(ctx, id)
 		if err != nil {
-			return &Error{Msg: "failed to delete seminar", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to restore seminar: %w", err)
 		} else if ra == 0 {
-			return &Error{Msg: "seminar not found", Err: err, Code: http.StatusNotFound}
+			return ErrNotFound
 		}
 		ra, err = txProductRepo.RestoreByDetailsID(ctx, id)
 		if err != nil {
-			return &Error{Msg: "failed to delete seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to restore seminar products: %w", err)
 		} else if ra != 5 {
-			return &Error{Msg: "failed to delete all seminar products", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to restore all 5 seminar products, only %d were updated", ra)
 		}
 		return nil
 	})

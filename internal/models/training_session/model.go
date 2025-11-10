@@ -26,13 +26,14 @@ import (
 )
 
 type TrainingSession struct {
-	ID        string         `gorm:"primaryKey;size:36" json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at"`
-	Tags      []string       `gorm:"type:varchar(128)[]" json:"tags"`
-	Images    []image.Image  `gorm:"polymorphic:Owner;" json:"images"`
-	Name      string         `gorm:"type:varchar(255)" json:"name"`
+	ID                  string         `gorm:"primaryKey;size:36" json:"id"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
+	DeletedAt           gorm.DeletedAt `json:"deleted_at"`
+	Tags                []string       `gorm:"type:varchar(128)[]" json:"tags"`
+	UploadedImageAmount int            `json:"uploaded_image_amount"`
+	Images              []image.Image  `gorm:"polymorphic:Owner;" json:"images"`
+	Name                string         `gorm:"type:varchar(255)" json:"name"`
 	// For concise, limited text. Brief description
 	ShortDescription string `gorm:"type:varchar(255)" json:"short_description"`
 	// For large text\Markdown content. Detailed description
@@ -44,4 +45,12 @@ type TrainingSession struct {
 	InStock         bool   `json:"in_stock"`
 	DurationMinutes int    `json:"duration_minutes"`
 	Format          string `gorm:"size:50" json:"format,omitempty"`
+}
+
+func (ts TrainingSession) GetUploadedImageAmount() int {
+	return ts.UploadedImageAmount
+}
+
+func (ts TrainingSession) SetUploadedImageAmount(amount int) {
+	ts.UploadedImageAmount = amount
 }

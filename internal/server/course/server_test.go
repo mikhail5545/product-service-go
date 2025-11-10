@@ -19,9 +19,9 @@ package course
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
-	"net/http"
 	"testing"
 
 	"github.com/google/uuid"
@@ -87,7 +87,7 @@ func TestServer_Get(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Arrange
 		expectedDetails := &coursemodel.CourseDetails{
-			Course: coursemodel.Course{
+			Course: &coursemodel.Course{
 				ID:   courseID,
 				Name: "Course name",
 			},
@@ -110,11 +110,7 @@ func TestServer_Get(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Get(gomock.Any(), courseID).Return(nil, serviceErr)
+		mockService.EXPECT().Get(gomock.Any(), courseID).Return(nil, courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.Get(context.Background(), &coursepb.GetRequest{Id: courseID})
@@ -131,11 +127,7 @@ func TestServer_Get(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Get(gomock.Any(), invalidID).Return(nil, serviceErr)
+		mockService.EXPECT().Get(gomock.Any(), invalidID).Return(nil, courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Get(context.Background(), &coursepb.GetRequest{Id: invalidID})
@@ -151,11 +143,8 @@ func TestServer_Get(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Get(gomock.Any(), courseID).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().Get(gomock.Any(), courseID).Return(nil, svcErr)
 
 		// Act
 		res, err := client.Get(context.Background(), &coursepb.GetRequest{Id: courseID})
@@ -180,7 +169,7 @@ func TestServer_GetWithDeleted(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Arrange
 		expectedDetails := &coursemodel.CourseDetails{
-			Course: coursemodel.Course{
+			Course: &coursemodel.Course{
 				ID:   courseID,
 				Name: "Course name",
 			},
@@ -203,11 +192,7 @@ func TestServer_GetWithDeleted(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), courseID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), courseID).Return(nil, courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.GetWithDeleted(context.Background(), &coursepb.GetWithDeletedRequest{Id: courseID})
@@ -224,11 +209,7 @@ func TestServer_GetWithDeleted(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), invalidID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), invalidID).Return(nil, courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.GetWithDeleted(context.Background(), &coursepb.GetWithDeletedRequest{Id: invalidID})
@@ -242,13 +223,10 @@ func TestServer_GetWithDeleted(t *testing.T) {
 		assert.Contains(t, st.Message(), "Invalid course ID")
 	})
 
-	t.Run("internal server error", func(t *testing.T) {
+	t.Run("internal service error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), courseID).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), courseID).Return(nil, svcErr)
 
 		// Act
 		res, err := client.GetWithDeleted(context.Background(), &coursepb.GetWithDeletedRequest{Id: courseID})
@@ -273,7 +251,7 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Arrange
 		expectedDetails := &coursemodel.CourseDetails{
-			Course: coursemodel.Course{
+			Course: &coursemodel.Course{
 				ID:   courseID,
 				Name: "Course name",
 			},
@@ -296,11 +274,7 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(nil, courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.GetWithUnpublished(context.Background(), &coursepb.GetWithUnpublishedRequest{Id: courseID})
@@ -317,11 +291,7 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), invalidID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), invalidID).Return(nil, courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.GetWithUnpublished(context.Background(), &coursepb.GetWithUnpublishedRequest{Id: invalidID})
@@ -337,11 +307,8 @@ func TestServer_GetWithUnpublished(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(nil, svcErr)
 
 		// Act
 		res, err := client.GetWithUnpublished(context.Background(), &coursepb.GetWithUnpublishedRequest{Id: courseID})
@@ -371,7 +338,7 @@ func TestServer_List(t *testing.T) {
 		// Arrange
 		expectedDetails := []coursemodel.CourseDetails{
 			{
-				Course: coursemodel.Course{
+				Course: &coursemodel.Course{
 					ID:   courseID_1,
 					Name: "Course 1 name",
 				},
@@ -379,7 +346,7 @@ func TestServer_List(t *testing.T) {
 				ProductID: productID_1,
 			},
 			{
-				Course: coursemodel.Course{
+				Course: &coursemodel.Course{
 					ID:   courseID_2,
 					Name: "Course 2 name",
 				},
@@ -408,11 +375,8 @@ func TestServer_List(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Failed to get courses",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().List(gomock.Any(), limit, offset).Return(nil, int64(0), serviceErr).Times(1)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().List(gomock.Any(), limit, offset).Return(nil, int64(0), svcErr).Times(1)
 
 		// Act
 		res, err := client.List(context.Background(), &coursepb.ListRequest{Limit: int32(limit), Offset: int32(offset)})
@@ -442,7 +406,7 @@ func TestServer_ListDeleted(t *testing.T) {
 		// Arrange
 		expectedDetails := []coursemodel.CourseDetails{
 			{
-				Course: coursemodel.Course{
+				Course: &coursemodel.Course{
 					ID:   courseID_1,
 					Name: "Course 1 name",
 				},
@@ -450,7 +414,7 @@ func TestServer_ListDeleted(t *testing.T) {
 				ProductID: productID_1,
 			},
 			{
-				Course: coursemodel.Course{
+				Course: &coursemodel.Course{
 					ID:   courseID_2,
 					Name: "Course 2 name",
 				},
@@ -479,11 +443,8 @@ func TestServer_ListDeleted(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Failed to get courses",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().ListDeleted(gomock.Any(), limit, offset).Return(nil, int64(0), serviceErr).Times(1)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().ListDeleted(gomock.Any(), limit, offset).Return(nil, int64(0), svcErr).Times(1)
 
 		// Act
 		res, err := client.ListDeleted(context.Background(), &coursepb.ListDeletedRequest{Limit: int32(limit), Offset: int32(offset)})
@@ -513,7 +474,7 @@ func TestServer_ListUnpublished(t *testing.T) {
 		// Arrange
 		expectedDetails := []coursemodel.CourseDetails{
 			{
-				Course: coursemodel.Course{
+				Course: &coursemodel.Course{
 					ID:   courseID_1,
 					Name: "Course 1 name",
 				},
@@ -521,7 +482,7 @@ func TestServer_ListUnpublished(t *testing.T) {
 				ProductID: productID_1,
 			},
 			{
-				Course: coursemodel.Course{
+				Course: &coursemodel.Course{
 					ID:   courseID_2,
 					Name: "Course 2 name",
 				},
@@ -550,11 +511,8 @@ func TestServer_ListUnpublished(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Failed to get courses",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().ListUnpublished(gomock.Any(), limit, offset).Return(nil, int64(0), serviceErr).Times(1)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().ListUnpublished(gomock.Any(), limit, offset).Return(nil, int64(0), svcErr).Times(1)
 
 		// Act
 		res, err := client.ListUnpublished(context.Background(), &coursepb.ListUnpublishedRequest{Limit: int32(limit), Offset: int32(offset)})
@@ -604,11 +562,8 @@ func TestServer_Create(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Failed to create course",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, svcErr)
 
 		// Act
 		res, err := client.Create(context.Background(), &coursepb.CreateRequest{
@@ -650,11 +605,7 @@ func TestServer_Publish(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Publish(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Publish(gomock.Any(), invalidID).Return(courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Publish(context.Background(), &coursepb.PublishRequest{Id: invalidID})
@@ -670,11 +621,7 @@ func TestServer_Publish(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Publish(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Publish(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.Publish(context.Background(), &coursepb.PublishRequest{Id: courseID})
@@ -710,11 +657,7 @@ func TestServer_Unpublish(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Unpublish(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Unpublish(gomock.Any(), invalidID).Return(courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Unpublish(context.Background(), &coursepb.UnpublishRequest{Id: invalidID})
@@ -730,11 +673,7 @@ func TestServer_Unpublish(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Unpublish(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Unpublish(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.Unpublish(context.Background(), &coursepb.UnpublishRequest{Id: courseID})
@@ -787,11 +726,7 @@ func TestServer_Update(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid request payload",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr).Times(1)
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, courseservice.ErrInvalidArgument).Times(1)
 
 		// Act
 		res, err := client.Update(context.Background(), &coursepb.UpdateRequest{
@@ -812,11 +747,7 @@ func TestServer_Update(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.Update(context.Background(), &coursepb.UpdateRequest{
@@ -837,11 +768,8 @@ func TestServer_Update(t *testing.T) {
 
 	t.Run("internal server error", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Database error",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		svcErr := errors.New("unexpected error")
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, svcErr)
 
 		// Act
 		res, err := client.Update(context.Background(), &coursepb.UpdateRequest{
@@ -882,11 +810,7 @@ func TestServer_Delete(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Delete(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Delete(gomock.Any(), invalidID).Return(courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Delete(context.Background(), &coursepb.DeleteRequest{Id: invalidID})
@@ -902,11 +826,7 @@ func TestServer_Delete(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Delete(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Delete(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.Delete(context.Background(), &coursepb.DeleteRequest{Id: courseID})
@@ -942,11 +862,7 @@ func TestServer_DeletePermanent(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().DeletePermanent(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().DeletePermanent(gomock.Any(), invalidID).Return(courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.DeletePermanent(context.Background(), &coursepb.DeletePermanentRequest{Id: invalidID})
@@ -962,11 +878,7 @@ func TestServer_DeletePermanent(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().DeletePermanent(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().DeletePermanent(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.DeletePermanent(context.Background(), &coursepb.DeletePermanentRequest{Id: courseID})
@@ -1002,11 +914,7 @@ func TestServer_Restore(t *testing.T) {
 	t.Run("invalid argument", func(t *testing.T) {
 		// Arrange
 		invalidID := "invalid-uuid"
-		serviceErr := &courseservice.Error{
-			Msg:  "Invalid course ID",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Restore(gomock.Any(), invalidID).Return(serviceErr)
+		mockService.EXPECT().Restore(gomock.Any(), invalidID).Return(courseservice.ErrInvalidArgument)
 
 		// Act
 		res, err := client.Restore(context.Background(), &coursepb.RestoreRequest{Id: invalidID})
@@ -1022,11 +930,7 @@ func TestServer_Restore(t *testing.T) {
 
 	t.Run("not found", func(t *testing.T) {
 		// Arrange
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Restore(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Restore(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		res, err := client.Restore(context.Background(), &coursepb.RestoreRequest{Id: courseID})

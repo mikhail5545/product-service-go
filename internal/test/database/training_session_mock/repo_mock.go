@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	trainingsession "github.com/mikhail5545/product-service-go/internal/database/training_session"
+	image "github.com/mikhail5545/product-service-go/internal/models/image"
 	trainingsession0 "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	gomock "go.uber.org/mock/gomock"
 	gorm "gorm.io/gorm"
@@ -41,6 +42,49 @@ func NewMockRepository(ctrl *gomock.Controller) *MockRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
+}
+
+// AddImage mocks base method.
+func (m *MockRepository) AddImage(ctx context.Context, ts *trainingsession0.TrainingSession, arg2 *image.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddImage", ctx, ts, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddImage indicates an expected call of AddImage.
+func (mr *MockRepositoryMockRecorder) AddImage(ctx, ts, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddImage", reflect.TypeOf((*MockRepository)(nil).AddImage), ctx, ts, arg2)
+}
+
+// AddImageBatch mocks base method.
+func (m *MockRepository) AddImageBatch(ctx context.Context, ts []trainingsession0.TrainingSession, arg2 *image.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddImageBatch", ctx, ts, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddImageBatch indicates an expected call of AddImageBatch.
+func (mr *MockRepositoryMockRecorder) AddImageBatch(ctx, ts, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddImageBatch", reflect.TypeOf((*MockRepository)(nil).AddImageBatch), ctx, ts, arg2)
+}
+
+// BatchUpdate mocks base method.
+func (m *MockRepository) BatchUpdate(ctx context.Context, updates []trainingsession0.TrainingSession, opt uint) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchUpdate", ctx, updates, opt)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BatchUpdate indicates an expected call of BatchUpdate.
+func (mr *MockRepositoryMockRecorder) BatchUpdate(ctx, updates, opt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchUpdate", reflect.TypeOf((*MockRepository)(nil).BatchUpdate), ctx, updates, opt)
 }
 
 // Count mocks base method.
@@ -116,6 +160,21 @@ func (mr *MockRepositoryMockRecorder) DB() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DB", reflect.TypeOf((*MockRepository)(nil).DB))
 }
 
+// DecrementImageCount mocks base method.
+func (m *MockRepository) DecrementImageCount(ctx context.Context, tsIDs []string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DecrementImageCount", ctx, tsIDs)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DecrementImageCount indicates an expected call of DecrementImageCount.
+func (mr *MockRepositoryMockRecorder) DecrementImageCount(ctx, tsIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecrementImageCount", reflect.TypeOf((*MockRepository)(nil).DecrementImageCount), ctx, tsIDs)
+}
+
 // Delete mocks base method.
 func (m *MockRepository) Delete(ctx context.Context, id string) (int64, error) {
 	m.ctrl.T.Helper()
@@ -131,6 +190,34 @@ func (mr *MockRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), ctx, id)
 }
 
+// DeleteImage mocks base method.
+func (m *MockRepository) DeleteImage(ctx context.Context, ts *trainingsession0.TrainingSession, mediaSvcID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteImage", ctx, ts, mediaSvcID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteImage indicates an expected call of DeleteImage.
+func (mr *MockRepositoryMockRecorder) DeleteImage(ctx, ts, mediaSvcID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockRepository)(nil).DeleteImage), ctx, ts, mediaSvcID)
+}
+
+// DeleteImageBatch mocks base method.
+func (m *MockRepository) DeleteImageBatch(ctx context.Context, ts []trainingsession0.TrainingSession, arg2 *image.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteImageBatch", ctx, ts, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteImageBatch indicates an expected call of DeleteImageBatch.
+func (mr *MockRepositoryMockRecorder) DeleteImageBatch(ctx, ts, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImageBatch", reflect.TypeOf((*MockRepository)(nil).DeleteImageBatch), ctx, ts, arg2)
+}
+
 // DeletePermanent mocks base method.
 func (m *MockRepository) DeletePermanent(ctx context.Context, id string) (int64, error) {
 	m.ctrl.T.Helper()
@@ -144,6 +231,21 @@ func (m *MockRepository) DeletePermanent(ctx context.Context, id string) (int64,
 func (mr *MockRepositoryMockRecorder) DeletePermanent(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePermanent", reflect.TypeOf((*MockRepository)(nil).DeletePermanent), ctx, id)
+}
+
+// FindOwnerIDsByImageID mocks base method.
+func (m *MockRepository) FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindOwnerIDsByImageID", ctx, mediaSvcID, ownerIDs)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindOwnerIDsByImageID indicates an expected call of FindOwnerIDsByImageID.
+func (mr *MockRepositoryMockRecorder) FindOwnerIDsByImageID(ctx, mediaSvcID, ownerIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOwnerIDsByImageID", reflect.TypeOf((*MockRepository)(nil).FindOwnerIDsByImageID), ctx, mediaSvcID, ownerIDs)
 }
 
 // Get mocks base method.
@@ -234,6 +336,26 @@ func (m *MockRepository) ListUnpublished(ctx context.Context, limit, offset int)
 func (mr *MockRepositoryMockRecorder) ListUnpublished(ctx, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUnpublished", reflect.TypeOf((*MockRepository)(nil).ListUnpublished), ctx, limit, offset)
+}
+
+// ListWithUnpublishedByIDs mocks base method.
+func (m *MockRepository) ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]trainingsession0.TrainingSession, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range ids {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListWithUnpublishedByIDs", varargs...)
+	ret0, _ := ret[0].([]trainingsession0.TrainingSession)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListWithUnpublishedByIDs indicates an expected call of ListWithUnpublishedByIDs.
+func (mr *MockRepositoryMockRecorder) ListWithUnpublishedByIDs(ctx any, ids ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, ids...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListWithUnpublishedByIDs", reflect.TypeOf((*MockRepository)(nil).ListWithUnpublishedByIDs), varargs...)
 }
 
 // Restore mocks base method.

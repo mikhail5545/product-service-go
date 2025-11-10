@@ -42,7 +42,16 @@ type PhysicalGood struct {
 	//
 	// 	- InStock = true -> available in the catalogue
 	// 	- InStock = false -> not available in the catalogue, archived
-	InStock          bool          `json:"in_stock"`
-	Images           []image.Image `gorm:"polymorphic:Owner;" json:"images"`
-	ShippingRequired bool          `json:"shipping_required"`
+	InStock             bool          `json:"in_stock"`
+	UploadedImageAmount int           `json:"uploaded_image_amount"`
+	Images              []image.Image `gorm:"polymorphic:Owner;" json:"images"`
+	ShippingRequired    bool          `json:"shipping_required"`
+}
+
+func (g PhysicalGood) GetUploadedImageAmount() int {
+	return g.UploadedImageAmount
+}
+
+func (g PhysicalGood) SetUploadedImageAmount(amount int) {
+	g.UploadedImageAmount = amount
 }

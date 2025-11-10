@@ -20,15 +20,19 @@ package trainingsession
 import (
 	"context"
 	"errors"
-	"net/http"
 	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
 	trainingsession "github.com/mikhail5545/product-service-go/internal/models/training_session"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"
 	trainingsessionmock "github.com/mikhail5545/product-service-go/internal/test/database/training_session_mock"
+
+	imageservicemock "github.com/mikhail5545/product-service-go/internal/test/services/image_mock"
+	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -40,8 +44,9 @@ func TestService_Get(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	tsID := uuid.New().String()
 	productID := uuid.New().String()
@@ -76,10 +81,7 @@ func TestService_Get(t *testing.T) {
 		details, err := testService.Get(context.Background(), tsID)
 
 		// Arrange
-		if err != nil {
-			t.Errorf("Get() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(details, expectedDetails) {
 			t.Errorf("Get() got %v, want %v", details, expectedDetails)
 		}
@@ -93,18 +95,8 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -115,18 +107,8 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -138,18 +120,7 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -159,8 +130,9 @@ func TestService_GetWithDeleted(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	tsID := uuid.New().String()
 	productID := uuid.New().String()
@@ -195,10 +167,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 		details, err := testService.GetWithDeleted(context.Background(), tsID)
 
 		// Arrange
-		if err != nil {
-			t.Errorf("GetWithDeleted() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(details, expectedDetails) {
 			t.Errorf("GetWithDeleted() got %v, want %v", details, expectedDetails)
 		}
@@ -212,18 +181,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetWithDeleted() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -234,18 +193,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetWithDeleted() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -257,18 +206,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetWithDeleted() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -278,8 +216,9 @@ func TestService_GetWithUnpublished(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	tsID := uuid.New().String()
 	productID := uuid.New().String()
@@ -314,10 +253,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		details, err := testService.GetWithUnpublished(context.Background(), tsID)
 
 		// Arrange
-		if err != nil {
-			t.Errorf("GetWithUnpublished() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(details, expectedDetails) {
 			t.Errorf("GetWithUnpublished() got %v, want %v", details, expectedDetails)
 		}
@@ -331,18 +267,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -353,18 +279,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -376,18 +292,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -397,8 +302,9 @@ func TestService_List(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	tsID_1 := uuid.New().String()
 	tsID_2 := uuid.New().String()
@@ -461,17 +367,9 @@ func TestService_List(t *testing.T) {
 		details, total, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("List() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("List() got %d, want %d", total, 2)
-		}
-		// The order from SelectByDetailsIDs is not guaranteed, so we need to compare them in a way that ignores order.
-		if len(details) != len(expectedDetails) {
-			t.Errorf("List() got %d items, want %d", len(details), len(expectedDetails))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(expectedDetails), len(details))
 	})
 
 	t.Run("success empty list", func(t *testing.T) {
@@ -485,16 +383,9 @@ func TestService_List(t *testing.T) {
 		details, total, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("List() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 0 {
-			t.Errorf("List() got total %d, want 0", total)
-		}
-		if len(details) != 0 {
-			t.Errorf("List() got %d items, want 0", len(details))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), total)
+		assert.Len(t, details, 0)
 	})
 
 	t.Run("db error on count", func(t *testing.T) {
@@ -509,14 +400,7 @@ func TestService_List(t *testing.T) {
 		_, _, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("List() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) || customErr.Code != http.StatusInternalServerError {
-			t.Errorf("List() expected an internal server error, got %v", err)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("db error on product select", func(t *testing.T) {
@@ -530,14 +414,7 @@ func TestService_List(t *testing.T) {
 		_, _, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("List() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) || customErr.Code != http.StatusInternalServerError {
-			t.Errorf("List() expected an internal server error, got %v", err)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("db error on list", func(t *testing.T) {
@@ -550,18 +427,7 @@ func TestService_List(t *testing.T) {
 		_, _, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("List() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("List() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("List() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -571,8 +437,9 @@ func TestService_ListDeleted(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	tsID_1 := uuid.New().String()
 	tsID_2 := uuid.New().String()
@@ -635,17 +502,9 @@ func TestService_ListDeleted(t *testing.T) {
 		details, total, err := testService.ListDeleted(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListDeleted() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("ListDeleted() got %d, want %d", total, 2)
-		}
-		// The order from SelectByDetailsIDs is not guaranteed, so we need to compare them in a way that ignores order.
-		if len(details) != len(expectedDetails) {
-			t.Errorf("ListDeleted() got %d items, want %d", len(details), len(expectedDetails))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(expectedDetails), len(details))
 	})
 
 	t.Run("success empty list", func(t *testing.T) {
@@ -659,16 +518,9 @@ func TestService_ListDeleted(t *testing.T) {
 		details, total, err := testService.ListDeleted(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListDeleted() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 0 {
-			t.Errorf("ListDeleted() got total %d, want 0", total)
-		}
-		if len(details) != 0 {
-			t.Errorf("ListDeleted() got %d items, want 0", len(details))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), total)
+		assert.Len(t, details, 0)
 	})
 
 	t.Run("db error on count", func(t *testing.T) {
@@ -682,14 +534,7 @@ func TestService_ListDeleted(t *testing.T) {
 		_, _, err := testService.ListDeleted(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) || customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListDeleted() expected an internal server error, got %v", err)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("db error on list", func(t *testing.T) {
@@ -702,18 +547,7 @@ func TestService_ListDeleted(t *testing.T) {
 		_, _, err := testService.ListDeleted(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListDeleted() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -723,8 +557,9 @@ func TestService_ListUnpublished(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	tsID_1 := uuid.New().String()
 	tsID_2 := uuid.New().String()
@@ -787,17 +622,9 @@ func TestService_ListUnpublished(t *testing.T) {
 		details, total, err := testService.ListUnpublished(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListUnpublished() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("ListUnpublished() got %d, want %d", total, 2)
-		}
-		// The order from SelectByDetailsIDs is not guaranteed, so we need to compare them in a way that ignores order.
-		if len(details) != len(expectedDetails) {
-			t.Errorf("ListUnpublished() got %d items, want %d", len(details), len(expectedDetails))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(expectedDetails), len(details))
 	})
 
 	t.Run("success empty list", func(t *testing.T) {
@@ -811,16 +638,9 @@ func TestService_ListUnpublished(t *testing.T) {
 		details, total, err := testService.ListUnpublished(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListUnpublished() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 0 {
-			t.Errorf("ListUnpublished() got total %d, want 0", total)
-		}
-		if len(details) != 0 {
-			t.Errorf("ListUnpublished() got %d items, want 0", len(details))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(0), total)
+		assert.Len(t, details, 0)
 	})
 
 	t.Run("db error on count", func(t *testing.T) {
@@ -834,14 +654,7 @@ func TestService_ListUnpublished(t *testing.T) {
 		_, _, err := testService.ListUnpublished(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) || customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListUnpublished() expected an internal server error, got %v", err)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("db error on list", func(t *testing.T) {
@@ -854,18 +667,7 @@ func TestService_ListUnpublished(t *testing.T) {
 		_, _, err := testService.ListUnpublished(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListUnpublished() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -875,8 +677,9 @@ func TestService_Create(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -921,46 +724,25 @@ func TestService_Create(t *testing.T) {
 		resp, err := testService.Create(context.Background(), createReq)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Create() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if _, err := uuid.Parse(createdTs.ID); err != nil {
 			t.Errorf("Expected training_session.ID to be a valid UUID, got %s", createdTs.ID)
 		}
+		assert.Equal(t, createReq.Name, createdTs.Name)
+		assert.Equal(t, createReq.ShortDescription, createdTs.ShortDescription)
+		assert.Equal(t, createReq.Format, createdTs.Format)
+		assert.Equal(t, createReq.DurationMinutes, createdTs.DurationMinutes)
+		assert.False(t, createdTs.InStock)
+
 		if _, err := uuid.Parse(createdProduct.ID); err != nil {
 			t.Errorf("Expected product.ID to be a valid UUID, got %s", createdProduct.ID)
 		}
-		if createdTs.Name != createReq.Name {
-			t.Errorf("training_session.Name = %s, want %s", createdTs.Name, createReq.Name)
-		}
-		if createdTs.ShortDescription != createReq.ShortDescription {
-			t.Errorf("training_session.ShortDescription = %s, want %s", createdTs.ShortDescription, createReq.ShortDescription)
-		}
-		if createdTs.Format != createReq.Format {
-			t.Errorf("training_session.Format = %s, want %s", createdTs.Format, createReq.Format)
-		}
-		if createdTs.DurationMinutes != createReq.DurationMinutes {
-			t.Errorf("training_session.DurationMinutes = %d, want %d", createdTs.DurationMinutes, createReq.DurationMinutes)
-		}
-		if createdProduct.Price != createReq.Price {
-			t.Errorf("product.Price = %f, want %f", createdProduct.Price, createReq.Price)
-		}
-		if createdProduct.DetailsID != createdTs.ID {
-			t.Errorf("product.DetailsID = %s, want %s", createdProduct.DetailsID, createdTs.ID)
-		}
-		if createdProduct.DetailsType != "training_session" {
-			t.Errorf("product.DetailsType = %s, want %s", createdProduct.DetailsType, "training_session")
-		}
-		if createdProduct.InStock || createdTs.InStock {
-			t.Errorf("Expected both training session and product to be unpublished")
-		}
-		if resp.ID != createdTs.ID {
-			t.Errorf("response.ID = %s, want %s", resp.ID, createdTs.ID)
-		}
-		if resp.ProductID != createdProduct.ID {
-			t.Errorf("response.ProductID = %s, want %s", resp.ProductID, createdProduct.ID)
-		}
+		assert.Equal(t, createReq.Price, createdProduct.Price)
+		assert.Equal(t, createdTs.ID, createdProduct.DetailsID)
+		assert.Equal(t, "training_session", createdProduct.DetailsType)
+		assert.False(t, createdProduct.InStock)
+		assert.Equal(t, createdTs.ID, resp.ID)
+		assert.Equal(t, createdProduct.ID, resp.ProductID)
 	})
 
 	t.Run("invalid request payload", func(t *testing.T) {
@@ -985,16 +767,8 @@ func TestService_Create(t *testing.T) {
 		_, err := testService.Create(context.Background(), invalidReq)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Create() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1013,16 +787,7 @@ func TestService_Create(t *testing.T) {
 		_, err := testService.Create(context.Background(), createReq)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Create() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusInternalServerError {
-			t.Errorf("expected status code %d, but got %d", http.StatusInternalServerError, serviceErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1032,8 +797,9 @@ func TestService_Publish(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1063,10 +829,7 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), tsID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Publish() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1077,16 +840,8 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Publish() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1104,16 +859,8 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Publish() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1132,16 +879,7 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Publish() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusInternalServerError {
-			t.Errorf("expected status code %d, but got %d", http.StatusInternalServerError, serviceErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1151,8 +889,9 @@ func TestService_Unpublish(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1182,10 +921,7 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), tsID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Unpublish() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1196,16 +932,8 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Unpublish() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1223,16 +951,8 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Unpublish() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1251,16 +971,7 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Unpublish() with invalid payload expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusInternalServerError {
-			t.Errorf("expected status code %d, but got %d", http.StatusInternalServerError, serviceErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1270,8 +981,9 @@ func TestService_Update(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1340,10 +1052,7 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err != nil {
-			t.Errorf("Update() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		// Assert training session
 		tsUpdatesFromResp, ok := updates["training_session"].(map[string]any)
 		if !ok {
@@ -1399,10 +1108,7 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err != nil {
-			t.Errorf("Update() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid request payload", func(t *testing.T) {
@@ -1426,16 +1132,8 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Fatal("Update() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1459,16 +1157,8 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Fatal("Update() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1495,16 +1185,299 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Fatal("Update() expected an error, but got nil")
+		assert.Error(t, err)
+	})
+}
+
+func TestService_AddImage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+
+	tsID := uuid.New().String()
+
+	addReq := &imagemodel.AddRequest{
+		URL:            "https://google.com",
+		SecureURL:      "https://google.com",
+		PublicID:       "public/id",
+		MediaServiceID: uuid.New().String(),
+		OwnerID:        tsID,
+	}
+
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(nil)
+
+		// Act
+		err := testService.AddImage(context.Background(), addReq)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid request payload", func(t *testing.T) {
+		// Arrange
+		invalidReq := &imagemodel.AddRequest{
+			URL:     "not a url",
+			OwnerID: "invalid-UUID",
 		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
+		mockImageSvc.EXPECT().AddImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
+
+		// Act
+		err := testService.AddImage(context.Background(), invalidReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("training session not found", func(t *testing.T) {
+		// Arrange
+		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
+
+		// Act
+		err := testService.AddImage(context.Background(), addReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
+	})
+
+	t.Run("image limit", func(t *testing.T) {
+		// Arrange
+		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrImageLimitExceeded)
+
+		// Act
+		err := testService.AddImage(context.Background(), addReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrImageLimitExceeded)
+	})
+}
+
+func TestSesrvice_DeleteImage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+
+	imgID := uuid.New().String()
+
+	tsID := uuid.New().String()
+
+	deleteReq := &imagemodel.DeleteRequest{
+		MediaServiceID: imgID,
+		OwnerID:        tsID,
+	}
+
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(nil)
+
+		// Act
+		err := testService.DeleteImage(context.Background(), deleteReq)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid rquest payload", func(t *testing.T) {
+		// Arrange
+		invalidReq := &imagemodel.DeleteRequest{
+			MediaServiceID: "invalid-UUID",
+			OwnerID:        "invalid-UUID",
 		}
-		if serviceErr.Code != http.StatusInternalServerError {
-			t.Errorf("expected status code %d, but got %d", http.StatusInternalServerError, serviceErr.Code)
-		}
+		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
+
+		// Act
+		err := testService.DeleteImage(context.Background(), invalidReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("training session not found", func(t *testing.T) {
+		// Arrange
+		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
+
+		// Act
+		err := testService.DeleteImage(context.Background(), deleteReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
+	})
+}
+
+func TestService_AddImageBatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+
+	// Use an in-memory SQLite DB for testing transactions.
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+		// This prevents GORM from starting a real DB transaction,
+		// allowing the mock repositories to work as expected.
+		SkipDefaultTransaction: true,
+	})
+	if err != nil {
+		t.Fatalf("failed to connect database: %v", err)
+	}
+
+	tsID_1 := uuid.New().String()
+	tsID_2 := uuid.New().String()
+
+	addBatchRequest := &imagemodel.AddBatchRequest{
+		URL:            "some-url",
+		SecureURL:      "some-secure-url",
+		PublicID:       "some-public-id",
+		MediaServiceID: uuid.New().String(),
+		OwnerIDs:       []string{tsID_1, tsID_2},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+
+		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
+
+		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(2, nil)
+
+		// Act
+		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid request payload", func(t *testing.T) {
+		// Arrange
+		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+
+		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
+
+		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
+
+		// Act
+		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("training sessions not found", func(t *testing.T) {
+		// Arrange
+		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+
+		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
+
+		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
+
+		// Act
+		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
+	})
+}
+
+func TestService_DeleteImageBatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+
+	// Use an in-memory SQLite DB for testing transactions.
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+		// This prevents GORM from starting a real DB transaction,
+		// allowing the mock repositories to work as expected.
+		SkipDefaultTransaction: true,
+	})
+	if err != nil {
+		t.Fatalf("failed to connect database: %v", err)
+	}
+
+	tsID_1 := uuid.New().String()
+	tsID_2 := uuid.New().String()
+
+	deleteBatchRequest := &imagemodel.DeleteBatchRequst{
+		MediaServiceID: uuid.New().String(),
+		OwnerIDs:       []string{tsID_1, tsID_2},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+
+		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
+
+		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(2, nil)
+
+		// Act
+		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid request payload", func(t *testing.T) {
+		// Arrange
+		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+
+		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
+
+		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
+
+		// Act
+		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("training sessions not found", func(t *testing.T) {
+		// Arrange
+		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
+
+		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
+
+		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
+
+		// Act
+		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
 	})
 }
 
@@ -1514,8 +1487,9 @@ func TestService_Delete(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1548,10 +1522,7 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), tsID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Delete() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1562,16 +1533,8 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Delete() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1589,16 +1552,8 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Delete() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("product not found", func(t *testing.T) {
@@ -1618,16 +1573,8 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Delete() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1646,19 +1593,7 @@ func TestService_Delete(t *testing.T) {
 		mockTxTrainingSessionRepo.EXPECT().Delete(gomock.Any(), tsID).Return(int64(0), dbErr)
 
 		// Act
-		err := testService.Delete(context.Background(), tsID)
-
-		// Assert
-		if err == nil {
-			t.Fatal("Delete() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusInternalServerError {
-			t.Errorf("expected status code %d, but got %d", http.StatusInternalServerError, serviceErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1668,8 +1603,9 @@ func TestService_DeletePermanent(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1699,10 +1635,7 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), tsID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("DeletePermanent() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1713,16 +1646,8 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("DeletePermanent() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1740,16 +1665,8 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("DeletePermanent() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("product not found", func(t *testing.T) {
@@ -1768,16 +1685,8 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("DeletePermanent() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1796,16 +1705,7 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("DeletePermanent() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusInternalServerError {
-			t.Errorf("expected status code %d, but got %d", http.StatusInternalServerError, serviceErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1815,8 +1715,9 @@ func TestService_Restore(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo)
+	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1846,10 +1747,7 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), tsID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Restore() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1860,16 +1758,8 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Restore() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, but got %d", http.StatusBadRequest, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1887,16 +1777,8 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Restore() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("product not found", func(t *testing.T) {
@@ -1915,16 +1797,8 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Restore() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusNotFound {
-			t.Errorf("expected status code %d, but got %d", http.StatusNotFound, serviceErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1943,15 +1817,6 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), tsID)
 
 		// Assert
-		if err == nil {
-			t.Fatal("Restore() expected an error, but got nil")
-		}
-		var serviceErr *Error
-		if !errors.As(err, &serviceErr) {
-			t.Fatalf("expected error of type *seminar.Error, but got %v", err)
-		}
-		if serviceErr.Code != http.StatusInternalServerError {
-			t.Errorf("expected status code %d, but got %d", http.StatusInternalServerError, serviceErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }

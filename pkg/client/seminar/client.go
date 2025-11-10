@@ -113,6 +113,37 @@ type Service interface {
 	// Returns a `NotFound` gRPC error if any of the records are not found.
 	// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 	Restore(ctx context.Context, req *seminarpb.RestoreRequest) (*seminarpb.RestoreResponse, error)
+	// AddImage calls [SeminarServiceServer.AddImage] method via client connection
+	// to add a new image to a seminar. It's called by media-service-go upon successful image upload.
+	// It validates the request, checks the image limit and appends the new information.
+	//
+	// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
+	// Returns `NotFound` gRPC error if the record is not found.
+	AddImage(ctx context.Context, req *seminarpb.AddImageRequest) (*seminarpb.AddImageResponse, error)
+	// DeleteImage calls [SeminarServiceServer.DeleteImage] method via client connection
+	// to delete an image from a seminar. It's called by media-service-go upon successful image deletion.
+	// The function validates the request and removes the image information from the seminar.
+	// This action is irreversable.
+	//
+	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+	// Returns `NotFound` gRPC error if any of records is not found.
+	DeleteImage(ctx context.Context, req *seminarpb.DeleteImageRequest) (*seminarpb.DeleteImageResponse, error)
+	// AddImageBatch calls [SeminarServiceServer.AddImageBatch] method via client connection
+	// to add an image for a batch of seminars. It's called by media-service-go
+	// upon successful image uplaod.
+	//
+	// Returns the number of affected seminars.
+	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+	// Returns `NotFound` gRPC error none of the seminars were found.
+	AddImageBatch(ctx context.Context, req *seminarpb.AddImageBatchRequest) (*seminarpb.AddImageBatchResponse, error)
+	// DeleteImageBatch calls [SeminarServiceServer.DeleteImageBatch] method via client connection
+	// to delete an image from a batch of seminars. It's called by media-service-go
+	// upon successful image deletion.
+	//
+	// Returns the number of affected seminars.
+	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+	// Returns `NotFound` gRPC error none of the seminars were found or the image was not found.
+	DeleteImageBatch(ctx context.Context, req *seminarpb.DeleteImageBatchRequest) (*seminarpb.DeleteImageBatchResponse, error)
 
 	// Close tears down connection to the client and all underlying connections.
 	Close() error
@@ -255,6 +286,49 @@ func (c *Client) DeletePermanent(ctx context.Context, req *seminarpb.DeletePerma
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (c *Client) Restore(ctx context.Context, req *seminarpb.RestoreRequest) (*seminarpb.RestoreResponse, error) {
 	return c.client.Restore(ctx, req)
+}
+
+// AddImage calls [SeminarServiceServer.AddImage] method via client connection
+// to add a new image to a seminar. It's called by media-service-go upon successful image upload.
+// It validates the request, checks the image limit and appends the new information.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
+// Returns `NotFound` gRPC error if the record is not found.
+func (c *Client) AddImage(ctx context.Context, req *seminarpb.AddImageRequest) (*seminarpb.AddImageResponse, error) {
+	return c.client.AddImage(ctx, req)
+}
+
+// DeleteImage calls [SeminarServiceServer.DeleteImage] method via client connection
+// to delete an image from a seminar. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the seminar.
+// This action is irreversable.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error if any of records is not found.
+func (c *Client) DeleteImage(ctx context.Context, req *seminarpb.DeleteImageRequest) (*seminarpb.DeleteImageResponse, error) {
+	return c.client.DeleteImage(ctx, req)
+}
+
+// AddImageBatch calls [SeminarServiceServer.AddImageBatch] method via client connection
+// to add an image for a batch of seminars. It's called by media-service-go
+// upon successful image uplaod.
+//
+// Returns the number of affected seminars.
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the seminars were found.
+func (c *Client) AddImageBatch(ctx context.Context, req *seminarpb.AddImageBatchRequest) (*seminarpb.AddImageBatchResponse, error) {
+	return c.client.AddImageBatch(ctx, req)
+}
+
+// DeleteImageBatch calls [SeminarServiceServer.DeleteImageBatch] method via client connection
+// to delete an image from a batch of seminars. It's called by media-service-go
+// upon successful image deletion.
+//
+// Returns the number of affected seminars.
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the seminars were found or the image was not found.
+func (c *Client) DeleteImageBatch(ctx context.Context, req *seminarpb.DeleteImageBatchRequest) (*seminarpb.DeleteImageBatchResponse, error) {
+	return c.client.DeleteImageBatch(ctx, req)
 }
 
 // Close tears down connection to the client and all underlying connections.

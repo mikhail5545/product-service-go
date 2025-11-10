@@ -41,8 +41,17 @@ type Course struct {
 	//
 	// 	- InStock = true -> available in the catalogue
 	// 	- InStock = false -> not available in the catalogue, archived
-	InStock        bool                     `json:"in_stock"`
-	AccessDuration int                      `json:"access_duration"`
-	Images         []image.Image            `gorm:"polymorphic:Owner;" json:"images"`
-	CourseParts    []*coursepart.CoursePart `gorm:"foreignKey:CourseID" json:"course_parts"` // Обратная связь
+	InStock             bool                     `json:"in_stock"`
+	AccessDuration      int                      `json:"access_duration"`
+	UploadedImageAmount int                      `json:"uploaded_image_amount"`
+	Images              []image.Image            `gorm:"polymorphic:Owner;" json:"images"`
+	CourseParts         []*coursepart.CoursePart `gorm:"foreignKey:CourseID" json:"course_parts"` // Обратная связь
+}
+
+func (c Course) GetUploadedImageAmount() int {
+	return c.UploadedImageAmount
+}
+
+func (c Course) SetUploadedImageAmount(amount int) {
+	c.UploadedImageAmount = amount
 }

@@ -25,6 +25,7 @@ package trainingsession
 import (
 	"context"
 
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
 	trainingsessionservice "github.com/mikhail5545/product-service-go/internal/services/training_session"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
@@ -61,7 +62,7 @@ func Register(s *grpc.Server, svc trainingsessionservice.Service) {
 func (s *Server) Get(ctx context.Context, req *trainingsessionpb.GetRequest) (*trainingsessionpb.GetResponse, error) {
 	details, err := s.service.Get(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &trainingsessionpb.GetResponse{TrainingSessionDetails: types.TrainingSessionDetailsToProtobuf(details)}, nil
@@ -75,7 +76,7 @@ func (s *Server) Get(ctx context.Context, req *trainingsessionpb.GetRequest) (*t
 func (s *Server) GetWithDeleted(ctx context.Context, req *trainingsessionpb.GetWithDeletedRequest) (*trainingsessionpb.GetWithDeletedResponse, error) {
 	details, err := s.service.GetWithDeleted(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &trainingsessionpb.GetWithDeletedResponse{TrainingSessionDetails: types.TrainingSessionDetailsToProtobuf(details)}, nil
@@ -89,7 +90,7 @@ func (s *Server) GetWithDeleted(ctx context.Context, req *trainingsessionpb.GetW
 func (s *Server) GetWithUnpublished(ctx context.Context, req *trainingsessionpb.GetWithUnpublishedRequest) (*trainingsessionpb.GetWithUnpublishedResponse, error) {
 	details, err := s.service.GetWithUnpublished(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &trainingsessionpb.GetWithUnpublishedResponse{TrainingSessionDetails: types.TrainingSessionDetailsToProtobuf(details)}, nil
@@ -101,7 +102,7 @@ func (s *Server) GetWithUnpublished(ctx context.Context, req *trainingsessionpb.
 func (s *Server) List(ctx context.Context, req *trainingsessionpb.ListRequest) (*trainingsessionpb.ListResponse, error) {
 	ts, total, err := s.service.List(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbdetails []*trainingsessionpb.TrainingSessionDetails
 	for _, ts := range ts {
@@ -117,7 +118,7 @@ func (s *Server) List(ctx context.Context, req *trainingsessionpb.ListRequest) (
 func (s *Server) ListDeleted(ctx context.Context, req *trainingsessionpb.ListDeletedRequest) (*trainingsessionpb.ListDeletedResponse, error) {
 	ts, total, err := s.service.ListDeleted(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbdetails []*trainingsessionpb.TrainingSessionDetails
 	for _, ts := range ts {
@@ -133,7 +134,7 @@ func (s *Server) ListDeleted(ctx context.Context, req *trainingsessionpb.ListDel
 func (s *Server) ListUnpublished(ctx context.Context, req *trainingsessionpb.ListUnpublishedRequest) (*trainingsessionpb.ListUnpublishedResponse, error) {
 	ts, total, err := s.service.ListUnpublished(ctx, int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbdetails []*trainingsessionpb.TrainingSessionDetails
 	for _, ts := range ts {
@@ -149,7 +150,7 @@ func (s *Server) ListUnpublished(ctx context.Context, req *trainingsessionpb.Lis
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Publish(ctx context.Context, req *trainingsessionpb.PublishRequest) (*trainingsessionpb.PublishResponse, error) {
 	if err := s.service.Publish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &trainingsessionpb.PublishResponse{Id: req.GetId()}, nil
 }
@@ -161,7 +162,7 @@ func (s *Server) Publish(ctx context.Context, req *trainingsessionpb.PublishRequ
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Unpublish(ctx context.Context, req *trainingsessionpb.UnpublishRequest) (*trainingsessionpb.UnpublishResponse, error) {
 	if err := s.service.Unpublish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &trainingsessionpb.UnpublishResponse{Id: req.GetId()}, nil
 }
@@ -180,7 +181,7 @@ func (s *Server) Create(ctx context.Context, req *trainingsessionpb.CreateReques
 	}
 	res, err := s.service.Create(ctx, createReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &trainingsessionpb.CreateResponse{Id: res.ID, ProductId: res.ProductID}, nil
 }
@@ -205,9 +206,84 @@ func (s *Server) Update(ctx context.Context, req *trainingsessionpb.UpdateReques
 	updateReq.DurationMinutes = &dm
 	res, err := s.service.Update(ctx, updateReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return types.TrainingSessionToProtobufUpdate(&trainingsessionpb.UpdateResponse{Id: req.GetId()}, res), nil
+}
+
+// AddImage adds a new image to a training session. It's called by media-service-go upon successful image upload.
+// It validates the request, checks the image limit and appends the new information.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
+// Returns `NotFound` gRPC error if the record is not found.
+func (s *Server) AddImage(ctx context.Context, req *trainingsessionpb.AddImageRequest) (*trainingsessionpb.AddImageResponse, error) {
+	addRequest := &imagemodel.AddRequest{
+		OwnerID:        req.GetOwnerId(),
+		MediaServiceID: req.GetMediaServiceId(),
+		URL:            req.GetUrl(),
+		SecureURL:      req.GetSecureUrl(),
+		PublicID:       req.GetPublicId(),
+	}
+	err := s.service.AddImage(ctx, addRequest)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &trainingsessionpb.AddImageResponse{MediaServiceId: req.MediaServiceId, OwnerId: req.OwnerId}, nil
+}
+
+// DeleteImage deletes an image from a training session. It's called by media-service-go upon successful image deletion.
+// The function validates the request and removes the image information from the training session.
+// This action is irreversable.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error if any of records is not found.
+func (s *Server) DeleteImage(ctx context.Context, req *trainingsessionpb.DeleteImageRequest) (*trainingsessionpb.DeleteImageResponse, error) {
+	deleteReq := &imagemodel.DeleteRequest{
+		OwnerID:        req.GetOwnerId(),
+		MediaServiceID: req.GetMediaServiceId(),
+	}
+	err := s.service.DeleteImage(ctx, deleteReq)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &trainingsessionpb.DeleteImageResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
+}
+
+// AddImageBatch adds an image for a batch of training sessions. It's called by media-service-go
+// upon successful image uplaod.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the training sessions were found.
+func (s *Server) AddImageBatch(ctx context.Context, req *trainingsessionpb.AddImageBatchRequest) (*trainingsessionpb.AddImageBatchResponse, error) {
+	addReq := &imagemodel.AddBatchRequest{
+		MediaServiceID: req.GetMediaServiceId(),
+		URL:            req.GetUrl(),
+		SecureURL:      req.GetUrl(),
+		PublicID:       req.GetPublicId(),
+		OwnerIDs:       req.GetOwnerIds(),
+	}
+	affectedOwners, err := s.service.AddImageBatch(ctx, addReq)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &trainingsessionpb.AddImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
+}
+
+// DeleteImageBatch deletes an image from a batch of training sessions. It's called by media-service-go
+// upon successful image deletion.
+//
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the training sessions were found or the image was not found.
+func (s *Server) DeleteImageBatch(ctx context.Context, req *trainingsessionpb.DeleteImageBatchRequest) (*trainingsessionpb.DeleteImageBatchResponse, error) {
+	deleteReq := &imagemodel.DeleteBatchRequst{
+		MediaServiceID: req.GetMediaServiceId(),
+		OwnerIDs:       req.GetOwnerIds(),
+	}
+	affectedOwners, err := s.service.DeleteImageBatch(ctx, deleteReq)
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	return &trainingsessionpb.DeleteImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
 }
 
 // Delete performs a soft-delete on a training session and its associated product.
@@ -218,7 +294,7 @@ func (s *Server) Update(ctx context.Context, req *trainingsessionpb.UpdateReques
 func (s *Server) Delete(ctx context.Context, req *trainingsessionpb.DeleteRequest) (*trainingsessionpb.DeleteResponse, error) {
 	err := s.service.Delete(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &trainingsessionpb.DeleteResponse{Id: req.GetId()}, nil
@@ -232,7 +308,7 @@ func (s *Server) Delete(ctx context.Context, req *trainingsessionpb.DeleteReques
 func (s *Server) DeletePermanent(ctx context.Context, req *trainingsessionpb.DeletePermanentRequest) (*trainingsessionpb.DeletePermanentResponse, error) {
 	err := s.service.DeletePermanent(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &trainingsessionpb.DeletePermanentResponse{Id: req.GetId()}, nil
@@ -246,7 +322,7 @@ func (s *Server) DeletePermanent(ctx context.Context, req *trainingsessionpb.Del
 func (s *Server) Restore(ctx context.Context, req *trainingsessionpb.RestoreRequest) (*trainingsessionpb.RestoreResponse, error) {
 	err := s.service.Restore(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 
 	return &trainingsessionpb.RestoreResponse{Id: req.GetId()}, nil

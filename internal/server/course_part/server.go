@@ -61,7 +61,7 @@ func Register(s *grpc.Server, svc coursepart.Service) {
 func (s *Server) Get(ctx context.Context, req *coursepartpb.GetRequest) (*coursepartpb.GetResponse, error) {
 	part, err := s.service.Get(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.GetResponse{CoursePart: types.CoursePartToProtobuf(part)}, nil
 }
@@ -74,7 +74,7 @@ func (s *Server) Get(ctx context.Context, req *coursepartpb.GetRequest) (*course
 func (s *Server) GetWithDeleted(ctx context.Context, req *coursepartpb.GetWithDeletedRequest) (*coursepartpb.GetWithDeletedResponse, error) {
 	part, err := s.service.GetWithDeleted(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.GetWithDeletedResponse{CoursePart: types.CoursePartToProtobuf(part)}, nil
 }
@@ -87,7 +87,7 @@ func (s *Server) GetWithDeleted(ctx context.Context, req *coursepartpb.GetWithDe
 func (s *Server) GetWithUnpublished(ctx context.Context, req *coursepartpb.GetWithUnpublishedRequest) (*coursepartpb.GetWithUnpublishedResponse, error) {
 	part, err := s.service.GetWithUnpublished(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.GetWithUnpublishedResponse{CoursePart: types.CoursePartToProtobuf(part)}, nil
 }
@@ -101,7 +101,7 @@ func (s *Server) GetWithUnpublished(ctx context.Context, req *coursepartpb.GetWi
 func (s *Server) GetReduced(ctx context.Context, req *coursepartpb.GetReducedRequest) (*coursepartpb.GetReducedResponse, error) {
 	part, err := s.service.GetReduced(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.GetReducedResponse{CoursePart: types.CoursePartToProtobuf(part)}, nil
 }
@@ -115,7 +115,7 @@ func (s *Server) GetReduced(ctx context.Context, req *coursepartpb.GetReducedReq
 func (s *Server) GetWithDeletedReduced(ctx context.Context, req *coursepartpb.GetWithDeletedReducedRequest) (*coursepartpb.GetWithDeletedReducedResponse, error) {
 	part, err := s.service.GetWithDeletedReduced(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.GetWithDeletedReducedResponse{CoursePart: types.CoursePartToProtobuf(part)}, nil
 }
@@ -129,7 +129,7 @@ func (s *Server) GetWithDeletedReduced(ctx context.Context, req *coursepartpb.Ge
 func (s *Server) GetWithUnpublishedReduced(ctx context.Context, req *coursepartpb.GetWithUnpublishedReducedRequest) (*coursepartpb.GetWithUnpublishedReducedResponse, error) {
 	part, err := s.service.GetWithUnpublishedReduced(ctx, req.GetId())
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.GetWithUnpublishedReducedResponse{CoursePart: types.CoursePartToProtobuf(part)}, nil
 }
@@ -141,7 +141,7 @@ func (s *Server) GetWithUnpublishedReduced(ctx context.Context, req *coursepartp
 func (s *Server) List(ctx context.Context, req *coursepartpb.ListRequest) (*coursepartpb.ListResponse, error) {
 	parts, total, err := s.service.List(ctx, req.GetCourseId(), int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbparts []*coursepartpb.CoursePart
 	for _, p := range parts {
@@ -156,7 +156,7 @@ func (s *Server) List(ctx context.Context, req *coursepartpb.ListRequest) (*cour
 func (s *Server) ListDeleted(ctx context.Context, req *coursepartpb.ListDeletedRequest) (*coursepartpb.ListDeletedResponse, error) {
 	parts, total, err := s.service.ListDeleted(ctx, req.GetCourseId(), int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbparts []*coursepartpb.CoursePart
 	for _, p := range parts {
@@ -171,7 +171,7 @@ func (s *Server) ListDeleted(ctx context.Context, req *coursepartpb.ListDeletedR
 func (s *Server) ListUnpublished(ctx context.Context, req *coursepartpb.ListUnpublishedRequest) (*coursepartpb.ListUnpublishedResponse, error) {
 	parts, total, err := s.service.ListUnpublished(ctx, req.GetCourseId(), int(req.GetLimit()), int(req.GetOffset()))
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	var pbparts []*coursepartpb.CoursePart
 	for _, p := range parts {
@@ -193,7 +193,7 @@ func (s *Server) Create(ctx context.Context, req *coursepartpb.CreateRequest) (*
 	}
 	res, err := s.service.Create(ctx, createReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.CreateResponse{Id: res.ID, CourseId: res.CourseID}, nil
 }
@@ -205,7 +205,7 @@ func (s *Server) Create(ctx context.Context, req *coursepartpb.CreateRequest) (*
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID or parent course is not published.
 func (s *Server) Publish(ctx context.Context, req *coursepartpb.PublishRequest) (*coursepartpb.PublishResponse, error) {
 	if err := s.service.Publish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.PublishResponse{Id: req.GetId()}, nil
 }
@@ -217,7 +217,7 @@ func (s *Server) Publish(ctx context.Context, req *coursepartpb.PublishRequest) 
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Unpublish(ctx context.Context, req *coursepartpb.UnpublishRequest) (*coursepartpb.UnpublishResponse, error) {
 	if err := s.service.Unpublish(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.UnpublishResponse{Id: req.GetId()}, nil
 }
@@ -241,7 +241,7 @@ func (s *Server) Update(ctx context.Context, req *coursepartpb.UpdateRequest) (*
 	updateReq.Number = &n
 	res, err := s.service.Update(ctx, updateReq)
 	if err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return types.CoursePartToProtobufUpdate(&coursepartpb.UpdateResponse{Id: req.GetId(), CourseId: req.GetCourseId()}, res), nil
 }
@@ -271,7 +271,7 @@ func (s *Server) AddVideo(ctx context.Context, req *coursepartpb.AddVideoRequest
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Delete(ctx context.Context, req *coursepartpb.DeleteRequest) (*coursepartpb.DeleteResponse, error) {
 	if err := s.service.Delete(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.DeleteResponse{Id: req.GetId()}, nil
 }
@@ -282,7 +282,7 @@ func (s *Server) Delete(ctx context.Context, req *coursepartpb.DeleteRequest) (*
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) DeletePermanent(ctx context.Context, req *coursepartpb.DeletePermanentRequest) (*coursepartpb.DeletePermanentResponse, error) {
 	if err := s.service.DeletePermanent(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.DeletePermanentResponse{Id: req.GetId()}, nil
 }
@@ -294,7 +294,7 @@ func (s *Server) DeletePermanent(ctx context.Context, req *coursepartpb.DeletePe
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (s *Server) Restore(ctx context.Context, req *coursepartpb.RestoreRequest) (*coursepartpb.RestoreResponse, error) {
 	if err := s.service.Restore(ctx, req.GetId()); err != nil {
-		return nil, errors.ToGRPCError(err)
+		return nil, errors.HandleServiceError(err)
 	}
 	return &coursepartpb.RestoreResponse{Id: req.GetId()}, nil
 }

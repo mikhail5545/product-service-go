@@ -33,84 +33,59 @@ import (
 )
 
 type ServiceError interface {
+	// GetCode is deprecated. Use errors.Is with sentinel errors instead.
 	GetCode() int
 	Error() string
 }
 
 // HTTPErrorHandler is a custom error handler for Echo.
 func HTTPErrorHandler(err error, c echo.Context) {
+	// Handle specific sentinel errors first
+	if errors.Is(err, seminar.ErrInvalidArgument) || errors.Is(err, course.ErrInvalidArgument) || errors.Is(err, trainingsession.ErrInvalidArgument) || errors.Is(err, physicalgood.ErrInvalidArgument) {
+		c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if errors.Is(err, seminar.ErrNotFound) || errors.Is(err, course.ErrNotFound) || errors.Is(err, trainingsession.ErrNotFound) || errors.Is(err, physicalgood.ErrNotFound) {
+		c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		return
+	}
+	if errors.Is(err, seminar.ErrImageLimitExceeded) {
+		c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+
+	// Fallback for older error types
 	var se ServiceError
 	if errors.As(err, &se) {
 		c.JSON(se.GetCode(), map[string]string{"error": se.Error()})
 		return
 	}
+
+	// Default to internal server error
 	c.JSON(http.StatusInternalServerError, map[string]string{"error": "internal server error"})
 }
 
-// ToGRPCError converts a service layer error into a gRPC status error.
-func ToGRPCError(err error) error {
+// HandleServiceError converts a service layer error into a gRPC status error.
+func HandleServiceError(err error) error {
 	if err == nil {
 		return nil
 	}
 
-	var productErr *product.Error
-	if errors.As(err, &productErr) {
-		switch productErr.GetCode() {
-		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, "Product service error occurred: %s", productErr.Error())
-		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, "Product service error occurred: %s", productErr.Error())
-		}
+	if errors.Is(err, seminar.ErrInvalidArgument) ||
+		errors.Is(err, course.ErrInvalidArgument) ||
+		errors.Is(err, trainingsession.ErrInvalidArgument) ||
+		errors.Is(err, physicalgood.ErrInvalidArgument) ||
+		errors.Is(err, product.ErrInvalidArgument) ||
+		errors.Is(err, coursepart.ErrInvalidArgument) {
+		return status.Errorf(codes.InvalidArgument, "Invalid argument: %s", err.Error())
 	}
-
-	var tsError *trainingsession.Error
-	if errors.As(err, &tsError) {
-		switch tsError.GetCode() {
-		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, "Training session service error occurred: %s", tsError.Error())
-		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, "Training session service error occurred: %s", tsError.Error())
-		}
-	}
-
-	var courseErr *course.Error
-	if errors.As(err, &courseErr) {
-		switch courseErr.GetCode() {
-		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, "Course service error occurred: %s", courseErr.Error())
-		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, "Course service error occurred: %s", courseErr.Error())
-		}
-	}
-
-	var semianrErr *seminar.Error
-	if errors.As(err, &semianrErr) {
-		switch semianrErr.GetCode() {
-		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, "Seminar service error occurred: %s", semianrErr.Error())
-		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, "Seminar service error occurred: %s", semianrErr.Error())
-		}
-	}
-
-	var coursePartErr *coursepart.Error
-	if errors.As(err, &coursePartErr) {
-		switch coursePartErr.GetCode() {
-		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, "Course part service error occurred: %s", coursePartErr.Error())
-		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, "Course part service error occurred: %s", coursePartErr.Error())
-		}
-	}
-
-	var physicalGoodErr *physicalgood.Error
-	if errors.As(err, &physicalGoodErr) {
-		switch physicalGoodErr.GetCode() {
-		case http.StatusBadRequest:
-			return status.Errorf(codes.InvalidArgument, "Physical good service error occurred: %s", physicalGoodErr.Error())
-		case http.StatusNotFound:
-			return status.Errorf(codes.NotFound, "Physical good service error occurred: %s", physicalGoodErr.Error())
-		}
+	if errors.Is(err, seminar.ErrNotFound) ||
+		errors.Is(err, course.ErrNotFound) ||
+		errors.Is(err, trainingsession.ErrNotFound) ||
+		errors.Is(err, physicalgood.ErrNotFound) ||
+		errors.Is(err, product.ErrNotFound) ||
+		errors.Is(err, coursepart.ErrNotFound) {
+		return status.Errorf(codes.NotFound, "Not found: %s", err.Error())
 	}
 
 	return status.Errorf(codes.Internal, "an internal error occurred: %v", err)

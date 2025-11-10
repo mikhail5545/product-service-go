@@ -46,7 +46,7 @@ type UpdateRequest struct {
 
 // CourseDetails is a DTO that combines the Course model with its associated Product price.
 type CourseDetails struct {
-	Course
+	*Course
 	Price     float32 `json:"price"`
 	ProductID string  `json:"product_id"`
 }

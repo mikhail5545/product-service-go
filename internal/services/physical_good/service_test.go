@@ -20,15 +20,19 @@ package physicalgood
 import (
 	"context"
 	"errors"
-	"net/http"
 	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgood "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
 	physicalgoodmock "github.com/mikhail5545/product-service-go/internal/test/database/physical_good_mock"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"
+
+	imageservicemock "github.com/mikhail5545/product-service-go/internal/test/services/image_mock"
+	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -40,8 +44,9 @@ func TestService_Get(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	physicalGoodID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -62,7 +67,7 @@ func TestService_Get(t *testing.T) {
 	}
 
 	expectedDetails := &physicalgood.PhysicalGoodDetails{
-		PhysicalGood: *mockPhysicalGood,
+		PhysicalGood: mockPhysicalGood,
 		Price:        mockProduct.Price,
 		ProductID:    mockProduct.ID,
 	}
@@ -76,10 +81,7 @@ func TestService_Get(t *testing.T) {
 		details, err := testService.Get(context.Background(), physicalGoodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Get() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(details, expectedDetails) {
 			t.Errorf("Get() got %v, want %v", details, expectedDetails)
 		}
@@ -93,18 +95,8 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -115,18 +107,8 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), physicalGoodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -138,18 +120,7 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), physicalGoodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -159,8 +130,9 @@ func TestService_GetWithDeleted(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	physicalGoodID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -181,7 +153,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 	}
 
 	expectedDetails := &physicalgood.PhysicalGoodDetails{
-		PhysicalGood: *mockPhysicalGood,
+		PhysicalGood: mockPhysicalGood,
 		Price:        mockProduct.Price,
 		ProductID:    mockProduct.ID,
 	}
@@ -195,10 +167,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 		details, err := testService.GetWithDeleted(context.Background(), physicalGoodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("GetWithDeleted() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(details, expectedDetails) {
 			t.Errorf("GetWithDeleted() got %v, want %v", details, expectedDetails)
 		}
@@ -212,18 +181,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetWithDeleted() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -234,18 +193,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), physicalGoodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetWithDeleted() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -257,18 +206,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), physicalGoodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetWithDeleted() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -278,8 +216,9 @@ func TestService_GetWithUnpublished(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	physicalGoodID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -300,7 +239,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 	}
 
 	expectedDetails := &physicalgood.PhysicalGoodDetails{
-		PhysicalGood: *mockPhysicalGood,
+		PhysicalGood: mockPhysicalGood,
 		Price:        mockProduct.Price,
 		ProductID:    mockProduct.ID,
 	}
@@ -314,10 +253,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		details, err := testService.GetWithUnpublished(context.Background(), physicalGoodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("GetWithUnpublished() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(details, expectedDetails) {
 			t.Errorf("GetWithUnpublished() got %v, want %v", details, expectedDetails)
 		}
@@ -331,18 +267,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -353,18 +279,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), physicalGoodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -376,18 +292,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), physicalGoodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -397,8 +302,9 @@ func TestService_List(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	phg1ID := "0d9828df-c57b-4629-9729-8c9641598e17"
 	phg2ID := "a33845f2-1c3c-4397-9380-7ecdb1d8c853"
@@ -433,12 +339,12 @@ func TestService_List(t *testing.T) {
 
 	expectedDetails := []physicalgood.PhysicalGoodDetails{
 		{
-			PhysicalGood: mockPhysicalGoods[0],
+			PhysicalGood: &mockPhysicalGoods[0],
 			Price:        mockProducts[0].Price,
 			ProductID:    mockProducts[0].ID,
 		},
 		{
-			PhysicalGood: mockPhysicalGoods[1],
+			PhysicalGood: &mockPhysicalGoods[1],
 			Price:        mockProducts[1].Price,
 			ProductID:    mockProducts[1].ID,
 		},
@@ -455,16 +361,9 @@ func TestService_List(t *testing.T) {
 		details, total, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("List() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("List() got total %d, want %d", total, 2)
-		}
-		if len(details) != len(expectedDetails) {
-			t.Errorf("List() got %v, want %v", details, expectedDetails)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(expectedDetails), len(details))
 	})
 
 	t.Run("db error on count", func(t *testing.T) {
@@ -479,18 +378,7 @@ func TestService_List(t *testing.T) {
 		_, _, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("List() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("List() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("List() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("db error on list", func(t *testing.T) {
@@ -503,18 +391,7 @@ func TestService_List(t *testing.T) {
 		_, _, err := testService.List(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("List() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("List() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("List() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -524,8 +401,9 @@ func TestService_ListDeleted(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	phg1ID := "0d9828df-c57b-4629-9729-8c9641598e17"
 	phg2ID := "a33845f2-1c3c-4397-9380-7ecdb1d8c853"
@@ -560,12 +438,12 @@ func TestService_ListDeleted(t *testing.T) {
 
 	expectedDetails := []physicalgood.PhysicalGoodDetails{
 		{
-			PhysicalGood: mockPhysicalGoods[0],
+			PhysicalGood: &mockPhysicalGoods[0],
 			Price:        mockProducts[0].Price,
 			ProductID:    mockProducts[0].ID,
 		},
 		{
-			PhysicalGood: mockPhysicalGoods[1],
+			PhysicalGood: &mockPhysicalGoods[1],
 			Price:        mockProducts[1].Price,
 			ProductID:    mockProducts[1].ID,
 		},
@@ -582,16 +460,9 @@ func TestService_ListDeleted(t *testing.T) {
 		details, total, err := testService.ListDeleted(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListDeleted() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("ListDeleted() got total %d, want %d", total, 2)
-		}
-		if len(details) != len(expectedDetails) {
-			t.Errorf("ListDeleted() got %v, want %v", details, expectedDetails)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(expectedDetails), len(details))
 	})
 
 	t.Run("db error on count", func(t *testing.T) {
@@ -606,18 +477,7 @@ func TestService_ListDeleted(t *testing.T) {
 		_, _, err := testService.ListDeleted(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListDeleted() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("db error on list", func(t *testing.T) {
@@ -630,18 +490,7 @@ func TestService_ListDeleted(t *testing.T) {
 		_, _, err := testService.ListDeleted(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListDeleted() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListDeleted() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -651,8 +500,9 @@ func TestService_ListUnpublished(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	phg1ID := "0d9828df-c57b-4629-9729-8c9641598e17"
 	phg2ID := "a33845f2-1c3c-4397-9380-7ecdb1d8c853"
@@ -687,12 +537,12 @@ func TestService_ListUnpublished(t *testing.T) {
 
 	expectedDetails := []physicalgood.PhysicalGoodDetails{
 		{
-			PhysicalGood: mockPhysicalGoods[0],
+			PhysicalGood: &mockPhysicalGoods[0],
 			Price:        mockProducts[0].Price,
 			ProductID:    mockProducts[0].ID,
 		},
 		{
-			PhysicalGood: mockPhysicalGoods[1],
+			PhysicalGood: &mockPhysicalGoods[1],
 			Price:        mockProducts[1].Price,
 			ProductID:    mockProducts[1].ID,
 		},
@@ -709,16 +559,9 @@ func TestService_ListUnpublished(t *testing.T) {
 		details, total, err := testService.ListUnpublished(context.Background(), limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListUnpublished() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("ListUnpublished() got total %d, want %d", total, 2)
-		}
-		if len(details) != len(expectedDetails) {
-			t.Errorf("ListUnpublished() got %v, want %v", details, expectedDetails)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(expectedDetails), len(details))
 	})
 
 	t.Run("db error on count", func(t *testing.T) {
@@ -733,18 +576,7 @@ func TestService_ListUnpublished(t *testing.T) {
 		_, _, err := testService.ListUnpublished(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListUnpublished() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("db error on list", func(t *testing.T) {
@@ -757,18 +589,7 @@ func TestService_ListUnpublished(t *testing.T) {
 		_, _, err := testService.ListUnpublished(context.Background(), limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListUnpublished() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListUnpublished() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -778,8 +599,9 @@ func TestSesrvice_Create(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	createReq := physicalgood.CreateRequest{
 		Name:             "Physical good name",
@@ -824,49 +646,26 @@ func TestSesrvice_Create(t *testing.T) {
 		resp, err := testService.Create(context.Background(), &createReq)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Create() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if _, err := uuid.Parse(createdPhysicalGood.ID); err != nil {
 			t.Errorf("Expected physicalGood.ID to be a valid UUID, got %s", createdPhysicalGood.ID)
 		}
-		if createdPhysicalGood.Name != createReq.Name {
-			t.Errorf("physicalGood.Name = %s, want %s", createdPhysicalGood.Name, createReq.Name)
-		}
-		if createdPhysicalGood.ShortDescription != createReq.ShortDescription {
-			t.Errorf("physicalGood.ShortDescription = %s, want %s", createdPhysicalGood.ShortDescription, createReq.ShortDescription)
-		}
-		if createdPhysicalGood.Amount != createReq.Amount {
-			t.Errorf("physicalGood.Amount = %d, want %d", createdPhysicalGood.Amount, createReq.Amount)
-		}
-		if createdPhysicalGood.ShippingRequired != createReq.ShippingRequired {
-			t.Errorf("physicalGood.Amount = %v, want %v", createdPhysicalGood.ShippingRequired, createReq.ShippingRequired)
-		}
-		if createdPhysicalGood.InStock {
-			t.Error("expected physical good to be unpublished")
-		}
+		assert.Equal(t, createReq.Name, createdPhysicalGood.Name)
+		assert.Equal(t, createReq.ShortDescription, createdPhysicalGood.ShortDescription)
+		assert.Equal(t, createReq.Amount, createdPhysicalGood.Amount)
+		assert.Equal(t, createReq.Amount, createdPhysicalGood.Amount)
+		assert.Equal(t, createReq.ShippingRequired, createdPhysicalGood.ShippingRequired)
+		assert.False(t, createdPhysicalGood.InStock)
+
 		if _, err := uuid.Parse(createdProduct.ID); err != nil {
 			t.Errorf("Expected product.ID to be a valid UUID, got %s", createdProduct.ID)
 		}
-		if createdProduct.Price != createReq.Price {
-			t.Errorf("product.Price = %f, want %f", createdProduct.Price, createReq.Price)
-		}
-		if createdProduct.DetailsID != createdPhysicalGood.ID {
-			t.Errorf("product.DetailsID = %s, want %s", createdProduct.DetailsID, createdPhysicalGood.ID)
-		}
-		if createdProduct.DetailsType != "physical_good" {
-			t.Errorf("product.DetailsType = %s, want %s", createdProduct.DetailsType, "physical_good")
-		}
-		if createdProduct.InStock {
-			t.Error("expected product to be unpublished")
-		}
-		if createdProduct.ID != resp.ProductID {
-			t.Errorf("response ProductID = %s, want %s", resp.ID, createdProduct.ID)
-		}
-		if createdPhysicalGood.ID != resp.ID {
-			t.Errorf("response ID = %s, want %s", resp.ID, createdPhysicalGood.ID)
-		}
+		assert.Equal(t, createReq.Price, createdProduct.Price)
+		assert.Equal(t, createdPhysicalGood.ID, createdProduct.DetailsID)
+		assert.Equal(t, "physical_good", createdProduct.DetailsType)
+		assert.False(t, createdProduct.InStock)
+		assert.Equal(t, createdProduct.ID, resp.ProductID)
+		assert.Equal(t, createdPhysicalGood.ID, resp.ID)
 	})
 
 	t.Run("invalid request payload", func(t *testing.T) {
@@ -888,18 +687,8 @@ func TestSesrvice_Create(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Create() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Create() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Create() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -912,24 +701,13 @@ func TestSesrvice_Create(t *testing.T) {
 		mockProductRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxProductRepo)
 
 		dbErr := errors.New("database error")
-		mockTxPhysicalGoodRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(dbErr)
+		mockTxPhysicalGoodRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(dbErr).AnyTimes()
 
 		// Act
 		_, err := testService.Create(context.Background(), &createReq)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Create() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Create() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Create() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -939,8 +717,9 @@ func TestService_Publish(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -970,10 +749,7 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), goodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Publish() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -991,18 +767,8 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), ivnalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Publish() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Publish() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1014,24 +780,14 @@ func TestService_Publish(t *testing.T) {
 		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
 		mockProductRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxProductRepo)
 
-		mockPhysicalGoodRepo.EXPECT().SetInStock(gomock.Any(), goodID, true).Return(int64(0), nil).AnyTimes()
+		mockTxPhysicalGoodRepo.EXPECT().SetInStock(gomock.Any(), goodID, true).Return(int64(0), nil).AnyTimes()
 
 		// Act
 		err := testService.Publish(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Publish() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Publish() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1050,18 +806,7 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Publish() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Publish() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1071,8 +816,9 @@ func TestService_Unpublish(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1102,10 +848,7 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), goodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Unpublish() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1123,18 +866,8 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), ivnalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Unpublish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Unpublish() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Unpublish() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1152,18 +885,8 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Unpublish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Unpublish() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Unpublish() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1182,18 +905,7 @@ func TestService_Unpublish(t *testing.T) {
 		err := testService.Unpublish(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Unpublish() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Unpublish() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1203,8 +915,9 @@ func TestService_Update(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1274,15 +987,11 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err != nil {
-			t.Errorf("Update() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 
 		goodUpdatesFromResp, ok := updates["physical_good"].(map[string]any)
-		if !ok {
-			t.Fatalf("response does not contain 'physical_good' updates")
-		}
+		assert.True(t, ok)
+
 		if name, ok := goodUpdatesFromResp["name"].(string); !ok || name != newName {
 			t.Errorf("physicalGood.Name in response = %v, want %s", goodUpdatesFromResp["name"], newName)
 		}
@@ -1297,9 +1006,7 @@ func TestService_Update(t *testing.T) {
 		}
 
 		productUpdatesFromResp, ok := updates["product"].(map[string]any)
-		if !ok {
-			t.Fatalf("response does not contain 'product' updates")
-		}
+		assert.True(t, ok)
 		if price, ok := productUpdatesFromResp["price"].(float32); !ok || price != newPrice {
 			t.Errorf("product.Price in response = %v, want %f", goodUpdatesFromResp["price"], newPrice)
 		}
@@ -1343,18 +1050,8 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Update() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Update() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Update() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1366,7 +1063,7 @@ func TestService_Update(t *testing.T) {
 		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
 		mockProductRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxProductRepo)
 
-		mockTxPhysicalGoodRepo.EXPECT().Get(gomock.Any(), goodID).Return(nil, gorm.ErrRecordNotFound)
+		mockTxPhysicalGoodRepo.EXPECT().Get(gomock.Any(), goodID).Return(nil, gorm.ErrRecordNotFound).AnyTimes()
 
 		// Act
 		_, err := testService.Update(context.Background(), &physicalgood.UpdateRequest{
@@ -1379,18 +1076,8 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Update() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Update() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Update() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1418,18 +1105,322 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Update() expected an error, but got nil")
-			return
+		assert.Error(t, err)
+	})
+}
+
+func TestService_AddImage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+
+	goodID := uuid.New().String()
+
+	addReq := &imagemodel.AddRequest{
+		URL:            "https://google.com",
+		SecureURL:      "https://google.com",
+		PublicID:       "public/id",
+		MediaServiceID: uuid.New().String(),
+		OwnerID:        goodID,
+	}
+
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockImgeSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(nil)
+
+		// Act
+		err := testService.AddImage(context.Background(), addReq)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid request payload", func(t *testing.T) {
+		// Arrange
+		invalidReq := &imagemodel.AddRequest{
+			URL:     "not a url",
+			OwnerID: "invalid-UUID",
 		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Update() expected a custom error type, got %v", err)
-			return
+		mockImgeSvc.EXPECT().AddImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
+
+		// Act
+		err := testService.AddImage(context.Background(), invalidReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("physical good not found", func(t *testing.T) {
+		// Arrange
+		mockImgeSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
+
+		// Act
+		err := testService.AddImage(context.Background(), addReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
+	})
+
+	t.Run("image limit", func(t *testing.T) {
+		// Arrange
+		mockImgeSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrImageLimitExceeded)
+
+		// Act
+		err := testService.AddImage(context.Background(), addReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrImageLimitExceeded)
+	})
+}
+
+func TestSesrvice_DeleteImage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+
+	imgID := uuid.New().String()
+	goodID := uuid.New().String()
+
+	deleteReq := &imagemodel.DeleteRequest{
+		MediaServiceID: imgID,
+		OwnerID:        goodID,
+	}
+
+	t.Run("success", func(t *testing.T) {
+		// Arrange
+		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(nil)
+
+		// Act
+		err := testService.DeleteImage(context.Background(), deleteReq)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid rquest payload", func(t *testing.T) {
+		// Arrange
+		invalidReq := &imagemodel.DeleteRequest{
+			MediaServiceID: "invalid-UUID",
+			OwnerID:        "invalid-UUID",
 		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Update() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
+
+		// Act
+		err := testService.DeleteImage(context.Background(), invalidReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("physical good not found", func(t *testing.T) {
+		// Arrange
+		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
+
+		// Act
+		err := testService.DeleteImage(context.Background(), deleteReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
+	})
+
+	t.Run("associations not found", func(t *testing.T) {
+		// Arrange
+		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(imageservice.ErrAssociationsNotFound)
+
+		// Act
+		err := testService.DeleteImage(context.Background(), deleteReq)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrAssociationsNotFound)
+	})
+}
+
+func TestService_AddImageBatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImageSvc)
+
+	// Use an in-memory SQLite DB for testing transactions.
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+		// This prevents GORM from starting a real DB transaction,
+		// allowing the mock repositories to work as expected.
+		SkipDefaultTransaction: true,
+	})
+	if err != nil {
+		t.Fatalf("failed to connect database: %v", err)
+	}
+
+	goodID_1 := uuid.New().String()
+	goodID_2 := uuid.New().String()
+
+	addBatchRequest := &imagemodel.AddBatchRequest{
+		URL:            "some-url",
+		SecureURL:      "some-secure-url",
+		PublicID:       "some-public-id",
+		MediaServiceID: uuid.New().String(),
+		OwnerIDs:       []string{goodID_1, goodID_2},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+
+		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
+
+		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(2, nil)
+
+		// Act
+		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid request payload", func(t *testing.T) {
+		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+
+		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
+
+		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
+
+		// Act
+		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("physical goods not found", func(t *testing.T) {
+		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+
+		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
+
+		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
+
+		// Act
+		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
+	})
+}
+
+func TestService_DeleteImageBatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImageSvc := imageservicemock.NewMockService(ctrl)
+
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImageSvc)
+
+	// Use an in-memory SQLite DB for testing transactions.
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+		// This prevents GORM from starting a real DB transaction,
+		// allowing the mock repositories to work as expected.
+		SkipDefaultTransaction: true,
+	})
+	if err != nil {
+		t.Fatalf("failed to connect database: %v", err)
+	}
+
+	goodID_1 := uuid.New().String()
+	goodID_2 := uuid.New().String()
+
+	deleteBatchRequest := &imagemodel.DeleteBatchRequst{
+		MediaServiceID: uuid.New().String(),
+		OwnerIDs:       []string{goodID_1, goodID_2},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+
+		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
+
+		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(2, nil)
+
+		// Act
+		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
+
+		// Assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid request payload", func(t *testing.T) {
+		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+
+		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
+
+		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
+
+		// Act
+		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
+	})
+
+	t.Run("physical goods not found", func(t *testing.T) {
+		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+
+		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
+
+		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
+
+		// Act
+		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
+	})
+
+	t.Run("associations not found", func(t *testing.T) {
+		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
+
+		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
+		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
+
+		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrAssociationsNotFound)
+
+		// Act
+		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
+
+		// Assert
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, imageservice.ErrAssociationsNotFound)
 	})
 }
 
@@ -1439,8 +1430,9 @@ func TestService_Delete(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1473,10 +1465,7 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), goodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Delete() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1487,18 +1476,8 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1516,18 +1495,8 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1549,18 +1518,7 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1570,8 +1528,9 @@ func TestService_DeletePermanent(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1601,10 +1560,7 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), goodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("DeletePermanent() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1615,18 +1571,8 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("DeletePermanent() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("DeletePermanent() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("DeletePermanent() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1644,18 +1590,8 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("DeletePermanent() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("DeletePermanent() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("DeletePermanent() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1674,18 +1610,7 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("DeletePermanent() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("DeletePermanent() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("DeletePermanent() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1695,8 +1620,9 @@ func TestService_Restore(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
+	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1726,10 +1652,7 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), goodID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Restore() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1740,18 +1663,8 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Restore() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Restore() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Restore() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1769,18 +1682,8 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Restore() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Restore() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Restore() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1799,17 +1702,6 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), goodID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Restore() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Restore() expected a custom error type, got %v", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Restore() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }

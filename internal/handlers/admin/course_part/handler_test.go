@@ -32,7 +32,6 @@ import (
 	coursepartmock "github.com/mikhail5545/product-service-go/internal/test/services/course_part_mock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"gorm.io/gorm"
 )
 
 func TestHandler_Get(t *testing.T) {
@@ -91,11 +90,7 @@ func TestHandler_Get(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Get(gomock.Any(), partID).Return(nil, serviceErr)
+		mockService.EXPECT().Get(gomock.Any(), partID).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Get(c)
@@ -182,11 +177,7 @@ func TestHandler_GetWithDeleted(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), partID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), partID).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.GetWithDeleted(c)
@@ -273,11 +264,7 @@ func TestHandler_GetWithUnpublished(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), partID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), partID).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.GetWithUnpublished(c)
@@ -363,11 +350,7 @@ func TestHandler_List(t *testing.T) {
 		c.SetParamNames(":cid")
 		c.SetParamValues(courseID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Failed to get course parts",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().List(gomock.Any(), courseID, 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().List(gomock.Any(), courseID, 2, 0).Return(nil, int64(0), coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.List(c)
@@ -450,11 +433,7 @@ func TestHandler_ListDeleted(t *testing.T) {
 		c.SetParamNames(":cid")
 		c.SetParamValues(courseID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Failed to get course parts",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().ListDeleted(gomock.Any(), courseID, 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().ListDeleted(gomock.Any(), courseID, 2, 0).Return(nil, int64(0), coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.ListDeleted(c)
@@ -537,11 +516,7 @@ func TestHandler_ListUnpublished(t *testing.T) {
 		c.SetParamNames(":cid")
 		c.SetParamValues(courseID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Failed to get course parts",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().ListUnpublished(gomock.Any(), courseID, 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().ListUnpublished(gomock.Any(), courseID, 2, 0).Return(nil, int64(0), coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.ListUnpublished(c)
@@ -651,12 +626,7 @@ func TestHandler_Create(t *testing.T) {
 		c.SetParamNames(":cid")
 		c.SetParamValues(courseID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Invalid request payload",
-			Code: http.StatusBadRequest,
-		}
-
-		mockService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		mockService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Create(c)
@@ -682,12 +652,7 @@ func TestHandler_Create(t *testing.T) {
 		c.SetParamNames(":cid")
 		c.SetParamValues(courseID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course not found",
-			Err:  gorm.ErrRecordNotFound,
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		mockService.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Create(c)
@@ -735,11 +700,7 @@ func TestHandler_Delete(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Delete(gomock.Any(), partID).Return(serviceErr)
+		mockService.EXPECT().Delete(gomock.Any(), partID).Return(coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Delete(c)
@@ -808,12 +769,7 @@ func TestHandler_Publish(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-
-		mockService.EXPECT().Publish(gomock.Any(), partID).Return(serviceErr)
+		mockService.EXPECT().Publish(gomock.Any(), partID).Return(coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Publish(c)
@@ -880,12 +836,7 @@ func TestHandler_Unpublish(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-
-		mockService.EXPECT().Unpublish(gomock.Any(), partID).Return(serviceErr)
+		mockService.EXPECT().Unpublish(gomock.Any(), partID).Return(coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Unpublish(c)
@@ -966,12 +917,8 @@ func TestHandler_AddVideo(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
 		addVideoReq.ID = partID
-		mockService.EXPECT().AddVideo(gomock.Any(), addVideoReq).Return(nil, serviceErr)
+		mockService.EXPECT().AddVideo(gomock.Any(), addVideoReq).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.AddVideo(c)
@@ -1060,11 +1007,7 @@ func TestHandler_Update(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Update(c)
@@ -1107,11 +1050,7 @@ func TestHandler_Update(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Invalid request payload",
-			Code: http.StatusBadRequest,
-		}
-		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, serviceErr)
+		mockService.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Update(c)
@@ -1177,11 +1116,7 @@ func TestHandler_DeletePermanent(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().DeletePermanent(gomock.Any(), partID).Return(serviceErr)
+		mockService.EXPECT().DeletePermanent(gomock.Any(), partID).Return(coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.DeletePermanent(c)
@@ -1250,11 +1185,7 @@ func TestHandler_Restore(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(partID)
 
-		serviceErr := &coursepartservice.Error{
-			Msg:  "Course part not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Restore(gomock.Any(), partID).Return(serviceErr)
+		mockService.EXPECT().Restore(gomock.Any(), partID).Return(coursepartservice.ErrNotFound)
 
 		// Act
 		err := handler.Restore(c)
