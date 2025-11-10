@@ -81,3 +81,63 @@ func (req DeleteRequest) Validate() error {
 		),
 	)
 }
+
+// Validate validates fields of [image.AddBatchRequest].
+// All request fields are required for images creation.
+// Validation rules:
+//
+//   - URL: required, valid URL.
+//   - SecureURL: required, valid URL.
+//   - PublicID: required, string.
+//   - MediaServiceID: required, valid UUID.
+//   - OwnerIDs: required, slice of valid UUIDs.
+func (req AddBatchRequest) Validate() error {
+	return validation.ValidateStruct(&req,
+		validation.Field(
+			&req.URL,
+			validation.Required,
+			is.URL,
+		),
+		validation.Field(
+			&req.SecureURL,
+			validation.Required,
+			is.URL,
+		),
+		validation.Field(
+			&req.PublicID,
+			validation.Required,
+		),
+		validation.Field(
+			&req.MediaServiceID,
+			validation.Required,
+			is.UUID,
+		),
+		validation.Field(
+			&req.OwnerIDs,
+			validation.Required,
+			validation.Each(is.UUID),
+		),
+	)
+}
+
+// Validate validates fields of [image.DeleteBatchRequst].
+// All request fields are required for image deletion.
+// Validation rules:
+//
+//   - MediaServiceID: required, valid UUID.
+//   - OwnerIDs: required, slice of valid UUIDs, at least one element.
+func (req DeleteBatchRequst) Validate() error {
+	return validation.ValidateStruct(&req,
+		validation.Field(
+			&req.MediaServiceID,
+			validation.Required,
+			is.UUID,
+		),
+		validation.Field(
+			&req.OwnerIDs,
+			validation.Required,
+			validation.Length(1, 0),
+			validation.Each(is.UUID),
+		),
+	)
+}

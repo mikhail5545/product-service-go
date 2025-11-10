@@ -35,3 +35,16 @@ type DeleteRequest struct {
 	MediaServiceID string `json:"media_service_id"`
 	OwnerID        string `json:"owner_id"`
 }
+
+type AddBatchRequest struct {
+	URL            string   `json:"url"`
+	SecureURL      string   `json:"secure_url"`
+	PublicID       string   `json:"public_id"`
+	MediaServiceID string   `json:"media_service_id"`
+	OwnerIDs       []string `json:"owner_ids"`
+}
+
+type DeleteBatchRequst struct {
+	MediaServiceID string   `json:"media_service_id"`
+	OwnerIDs       []string `json:"owner_ids"`
+}
