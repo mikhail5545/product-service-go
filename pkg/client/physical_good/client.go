@@ -126,6 +126,22 @@ type Service interface {
 	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
 	// Returns `NotFound` gRPC error if any of records is not found.
 	DeleteImage(ctx context.Context, req *physicalgoodpb.DeleteImageRequest) (*physicalgoodpb.DeleteImageResponse, error)
+	// AddImageBatch calls [PhysicalGoodServiceServer.AddImageBatch] method via client connection
+	// to add an image for a batch of physical goods. It's called by media-service-go
+	// upon successful image uplaod.
+	//
+	// Returns the number of affected physical goods.
+	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+	// Returns `NotFound` gRPC error none of the physical goods were found.
+	AddImageBatch(ctx context.Context, req *physicalgoodpb.AddImageBatchRequest) (*physicalgoodpb.AddImageBatchResponse, error)
+	// DeleteImageBatch calls [PhysicalGoodServiceServer.DeleteImageBatch] method via client connection
+	// to delete an image from a batch of physical goods. It's called by media-service-go
+	// upon successful image deletion.
+	//
+	// Returns the number of affected physical goods.
+	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+	// Returns `NotFound` gRPC error none of the physical goods were found or the image was not found.
+	DeleteImageBatch(ctx context.Context, req *physicalgoodpb.DeleteImageBatchRequest) (*physicalgoodpb.DeleteImageBatchResponse, error)
 	// Close tears down connection to the client and all underlying connections.
 	Close() error
 }
@@ -286,6 +302,28 @@ func (c *Client) AddImage(ctx context.Context, req *physicalgoodpb.AddImageReque
 // Returns `NotFound` gRPC error if any of records is not found.
 func (c *Client) DeleteImage(ctx context.Context, req *physicalgoodpb.DeleteImageRequest) (*physicalgoodpb.DeleteImageResponse, error) {
 	return c.client.DeleteImage(ctx, req)
+}
+
+// AddImageBatch calls [PhysicalGoodServiceServer.AddImageBatch] method via client connection
+// to add an image for a batch of physical goods. It's called by media-service-go
+// upon successful image uplaod.
+//
+// Returns the number of affected physical goods.
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the physical goods were found.
+func (c *Client) AddImageBatch(ctx context.Context, req *physicalgoodpb.AddImageBatchRequest) (*physicalgoodpb.AddImageBatchResponse, error) {
+	return c.client.AddImageBatch(ctx, req)
+}
+
+// DeleteImageBatch calls [PhysicalGoodServiceServer.DeleteImageBatch] method via client connection
+// to delete an image from a batch of physical goods. It's called by media-service-go
+// upon successful image deletion.
+//
+// Returns the number of affected physical goods.
+// Returns `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns `NotFound` gRPC error none of the physical goods were found or the image was not found.
+func (c *Client) DeleteImageBatch(ctx context.Context, req *physicalgoodpb.DeleteImageBatchRequest) (*physicalgoodpb.DeleteImageBatchResponse, error) {
+	return c.client.DeleteImageBatch(ctx, req)
 }
 
 // Close tears down connection to the client and all underlying connections.
