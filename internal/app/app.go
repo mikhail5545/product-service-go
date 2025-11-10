@@ -30,6 +30,7 @@ import (
 	"github.com/mikhail5545/product-service-go/internal/database"
 	courserepo "github.com/mikhail5545/product-service-go/internal/database/course"
 	cprepo "github.com/mikhail5545/product-service-go/internal/database/course_part"
+	imagerepo "github.com/mikhail5545/product-service-go/internal/database/image"
 	physicalgoodrepo "github.com/mikhail5545/product-service-go/internal/database/physical_good"
 	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
 	seminarrepo "github.com/mikhail5545/product-service-go/internal/database/seminar"
@@ -43,6 +44,7 @@ import (
 	tsserver "github.com/mikhail5545/product-service-go/internal/server/training_session"
 	courseservice "github.com/mikhail5545/product-service-go/internal/services/course"
 	cpservice "github.com/mikhail5545/product-service-go/internal/services/course_part"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
 	physicalgoodservice "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	productservice "github.com/mikhail5545/product-service-go/internal/services/product"
 	seminarservice "github.com/mikhail5545/product-service-go/internal/services/seminar"
@@ -84,14 +86,16 @@ func Run(ctx context.Context) {
 	seminarRepo := seminarrepo.New(db)
 	coursePartRepo := cprepo.New(db)
 	physicalGoodRepo := physicalgoodrepo.New(db)
+	imageRepo := imagerepo.New(db)
 
 	// Create an instance of required services
 	productService := productservice.New(productRepo)
-	trainingSessionService := tsservice.New(trainingSessionRepo, productRepo)
-	courseService := courseservice.New(courseRepo, productRepo, coursePartRepo)
-	seminarService := seminarservice.New(seminarRepo, productRepo)
+	imageService := imageservice.New(imageRepo)
+	trainingSessionService := tsservice.New(trainingSessionRepo, productRepo, imageService)
+	courseService := courseservice.New(courseRepo, productRepo, coursePartRepo, imageService)
+	seminarService := seminarservice.New(seminarRepo, productRepo, imageService)
 	coursePartService := cpservice.New(coursePartRepo, courseRepo)
-	physicalGoodService := physicalgoodservice.New(physicalGoodRepo, productRepo)
+	physicalGoodService := physicalgoodservice.New(physicalGoodRepo, productRepo, imageService)
 
 	// --- Start gRPC server ---
 	go func() {

@@ -43,18 +43,32 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // AddImage mocks base method.
-func (m *MockService) AddImage(ctx context.Context, req *image.AddRequest) (*image.AddResponse, error) {
+func (m *MockService) AddImage(ctx context.Context, req *image.AddRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddImage", ctx, req)
-	ret0, _ := ret[0].(*image.AddResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // AddImage indicates an expected call of AddImage.
 func (mr *MockServiceMockRecorder) AddImage(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddImage", reflect.TypeOf((*MockService)(nil).AddImage), ctx, req)
+}
+
+// AddImageBatch mocks base method.
+func (m *MockService) AddImageBatch(ctx context.Context, req *image.AddBatchRequest) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddImageBatch", ctx, req)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddImageBatch indicates an expected call of AddImageBatch.
+func (mr *MockServiceMockRecorder) AddImageBatch(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddImageBatch", reflect.TypeOf((*MockService)(nil).AddImageBatch), ctx, req)
 }
 
 // Create mocks base method.
@@ -98,6 +112,21 @@ func (m *MockService) DeleteImage(ctx context.Context, req *image.DeleteRequest)
 func (mr *MockServiceMockRecorder) DeleteImage(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockService)(nil).DeleteImage), ctx, req)
+}
+
+// DeleteImageBatch mocks base method.
+func (m *MockService) DeleteImageBatch(ctx context.Context, req *image.DeleteBatchRequst) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteImageBatch", ctx, req)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteImageBatch indicates an expected call of DeleteImageBatch.
+func (mr *MockServiceMockRecorder) DeleteImageBatch(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImageBatch", reflect.TypeOf((*MockService)(nil).DeleteImageBatch), ctx, req)
 }
 
 // DeletePermanent mocks base method.
