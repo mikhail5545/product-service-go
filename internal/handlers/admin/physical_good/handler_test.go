@@ -28,7 +28,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	physicalgood "github.com/mikhail5545/product-service-go/internal/models/physical_good"
-	pjysicalgood "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	physicalgoodservice "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	physicalgoodmock "github.com/mikhail5545/product-service-go/internal/test/services/physical_good_mock"
 	"github.com/stretchr/testify/assert"
@@ -44,8 +43,8 @@ func TestHandler_Get(t *testing.T) {
 
 	goodID := uuid.New().String()
 
-	mockPhysicalGoodDetails := &pjysicalgood.PhysicalGoodDetails{
-		PhysicalGood: physicalgood.PhysicalGood{
+	mockPhysicalGoodDetails := &physicalgood.PhysicalGoodDetails{
+		PhysicalGood: &physicalgood.PhysicalGood{
 			ID:               goodID,
 			Name:             "Physical good name",
 			ShortDescription: "Physical good short description",
@@ -85,11 +84,7 @@ func TestHandler_Get(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Get(gomock.Any(), goodID).Return(nil, serviceErr)
+		mockService.EXPECT().Get(gomock.Any(), goodID).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.Get(c)
@@ -129,8 +124,8 @@ func TestHandler_GetWithDeleted(t *testing.T) {
 
 	goodID := uuid.New().String()
 
-	mockPhysicalGoodDetails := &pjysicalgood.PhysicalGoodDetails{
-		PhysicalGood: physicalgood.PhysicalGood{
+	mockPhysicalGoodDetails := &physicalgood.PhysicalGoodDetails{
+		PhysicalGood: &physicalgood.PhysicalGood{
 			ID:               goodID,
 			Name:             "Physical good name",
 			ShortDescription: "Physical good short description",
@@ -170,11 +165,7 @@ func TestHandler_GetWithDeleted(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), goodID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), goodID).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.GetWithDeleted(c)
@@ -214,8 +205,8 @@ func TestHandler_GetWithUnpublished(t *testing.T) {
 
 	goodID := uuid.New().String()
 
-	mockPhysicalGoodDetails := &pjysicalgood.PhysicalGoodDetails{
-		PhysicalGood: physicalgood.PhysicalGood{
+	mockPhysicalGoodDetails := &physicalgood.PhysicalGoodDetails{
+		PhysicalGood: &physicalgood.PhysicalGood{
 			ID:               goodID,
 			Name:             "Physical good name",
 			ShortDescription: "Physical good short description",
@@ -255,11 +246,7 @@ func TestHandler_GetWithUnpublished(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), goodID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), goodID).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.GetWithUnpublished(c)
@@ -302,7 +289,7 @@ func TestHandler_List(t *testing.T) {
 
 	mockPhysicalGoodDetails := []physicalgood.PhysicalGoodDetails{
 		{
-			PhysicalGood: pjysicalgood.PhysicalGood{
+			PhysicalGood: &physicalgood.PhysicalGood{
 				ID:               goodID_1,
 				Name:             "Physical good name 1",
 				ShortDescription: "Physical good short description 1",
@@ -311,7 +298,7 @@ func TestHandler_List(t *testing.T) {
 			ProductID: uuid.New().String(),
 		},
 		{
-			PhysicalGood: pjysicalgood.PhysicalGood{
+			PhysicalGood: &physicalgood.PhysicalGood{
 				ID:               goodID_2,
 				Name:             "Physical good name 2",
 				ShortDescription: "Physical good short description 2",
@@ -348,11 +335,7 @@ func TestHandler_List(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().List(gomock.Any(), 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().List(gomock.Any(), 2, 0).Return(nil, int64(0), physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.List(c)
@@ -375,7 +358,7 @@ func TestHandler_ListUnpublished(t *testing.T) {
 
 	mockPhysicalGoodDetails := []physicalgood.PhysicalGoodDetails{
 		{
-			PhysicalGood: pjysicalgood.PhysicalGood{
+			PhysicalGood: &physicalgood.PhysicalGood{
 				ID:               goodID_1,
 				Name:             "Physical good name 1",
 				ShortDescription: "Physical good short description 1",
@@ -384,7 +367,7 @@ func TestHandler_ListUnpublished(t *testing.T) {
 			ProductID: uuid.New().String(),
 		},
 		{
-			PhysicalGood: pjysicalgood.PhysicalGood{
+			PhysicalGood: &physicalgood.PhysicalGood{
 				ID:               goodID_2,
 				Name:             "Physical good name 2",
 				ShortDescription: "Physical good short description 2",
@@ -421,11 +404,7 @@ func TestHandler_ListUnpublished(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().ListUnpublished(gomock.Any(), 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().ListUnpublished(gomock.Any(), 2, 0).Return(nil, int64(0), physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.ListUnpublished(c)
@@ -448,7 +427,7 @@ func TestHandler_ListDeleted(t *testing.T) {
 
 	mockPhysicalGoodDetails := []physicalgood.PhysicalGoodDetails{
 		{
-			PhysicalGood: pjysicalgood.PhysicalGood{
+			PhysicalGood: &physicalgood.PhysicalGood{
 				ID:               goodID_1,
 				Name:             "Physical good name 1",
 				ShortDescription: "Physical good short description 1",
@@ -457,7 +436,7 @@ func TestHandler_ListDeleted(t *testing.T) {
 			ProductID: uuid.New().String(),
 		},
 		{
-			PhysicalGood: pjysicalgood.PhysicalGood{
+			PhysicalGood: &physicalgood.PhysicalGood{
 				ID:               goodID_2,
 				Name:             "Physical good name 2",
 				ShortDescription: "Physical good short description 2",
@@ -494,11 +473,7 @@ func TestHandler_ListDeleted(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().ListDeleted(gomock.Any(), 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().ListDeleted(gomock.Any(), 2, 0).Return(nil, int64(0), physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.ListDeleted(c)
@@ -563,11 +538,7 @@ func TestHandler_Create(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Failed to create physical good",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, serviceErr)
+		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.Create(c)
@@ -650,11 +621,7 @@ func TestHandler_Publish(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Publish(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Publish(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.Publish(c)
@@ -721,11 +688,7 @@ func TestHandler_Unpublish(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Unpublish(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Unpublish(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.Unpublish(c)
@@ -820,12 +783,8 @@ func TestHandler_Update(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Failed to update physical good",
-			Code: http.StatusInternalServerError,
-		}
 		updateReq.ID = goodID
-		mockService.EXPECT().Update(gomock.Any(), &updateReq).Return(nil, serviceErr)
+		mockService.EXPECT().Update(gomock.Any(), &updateReq).Return(nil, physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.Update(c)
@@ -892,11 +851,7 @@ func TestHandler_Delete(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Delete(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Delete(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.Delete(c)
@@ -963,11 +918,7 @@ func TestHandler_DeletePermanent(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().DeletePermanent(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().DeletePermanent(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.DeletePermanent(c)
@@ -1034,11 +985,7 @@ func TestHandler_Restore(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(goodID)
 
-		serviceErr := &physicalgoodservice.Error{
-			Msg:  "Physical good not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Restore(gomock.Any(), goodID).Return(serviceErr)
+		mockService.EXPECT().Restore(gomock.Any(), goodID).Return(physicalgoodservice.ErrNotFound)
 
 		// Act
 		err := handler.Restore(c)

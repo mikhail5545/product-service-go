@@ -44,7 +44,7 @@ func TestHandler_Get(t *testing.T) {
 	courseID := uuid.New().String()
 
 	mockCourseDetails := &course.CourseDetails{
-		Course: course.Course{
+		Course: &course.Course{
 			ID:               courseID,
 			Name:             "Course name",
 			ShortDescription: "Short course description",
@@ -75,7 +75,7 @@ func TestHandler_Get(t *testing.T) {
 		assert.JSONEq(t, string(expectedJSON), rec.Body.String())
 	})
 
-	t.Run("service error", func(t *testing.T) {
+	t.Run("not found", func(t *testing.T) {
 		// Arrange
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -84,11 +84,26 @@ func TestHandler_Get(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Get(gomock.Any(), courseID).Return(nil, serviceErr)
+		mockService.EXPECT().Get(gomock.Any(), courseID).Return(nil, courseservice.ErrNotFound)
+
+		// Act
+		err := handler.Get(c)
+
+		// Assert
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+	})
+
+	t.Run("bad reqeust", func(t *testing.T) {
+		// Arrange
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames(":id")
+		c.SetParamValues(courseID)
+
+		mockService.EXPECT().Get(gomock.Any(), courseID).Return(nil, courseservice.ErrInvalidArgument)
 
 		// Act
 		err := handler.Get(c)
@@ -129,7 +144,7 @@ func TestHandler_GetWithDeleted(t *testing.T) {
 	courseID := uuid.New().String()
 
 	mockCourseDetails := &course.CourseDetails{
-		Course: course.Course{
+		Course: &course.Course{
 			ID:               courseID,
 			Name:             "Course name",
 			ShortDescription: "Short course description",
@@ -169,11 +184,7 @@ func TestHandler_GetWithDeleted(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithDeleted(gomock.Any(), courseID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithDeleted(gomock.Any(), courseID).Return(nil, courseservice.ErrNotFound)
 
 		// Act
 		err := handler.GetWithDeleted(c)
@@ -214,7 +225,7 @@ func TestHandler_GetWithUnpublished(t *testing.T) {
 	courseID := uuid.New().String()
 
 	mockCourseDetails := &course.CourseDetails{
-		Course: course.Course{
+		Course: &course.Course{
 			ID:               courseID,
 			Name:             "Course name",
 			ShortDescription: "Short course description",
@@ -254,11 +265,7 @@ func TestHandler_GetWithUnpublished(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(nil, serviceErr)
+		mockService.EXPECT().GetWithUnpublished(gomock.Any(), courseID).Return(nil, courseservice.ErrNotFound)
 
 		// Act
 		err := handler.GetWithUnpublished(c)
@@ -301,7 +308,7 @@ func TestHandler_List(t *testing.T) {
 
 	mockCourseDetails := []course.CourseDetails{
 		{
-			Course: course.Course{
+			Course: &course.Course{
 				ID:               courseID_1,
 				Name:             "Course 1 name",
 				ShortDescription: "Course 1 short description",
@@ -310,7 +317,7 @@ func TestHandler_List(t *testing.T) {
 			ProductID: uuid.New().String(),
 		},
 		{
-			Course: course.Course{
+			Course: &course.Course{
 				ID:               courseID_2,
 				Name:             "Course 2 name",
 				ShortDescription: "Course 2 short description",
@@ -347,11 +354,7 @@ func TestHandler_List(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().List(gomock.Any(), 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().List(gomock.Any(), 2, 0).Return(nil, int64(0), courseservice.ErrNotFound)
 
 		// Act
 		err := handler.List(c)
@@ -390,7 +393,7 @@ func TestHandler_ListDeleted(t *testing.T) {
 
 	mockCourseDetails := []course.CourseDetails{
 		{
-			Course: course.Course{
+			Course: &course.Course{
 				ID:               courseID_1,
 				Name:             "Course 1 name",
 				ShortDescription: "Course 1 short description",
@@ -399,7 +402,7 @@ func TestHandler_ListDeleted(t *testing.T) {
 			ProductID: uuid.New().String(),
 		},
 		{
-			Course: course.Course{
+			Course: &course.Course{
 				ID:               courseID_2,
 				Name:             "Course 2 name",
 				ShortDescription: "Course 2 short description",
@@ -436,11 +439,7 @@ func TestHandler_ListDeleted(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().ListDeleted(gomock.Any(), 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().ListDeleted(gomock.Any(), 2, 0).Return(nil, int64(0), courseservice.ErrNotFound)
 
 		// Act
 		err := handler.ListDeleted(c)
@@ -479,7 +478,7 @@ func TestHandler_ListUnpublished(t *testing.T) {
 
 	mockCourseDetails := []course.CourseDetails{
 		{
-			Course: course.Course{
+			Course: &course.Course{
 				ID:               courseID_1,
 				Name:             "Course 1 name",
 				ShortDescription: "Course 1 short description",
@@ -488,7 +487,7 @@ func TestHandler_ListUnpublished(t *testing.T) {
 			ProductID: uuid.New().String(),
 		},
 		{
-			Course: course.Course{
+			Course: &course.Course{
 				ID:               courseID_2,
 				Name:             "Course 2 name",
 				ShortDescription: "Course 2 short description",
@@ -525,11 +524,7 @@ func TestHandler_ListUnpublished(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().ListUnpublished(gomock.Any(), 2, 0).Return(nil, int64(0), serviceErr)
+		mockService.EXPECT().ListUnpublished(gomock.Any(), 2, 0).Return(nil, int64(0), courseservice.ErrNotFound)
 
 		// Act
 		err := handler.ListUnpublished(c)
@@ -610,18 +605,14 @@ func TestHandler_Create(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Failed to create course",
-			Code: http.StatusInternalServerError,
-		}
-		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, serviceErr)
+		mockService.EXPECT().Create(gomock.Any(), &createReq).Return(nil, courseservice.ErrInvalidArgument)
 
 		// Act
 		err := handler.Create(c)
 
 		// Assert
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
 	})
 
 	t.Run("bind error", func(t *testing.T) {
@@ -699,11 +690,7 @@ func TestHandler_Publish(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Publish(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Publish(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		err := handler.Publish(c)
@@ -770,11 +757,7 @@ func TestHandler_Unpublish(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Unpublish(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Unpublish(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		err := handler.Unpublish(c)
@@ -869,19 +852,15 @@ func TestHandler_Update(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Failed to update course",
-			Code: http.StatusInternalServerError,
-		}
 		updateReq.ID = courseID
-		mockService.EXPECT().Update(gomock.Any(), &updateReq).Return(nil, serviceErr)
+		mockService.EXPECT().Update(gomock.Any(), &updateReq).Return(nil, courseservice.ErrNotFound)
 
 		// Act
 		err := handler.Update(c)
 
 		// Assert
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		assert.Equal(t, http.StatusNotFound, rec.Code)
 	})
 }
 
@@ -941,11 +920,7 @@ func TestHandler_Delete(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Delete(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Delete(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		err := handler.Delete(c)
@@ -1012,11 +987,7 @@ func TestHandler_DeletePermanent(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().DeletePermanent(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().DeletePermanent(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		err := handler.DeletePermanent(c)
@@ -1083,11 +1054,7 @@ func TestHandler_Restore(t *testing.T) {
 		c.SetParamNames(":id")
 		c.SetParamValues(courseID)
 
-		serviceErr := &courseservice.Error{
-			Msg:  "Course not found",
-			Code: http.StatusNotFound,
-		}
-		mockService.EXPECT().Restore(gomock.Any(), courseID).Return(serviceErr)
+		mockService.EXPECT().Restore(gomock.Any(), courseID).Return(courseservice.ErrNotFound)
 
 		// Act
 		err := handler.Restore(c)

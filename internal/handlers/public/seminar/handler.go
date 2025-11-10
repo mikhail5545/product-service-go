@@ -39,9 +39,10 @@ func (h *Handler) ServeError(c echo.Context, code int, msg string) error {
 }
 
 func (h *Handler) HandleServiceError(c echo.Context, err error) error {
-	var se *seminarservice.Error
-	if errors.As(err, &se) {
-		return c.JSON(se.GetCode(), map[string]any{"error": se.Msg})
+	if errors.Is(err, seminarservice.ErrNotFound) || errors.Is(err, seminarservice.ErrImageNotFoundOnOwner) || errors.Is(err, seminarservice.ErrProductsNotFound) {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+	} else if errors.Is(err, seminarservice.ErrInvalidArgument) || errors.Is(err, seminarservice.ErrImageLimitExceeded) {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusInternalServerError, map[string]any{"error": "Internal server error"})
 }
