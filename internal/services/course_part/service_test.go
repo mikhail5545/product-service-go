@@ -20,7 +20,6 @@ package coursepart
 import (
 	"context"
 	"errors"
-	"net/http"
 	"reflect"
 	"testing"
 
@@ -29,6 +28,7 @@ import (
 	coursepart "github.com/mikhail5545/product-service-go/internal/models/course_part"
 	coursemock "github.com/mikhail5545/product-service-go/internal/test/database/course_mock"
 	coursepartmock "github.com/mikhail5545/product-service-go/internal/test/database/course_part_mock"
+	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -59,10 +59,7 @@ func TestService_Get(t *testing.T) {
 		part, err := testService.Get(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Get() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(part, mockPart) {
 			t.Errorf("Get() got = %v, want %v", part, mockPart)
 		}
@@ -76,18 +73,8 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -98,18 +85,8 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -121,18 +98,7 @@ func TestService_Get(t *testing.T) {
 		_, err := testService.Get(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -161,10 +127,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 		part, err := testService.GetWithDeleted(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Get() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(part, mockPart) {
 			t.Errorf("Get() got = %v, want %v", part, mockPart)
 		}
@@ -178,18 +141,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -200,18 +153,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -223,18 +166,7 @@ func TestService_GetWithDeleted(t *testing.T) {
 		_, err := testService.GetWithDeleted(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Get() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Get() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Get() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -263,10 +195,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		part, err := testService.GetWithUnpublished(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Get() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(part, mockPart) {
 			t.Errorf("GetWithUnpublished() got = %v, want %v", part, mockPart)
 		}
@@ -280,18 +209,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -302,18 +221,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -325,18 +234,7 @@ func TestService_GetWithUnpublished(t *testing.T) {
 		_, err := testService.GetWithUnpublished(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublished() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetWithUnpublished() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -365,10 +263,7 @@ func TestService_GetReduced(t *testing.T) {
 		part, err := testService.GetReduced(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Get() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(part, mockPart) {
 			t.Errorf("GetReduced() got = %v, want %v", part, mockPart)
 		}
@@ -382,18 +277,8 @@ func TestService_GetReduced(t *testing.T) {
 		_, err := testService.GetReduced(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetReduced() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -404,18 +289,8 @@ func TestService_GetReduced(t *testing.T) {
 		_, err := testService.GetReduced(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetReduced() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -427,18 +302,7 @@ func TestService_GetReduced(t *testing.T) {
 		_, err := testService.GetReduced(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetReduced() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -467,10 +331,7 @@ func TestService_GetWithDeletedReduced(t *testing.T) {
 		part, err := testService.GetWithDeletedReduced(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("GetWithDeletedReduced() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(part, mockPart) {
 			t.Errorf("GetWithDeletedReduced() got = %v, want %v", part, mockPart)
 		}
@@ -484,18 +345,8 @@ func TestService_GetWithDeletedReduced(t *testing.T) {
 		_, err := testService.GetWithDeletedReduced(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeletedReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeletedReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetWithDeletedReduced() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -506,18 +357,8 @@ func TestService_GetWithDeletedReduced(t *testing.T) {
 		_, err := testService.GetWithDeletedReduced(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeletedReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeletedReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetWithDeletedReduced() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -529,18 +370,7 @@ func TestService_GetWithDeletedReduced(t *testing.T) {
 		_, err := testService.GetWithDeletedReduced(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithDeletedReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithDeletedReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetWithDeletedReduced() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -569,10 +399,7 @@ func TestService_GetWithUnpublishedReduced(t *testing.T) {
 		part, err := testService.GetWithUnpublishedReduced(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("GetWithUnpublishedReduced() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if !reflect.DeepEqual(part, mockPart) {
 			t.Errorf("GetWithUnpublishedReduced() got = %v, want %v", part, mockPart)
 		}
@@ -586,18 +413,8 @@ func TestService_GetWithUnpublishedReduced(t *testing.T) {
 		_, err := testService.GetWithUnpublishedReduced(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublishedReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublishedReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("GetWithUnpublishedReduced() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -608,18 +425,8 @@ func TestService_GetWithUnpublishedReduced(t *testing.T) {
 		_, err := testService.GetWithUnpublishedReduced(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublishedReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublishedReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("GetWithUnpublishedReduced() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -631,18 +438,7 @@ func TestService_GetWithUnpublishedReduced(t *testing.T) {
 		_, err := testService.GetWithUnpublishedReduced(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("GetWithUnpublishedReduced() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("GetWithUnpublishedReduced() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("GetWithUnpublishedReduced() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -684,16 +480,9 @@ func TestService_List(t *testing.T) {
 		parts, total, err := testService.List(context.Background(), courseID, limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("List() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("List() got = %v, want %v", total, 2)
-		}
-		if len(parts) != len(mockParts) {
-			t.Errorf("List() got %d items, want %d", len(parts), len(mockParts))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(mockParts), len(parts))
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -705,18 +494,8 @@ func TestService_List(t *testing.T) {
 		_, _, err := testService.List(context.Background(), invalidID, limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("List() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("List() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("List() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -729,18 +508,7 @@ func TestService_List(t *testing.T) {
 		_, _, err := testService.List(context.Background(), courseID, limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("List() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("List() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("List() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -782,16 +550,9 @@ func TestService_ListDeleted(t *testing.T) {
 		parts, total, err := testService.ListDeleted(context.Background(), courseID, limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListDeleted() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("ListDeleted() got = %v, want %v", total, 2)
-		}
-		if len(parts) != len(mockParts) {
-			t.Errorf("ListDeleted() got %d items, want %d", len(parts), len(mockParts))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(mockParts), len(parts))
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -803,18 +564,8 @@ func TestService_ListDeleted(t *testing.T) {
 		_, _, err := testService.ListDeleted(context.Background(), invalidID, limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListDeleted() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("ListDeleted() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -827,18 +578,7 @@ func TestService_ListDeleted(t *testing.T) {
 		_, _, err := testService.ListDeleted(context.Background(), courseID, limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListDeleted() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListDeleted() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListDeleted() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -880,16 +620,9 @@ func TestService_ListUnpublished(t *testing.T) {
 		parts, total, err := testService.ListUnpublished(context.Background(), courseID, limit, offset)
 
 		// Assert
-		if err != nil {
-			t.Errorf("ListUnpublished() error = %v, wantErr %v", err, nil)
-			return
-		}
-		if total != 2 {
-			t.Errorf("ListUnpublished() got = %v, want %v", total, 2)
-		}
-		if len(parts) != len(mockParts) {
-			t.Errorf("ListUnpublished() got %d items, want %d", len(parts), len(mockParts))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, int64(2), total)
+		assert.Equal(t, len(mockParts), len(parts))
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -901,18 +634,8 @@ func TestService_ListUnpublished(t *testing.T) {
 		_, _, err := testService.ListUnpublished(context.Background(), invalidID, limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListUnpublished() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("ListUnpublished() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -925,18 +648,7 @@ func TestService_ListUnpublished(t *testing.T) {
 		_, _, err := testService.ListUnpublished(context.Background(), courseID, limit, offset)
 
 		// Assert
-		if err == nil {
-			t.Errorf("ListUnpublished() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("ListUnpublished() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("ListUnpublished() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -990,30 +702,18 @@ func TestService_Create(t *testing.T) {
 		resp, err := testService.Create(context.Background(), &createReq)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Create() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 		if _, err := uuid.Parse(createdPart.ID); err != nil {
 			t.Errorf("expected coursePart.ID to be a valid UUID, got %s", createdPart.ID)
 		}
+		assert.Equal(t, createReq.Name, createdPart.Name)
+		assert.Equal(t, createReq.ShortDescription, createdPart.ShortDescription)
+		assert.Equal(t, createReq.Number, createdPart.Number)
+		assert.Equal(t, createdPart.ID, resp.ID)
+		assert.Equal(t, createdPart.CourseID, resp.CourseID)
+
 		if _, err := uuid.Parse(createdPart.CourseID); err != nil {
 			t.Errorf("expected coursePart.CourseID to be a valid UUID, got %s", createdPart.CourseID)
-		}
-		if createdPart.Name != createReq.Name {
-			t.Errorf("coursePart.Name = %s, want %s", createdPart.Name, createReq.Name)
-		}
-		if createdPart.ShortDescription != createReq.ShortDescription {
-			t.Errorf("coursePart.ShortDescription = %s, want %s", createdPart.ShortDescription, createReq.ShortDescription)
-		}
-		if createdPart.Number != createReq.Number {
-			t.Errorf("coursePart.Number = %d, want %d", createdPart.Number, createReq.Number)
-		}
-		if resp.ID != createdPart.ID {
-			t.Errorf("response ID = %s, want %s", resp.ID, createdPart.ID)
-		}
-		if resp.CourseID != createdPart.CourseID {
-			t.Errorf("response CourseID = %s, want %s", resp.CourseID, createdPart.CourseID)
 		}
 	})
 
@@ -1035,18 +735,8 @@ func TestService_Create(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Create() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Create() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Create() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("course not found", func(t *testing.T) {
@@ -1064,18 +754,8 @@ func TestService_Create(t *testing.T) {
 		_, err := testService.Create(context.Background(), &createReq)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Create() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Create() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Create() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("part with this number already exists", func(t *testing.T) {
@@ -1094,18 +774,8 @@ func TestService_Create(t *testing.T) {
 		_, err := testService.Create(context.Background(), &createReq)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Create() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Create() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Create() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1126,18 +796,7 @@ func TestService_Create(t *testing.T) {
 		_, err := testService.Create(context.Background(), &createReq)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Create() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Create() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Create() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1194,10 +853,7 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Publish() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1208,18 +864,8 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Publish() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Publish() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1237,18 +883,8 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Publish() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Publish() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1269,18 +905,7 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Publish() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Publish() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("course not published", func(t *testing.T) {
@@ -1300,18 +925,8 @@ func TestService_Publish(t *testing.T) {
 		err := testService.Publish(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Publish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Publish() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Publish() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 }
 
@@ -1349,10 +964,7 @@ func TestService_Unpublished(t *testing.T) {
 		err := testService.Unpublish(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Errorf("Unpublish() error = %v, wantErr %v", err, nil)
-			return
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1363,18 +975,8 @@ func TestService_Unpublished(t *testing.T) {
 		err := testService.Unpublish(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Unpublish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Unpublish() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Unpublish() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1390,18 +992,8 @@ func TestService_Unpublished(t *testing.T) {
 		err := testService.Unpublish(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Unpublish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Unpublish() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Unpublish() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1418,18 +1010,7 @@ func TestService_Unpublished(t *testing.T) {
 		err := testService.Unpublish(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Unpublish() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Unpublish() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Unpublish() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1495,9 +1076,7 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err != nil {
-			t.Fatalf("Update() error = %v, wantErr %v", err, nil)
-		}
+		assert.NoError(t, err)
 
 		if name, ok := updates["name"].(string); !ok || name != newName {
 			t.Errorf("coursePart.Name in response = %v, want %s", updates["name"], newName)
@@ -1541,18 +1120,8 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Update() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Update() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Update() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1575,18 +1144,8 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Update() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Update() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Update() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("part with this number already exists", func(t *testing.T) {
@@ -1610,18 +1169,8 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Update() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Update() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Update() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1647,18 +1196,7 @@ func TestService_Update(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("Update() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Update() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Update() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1712,9 +1250,7 @@ func TestService_AddVideo(t *testing.T) {
 		})
 
 		// Assert
-		if err != nil {
-			t.Fatalf("AddVideo() error = %v, wantErr %v", err, nil)
-		}
+		assert.NoError(t, err)
 		if muxID, ok := updates["mux_video_id"].(string); !ok || muxID != newMuxVideoID {
 			t.Errorf("coursePart.MUXVideoID passed to repo %v, want %s", updates["mux_video_id"], newMuxVideoID)
 		}
@@ -1737,18 +1273,8 @@ func TestService_AddVideo(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("AddVideo() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("AddVideo() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("AddVideo() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1767,18 +1293,8 @@ func TestService_AddVideo(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("AddVideo() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("AddVideo() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("AddVideo() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1799,18 +1315,7 @@ func TestService_AddVideo(t *testing.T) {
 		})
 
 		// Assert
-		if err == nil {
-			t.Errorf("AddVideo() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("AddVideo() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("AddVideo() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1850,9 +1355,7 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Fatalf("Delete() error = %v, wantErr %v", err, nil)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1863,18 +1366,8 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -1890,18 +1383,8 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -1920,18 +1403,7 @@ func TestService_Delete(t *testing.T) {
 		err := testService.Delete(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -1969,9 +1441,7 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Fatalf("DeletePermanent() error = %v, wantErr %v", err, nil)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -1982,18 +1452,8 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("DeletePermanent() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("DeletePermanent() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("DeletePermanent() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -2009,18 +1469,8 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -2037,18 +1487,7 @@ func TestService_DeletePermanent(t *testing.T) {
 		err := testService.DeletePermanent(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Delete() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Delete() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Delete() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }
 
@@ -2086,9 +1525,7 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), partID)
 
 		// Assert
-		if err != nil {
-			t.Fatalf("Restore() error = %v, wantErr %v", err, nil)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -2099,18 +1536,8 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), invalidID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Restore() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Restore() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusBadRequest {
-			t.Errorf("Restore() expected status code %d, got %d", http.StatusBadRequest, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -2126,18 +1553,8 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Restore() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Restore() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusNotFound {
-			t.Errorf("Restore() expected status code %d, got %d", http.StatusNotFound, customErr.Code)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 
 	t.Run("db error", func(t *testing.T) {
@@ -2154,17 +1571,6 @@ func TestService_Restore(t *testing.T) {
 		err := testService.Restore(context.Background(), partID)
 
 		// Assert
-		if err == nil {
-			t.Errorf("Restore() expected an error, but got nil")
-			return
-		}
-		var customErr *Error
-		if !errors.As(err, &customErr) {
-			t.Errorf("Restore() expected a custom error type, got %T", err)
-			return
-		}
-		if customErr.Code != http.StatusInternalServerError {
-			t.Errorf("Restore() expected status code %d, got %d", http.StatusInternalServerError, customErr.Code)
-		}
+		assert.Error(t, err)
 	})
 }

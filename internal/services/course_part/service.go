@@ -20,10 +20,8 @@ package coursepart
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 	courserepo "github.com/mikhail5545/product-service-go/internal/database/course"
@@ -161,25 +159,6 @@ type service struct {
 	courseRepo courserepo.Repository
 }
 
-// Error represents a course part service error.
-type Error struct {
-	Msg  string
-	Err  error
-	Code int
-}
-
-func (e *Error) Error() string {
-	return fmt.Sprintf("%s: %v", e.Msg, e.Err)
-}
-
-func (e *Error) Unwrap() error {
-	return e.Err
-}
-
-func (e *Error) GetCode() int {
-	return e.Code
-}
-
 // New creates a new Service instance with the provided course part and course repositories.
 func New(pr coursepartrepo.Repository, cr courserepo.Repository) Service {
 	return &service{
@@ -196,14 +175,14 @@ func New(pr coursepartrepo.Repository, cr courserepo.Repository) Service {
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) Get(ctx context.Context, id string) (*coursepartmodel.CoursePart, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid Course part ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	part, err := s.partRepo.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve course part: %w", err)
 	}
 	// TODO: Implement call to media service to retrieve mux video.
 	return part, nil
@@ -217,14 +196,14 @@ func (s *service) Get(ctx context.Context, id string) (*coursepartmodel.CoursePa
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) GetWithDeleted(ctx context.Context, id string) (*coursepartmodel.CoursePart, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid Course part ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	part, err := s.partRepo.GetWithDeleted(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve course part: %w", err)
 	}
 	// TODO: Implement call to media service to retrieve mux video.
 	return part, nil
@@ -238,14 +217,14 @@ func (s *service) GetWithDeleted(ctx context.Context, id string) (*coursepartmod
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) GetWithUnpublished(ctx context.Context, id string) (*coursepartmodel.CoursePart, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid Course part ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	part, err := s.partRepo.GetWithUnpublished(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve course part: %w", err)
 	}
 	// TODO: Implement call to media service to retrieve mux video.
 	return part, nil
@@ -259,14 +238,14 @@ func (s *service) GetWithUnpublished(ctx context.Context, id string) (*coursepar
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) GetReduced(ctx context.Context, id string) (*coursepartmodel.CoursePart, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid Course part ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	part, err := s.partRepo.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve course part: %w", err)
 	}
 	return part, nil
 }
@@ -279,14 +258,14 @@ func (s *service) GetReduced(ctx context.Context, id string) (*coursepartmodel.C
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) GetWithDeletedReduced(ctx context.Context, id string) (*coursepartmodel.CoursePart, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid Course part ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	part, err := s.partRepo.GetWithDeleted(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve course part: %w", err)
 	}
 	return part, nil
 }
@@ -299,14 +278,14 @@ func (s *service) GetWithDeletedReduced(ctx context.Context, id string) (*course
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) GetWithUnpublishedReduced(ctx context.Context, id string) (*coursepartmodel.CoursePart, error) {
 	if _, err := uuid.Parse(id); err != nil {
-		return nil, &Error{Msg: "Invalid Course part ID", Err: err, Code: http.StatusBadRequest}
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	part, err := s.partRepo.GetWithUnpublished(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return nil, fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
-		return nil, &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+		return nil, fmt.Errorf("failed to retrieve course part: %w", err)
 	}
 	return part, nil
 }
@@ -318,15 +297,15 @@ func (s *service) GetWithUnpublishedReduced(ctx context.Context, id string) (*co
 // Returns an error if the course ID is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) List(ctx context.Context, courseID string, limit, offset int) ([]coursepartmodel.CoursePart, int64, error) {
 	if _, err := uuid.Parse(courseID); err != nil {
-		return nil, 0, &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
+		return nil, 0, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	parts, err := s.partRepo.List(ctx, courseID, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to get course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve course parts: %w", err)
 	}
 	total, err := s.partRepo.Count(ctx, courseID)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to count course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to count course parts: %w", err)
 	}
 	// TODO: Implement call to media service to retrieve mux video.
 	return parts, total, nil
@@ -339,15 +318,15 @@ func (s *service) List(ctx context.Context, courseID string, limit, offset int) 
 // Returns an error if the course ID is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) ListReduced(ctx context.Context, courseID string, limit, offset int) ([]coursepartmodel.CoursePart, int64, error) {
 	if _, err := uuid.Parse(courseID); err != nil {
-		return nil, 0, &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
+		return nil, 0, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	parts, err := s.partRepo.List(ctx, courseID, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to get course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve course parts: %w", err)
 	}
 	total, err := s.partRepo.Count(ctx, courseID)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to count course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to count course parts: %w", err)
 	}
 	return parts, total, nil
 }
@@ -359,15 +338,15 @@ func (s *service) ListReduced(ctx context.Context, courseID string, limit, offse
 // Returns an error if the course ID is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) ListDeleted(ctx context.Context, courseID string, limit, offset int) ([]coursepartmodel.CoursePart, int64, error) {
 	if _, err := uuid.Parse(courseID); err != nil {
-		return nil, 0, &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
+		return nil, 0, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	parts, err := s.partRepo.ListDeleted(ctx, courseID, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to get course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve course parts: %w", err)
 	}
 	total, err := s.partRepo.CountDeleted(ctx, courseID)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to count course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to count course parts: %w", err)
 	}
 	return parts, total, nil
 }
@@ -379,15 +358,15 @@ func (s *service) ListDeleted(ctx context.Context, courseID string, limit, offse
 // Returns an error if the course ID is invalid (http.StatusBadRequest) or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) ListUnpublished(ctx context.Context, courseID string, limit, offset int) ([]coursepartmodel.CoursePart, int64, error) {
 	if _, err := uuid.Parse(courseID); err != nil {
-		return nil, 0, &Error{Msg: "Invalid course ID", Err: err, Code: http.StatusBadRequest}
+		return nil, 0, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	parts, err := s.partRepo.ListUnpublished(ctx, courseID, limit, offset)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to get course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to retrieve course parts: %w", err)
 	}
 	total, err := s.partRepo.CountUnpublished(ctx, courseID)
 	if err != nil {
-		return nil, 0, &Error{Msg: "Failed to count course parts", Err: err, Code: http.StatusInternalServerError}
+		return nil, 0, fmt.Errorf("failed to count course parts: %w", err)
 	}
 	return parts, total, nil
 }
@@ -400,15 +379,14 @@ func (s *service) ListUnpublished(ctx context.Context, courseID string, limit, o
 // Returns an error if the request payload is invalid (http.StatusBadRequest), the associated course is not found (http.StatusNotFound),
 // the part number is not unique within the course (http.StatusBadRequest), or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) Create(ctx context.Context, req *coursepartmodel.CreateRequest) (*coursepartmodel.CreateResponse, error) {
+	if err := req.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
+	}
+
 	var partID, courseID string
 	err := s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txPartRepo := s.partRepo.WithTx(tx)
 		txCourseRepo := s.courseRepo.WithTx(tx)
-
-		if err := req.Validate(); err != nil {
-			validationMsg, _ := json.Marshal(err)
-			return &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
-		}
 
 		part := &coursepartmodel.CoursePart{
 			ID:               uuid.New().String(),
@@ -422,37 +400,24 @@ func (s *service) Create(ctx context.Context, req *coursepartmodel.CreateRequest
 		_, err := txCourseRepo.Select(ctx, part.CourseID, "id") // Only need to check if course exists
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{
-					Msg:  "Course not found",
-					Err:  err,
-					Code: http.StatusNotFound,
-				}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{
-				Msg:  "Failed to get course",
-				Err:  err,
-				Code: http.StatusInternalServerError,
-			}
+			return fmt.Errorf("failed to retrieve course: %w", err)
 		}
 
 		// Check for unique part number within the course
 		count, err := txPartRepo.CountQuery(ctx, "course_id = ? AND number = ?", req.CourseID, req.Number)
 		if err != nil {
-			return &Error{Msg: "Failed to check for unique course part number", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to check for unique course part number: %w", err)
 		}
 		if count != 0 {
-			return &Error{Msg: fmt.Sprintf("Course part with number %d already exists in course %s", req.Number, req.CourseID), Err: nil, Code: http.StatusBadRequest}
+			return fmt.Errorf("%w, course part with number %d already exists in course %s: %w", ErrInvalidArgument, req.Number, req.CourseID, err)
 		}
 
 		if err := txPartRepo.Create(ctx, part); err != nil {
-			return &Error{
-				Msg:  "Failed to create course part",
-				Err:  err,
-				Code: http.StatusInternalServerError,
-			}
+			return fmt.Errorf("failed to create course part: %w", err)
 		}
-		// GORM handles associations automatically when the CoursePart is created with a valid CourseID.
-		// Explicitly updating `course.CourseParts` on the Course model is generally not needed and can be problematic for associations.
+
 		partID = part.ID
 		courseID = part.CourseID
 		return nil
@@ -470,7 +435,7 @@ func (s *service) Create(ctx context.Context, req *coursepartmodel.CreateRequest
 // the parent course is unpublished (http.StatusBadRequest), or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) Publish(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "Invalid course part ID", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	return s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txPartRepo := s.partRepo.WithTx(tx)
@@ -479,25 +444,25 @@ func (s *service) Publish(ctx context.Context, id string) error {
 		part, err := txPartRepo.GetWithUnpublished(ctx, id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to retrieve course part: %w", err)
 		}
 
 		course, err := txCourseRepo.GetReduced(ctx, part.CourseID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{Msg: "Parent course not found", Err: err, Code: http.StatusNotFound}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{Msg: "Failed to get parent course", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to retrieve course: %w", err)
 		}
 
 		if !course.InStock {
-			return &Error{Msg: "Cannot publish course part because parent course is unpublished", Err: nil, Code: http.StatusBadRequest}
+			return fmt.Errorf("%w, cannot publish course part because parent course is not published: %w", ErrInvalidArgument, err)
 		}
 
 		if _, err := txPartRepo.SetPublished(ctx, id, true); err != nil {
-			return &Error{Msg: "Failed to publish course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to publish course part: %w", err)
 		}
 		return nil
 	})
@@ -509,14 +474,14 @@ func (s *service) Publish(ctx context.Context, id string) error {
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) Unpublish(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "Invalid course part ID", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	return s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		ra, err := s.partRepo.WithTx(tx).SetPublished(ctx, id, false)
 		if err != nil {
-			return &Error{Msg: "Failed to unpublish course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to upublish course part: %w", err)
 		} else if ra == 0 {
-			return &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
 		return nil
 	})
@@ -531,21 +496,20 @@ func (s *service) Unpublish(ctx context.Context, id string) error {
 // Returns an error if the request payload is invalid (http.StatusBadRequest), the course part is not found (http.StatusNotFound),
 // the new part number is not unique within the course (http.StatusBadRequest), or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) Update(ctx context.Context, req *coursepartmodel.UpdateRequest) (map[string]any, error) {
+	if err := req.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
+	}
+
 	updates := make(map[string]any)
 	err := s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txPartRepo := s.partRepo.WithTx(tx)
 
-		if err := req.Validate(); err != nil {
-			validationMsg, _ := json.Marshal(err)
-			return &Error{Msg: string(validationMsg), Err: err, Code: http.StatusBadRequest}
-		}
-
 		part, err := txPartRepo.Get(ctx, req.ID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to retrieve course part: %w", err)
 		}
 
 		if req.Name != nil && *req.Name != part.Name {
@@ -560,10 +524,10 @@ func (s *service) Update(ctx context.Context, req *coursepartmodel.UpdateRequest
 		if req.Number != nil && *req.Number != part.Number {
 			count, err := txPartRepo.CountQuery(ctx, "course_id = ? AND number = ?", part.CourseID, *req.Number) // Use part.CourseID
 			if err != nil {
-				return &Error{Msg: "Failed to check for unique course part number", Err: err, Code: http.StatusInternalServerError}
+				return fmt.Errorf("failed to check for unique course part number: %w", err)
 			}
 			if count > 0 { // If count is greater than 0, a part with this number already exists in this course
-				return &Error{Msg: fmt.Sprintf("Course part with number %d already exists in course %s", *req.Number, part.CourseID), Err: nil, Code: http.StatusBadRequest}
+				return fmt.Errorf("%w, course part with number %d already exists in course %s: %w", ErrInvalidArgument, *req.Number, part.CourseID, err)
 			}
 			updates["number"] = *req.Number
 		}
@@ -573,7 +537,7 @@ func (s *service) Update(ctx context.Context, req *coursepartmodel.UpdateRequest
 
 		if len(updates) > 0 {
 			if _, err := txPartRepo.Update(ctx, part, updates); err != nil {
-				return &Error{Msg: "Failed to update course part", Err: err, Code: http.StatusInternalServerError}
+				return fmt.Errorf("failed to update course part: %w", err)
 			}
 		}
 		return nil
@@ -590,21 +554,19 @@ func (s *service) Update(ctx context.Context, req *coursepartmodel.UpdateRequest
 // Returns an error if the request payload is invalid (http.StatusBadRequest), the course part is not found (http.StatusNotFound),
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) AddVideo(ctx context.Context, req *coursepartmodel.AddVideoRequest) (map[string]any, error) {
+	if err := req.Validate(); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
+	}
 	updates := make(map[string]any)
 	err := s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txPartRepo := s.partRepo.WithTx(tx)
 
-		if err := req.Validate(); err != nil {
-			validateMsg, _ := json.Marshal(err)
-			return &Error{Msg: string(validateMsg), Err: err, Code: http.StatusBadRequest}
-		}
-
 		part, err := txPartRepo.Select(ctx, req.ID, "id", "course_id", "mux_video_id")
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to retrieve course part: %w", err)
 		}
 
 		// Only update if the new MUXVideoID is different from the existing one
@@ -614,10 +576,9 @@ func (s *service) AddVideo(ctx context.Context, req *coursepartmodel.AddVideoReq
 
 		if len(updates) > 0 { // Only perform update if there are actual changes
 			if _, err := txPartRepo.Update(ctx, part, updates); err != nil {
-				return &Error{Msg: "Failed to update course part", Err: err, Code: http.StatusInternalServerError}
+				return fmt.Errorf("failed to update course part: %w", err)
 			}
 		}
-
 		return nil
 	})
 	if err != nil {
@@ -633,7 +594,7 @@ func (s *service) AddVideo(ctx context.Context, req *coursepartmodel.AddVideoReq
 // after restore.
 func (s *service) Delete(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "Invalid course part ID", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	return s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		txPartRepo := s.partRepo.WithTx(tx)
@@ -641,18 +602,18 @@ func (s *service) Delete(ctx context.Context, id string) error {
 		// Check if the record exists first (including unpublished, but not soft-deleted)
 		if _, err := txPartRepo.GetWithUnpublished(ctx, id); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+				return fmt.Errorf("%w: %w", ErrNotFound, err)
 			}
-			return &Error{Msg: "Failed to get course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to retrieve course part: %w", err)
 		}
 
 		if _, err := txPartRepo.SetPublished(ctx, id, false); err != nil {
-			return &Error{Msg: "Failed to unpublish course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to unpublish course part: %w", err)
 		}
 
 		// Perform soft-delete
 		if _, err := txPartRepo.Delete(ctx, id); err != nil {
-			return &Error{Msg: "Failed to delete course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to delete course part: %w", err)
 		}
 		return nil
 	})
@@ -664,14 +625,14 @@ func (s *service) Delete(ctx context.Context, id string) error {
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) DeletePermanent(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "Invalid course part ID", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	return s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		ra, err := s.partRepo.WithTx(tx).DeletePermanent(ctx, id)
 		if err != nil {
-			return &Error{Msg: "Failed to delete course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to delete course part: %w", err)
 		} else if ra == 0 {
-			return &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
 		return nil
 	})
@@ -684,14 +645,14 @@ func (s *service) DeletePermanent(ctx context.Context, id string) error {
 // or a database/internal error occurs (http.StatusInternalServerError).
 func (s *service) Restore(ctx context.Context, id string) error {
 	if _, err := uuid.Parse(id); err != nil {
-		return &Error{Msg: "Invalid course part ID", Err: err, Code: http.StatusBadRequest}
+		return fmt.Errorf("%w: %w", ErrInvalidArgument, err)
 	}
 	return s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
 		ra, err := s.partRepo.WithTx(tx).Restore(ctx, id)
 		if err != nil {
-			return &Error{Msg: "Failed to delete course part", Err: err, Code: http.StatusInternalServerError}
+			return fmt.Errorf("failed to restore course part: %w", err)
 		} else if ra == 0 {
-			return &Error{Msg: "Course part not found", Err: err, Code: http.StatusNotFound}
+			return fmt.Errorf("%w: %w", ErrNotFound, err)
 		}
 		return nil
 	})
