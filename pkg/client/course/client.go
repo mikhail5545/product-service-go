@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"log"
 
-	coursepb "github.com/mikhail5545/proto-go/proto/product_service/course/v0"
+	coursepb "github.com/mikhail5545/proto-go/proto/product_service/course/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -126,37 +126,6 @@ type Service interface {
 	// Returns a `NotFound` gRPC error if any of the records are not found.
 	// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 	Restore(ctx context.Context, req *coursepb.RestoreRequest) (*coursepb.RestoreResponse, error)
-	// AddImage calls [CourseServiceServer.AddImage] method via client connection
-	// to add a new image to a course. It's called by media-service-go upon successful image upload.
-	// It validates the request, checks the image limit and appends the new information.
-	//
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
-	// Returns `NotFound` gRPC error if the record is not found.
-	AddImage(ctx context.Context, req *coursepb.AddImageRequest) (*coursepb.AddImageResponse, error)
-	// DeleteImage calls [CourseServiceServer.DeleteImage] method via client connection
-	// to delete an image from a course. It's called by media-service-go upon successful image deletion.
-	// The function validates the request and removes the image information from the course.
-	// This action is irreversable.
-	//
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-	// Returns `NotFound` gRPC error if any of records is not found.
-	DeleteImage(ctx context.Context, req *coursepb.DeleteImageRequest) (*coursepb.DeleteImageResponse, error)
-	// AddImageBatch calls [CourseServiceServer.DeleteImage] method via client connection
-	// to add an image for a batch of courses. It's called by media-service-go
-	// upon successful image uplaod.
-	//
-	// Returns the number of affected courses.
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-	// Returns `NotFound` gRPC error none of the courses were found.
-	AddImageBatch(ctx context.Context, req *coursepb.AddImageBatchRequest) (*coursepb.AddImageBatchResponse, error)
-	// DeleteImageBatch calls [CourseServiceServer.DeleteImage] method via client connection
-	// to delete an image from a batch of courses. It's called by media-service-go
-	// upon successful image deletion.
-	//
-	// Returns the number of affected courses.
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-	// Returns `NotFound` gRPC error none of the courses were found or the image was not found.
-	DeleteImageBatch(ctx context.Context, req *coursepb.DeleteImageBatchRequest) (*coursepb.DeleteImageBatchResponse, error)
 
 	// Close tears down connection to the client and all underlying connections.
 	Close() error
@@ -318,49 +287,6 @@ func (c *Client) DeletePermanent(ctx context.Context, req *coursepb.DeletePerman
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (c *Client) Restore(ctx context.Context, req *coursepb.RestoreRequest) (*coursepb.RestoreResponse, error) {
 	return c.client.Restore(ctx, req)
-}
-
-// AddImage calls [CourseServiceServer.AddImage] method via client connection
-// to add a new image to a course. It's called by media-service-go upon successful image upload.
-// It validates the request, checks the image limit and appends the new information.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
-// Returns `NotFound` gRPC error if the record is not found.
-func (c *Client) AddImage(ctx context.Context, req *coursepb.AddImageRequest) (*coursepb.AddImageResponse, error) {
-	return c.client.AddImage(ctx, req)
-}
-
-// DeleteImage calls [CourseServiceServer.DeleteImage] method via client connection
-// to delete an image from a course. It's called by media-service-go upon successful image deletion.
-// The function validates the request and removes the image information from the course.
-// This action is irreversable.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error if any of records is not found.
-func (c *Client) DeleteImage(ctx context.Context, req *coursepb.DeleteImageRequest) (*coursepb.DeleteImageResponse, error) {
-	return c.client.DeleteImage(ctx, req)
-}
-
-// AddImageBatch calls [CourseServiceServer.AddImageBatch] method via client connection
-// to add an image for a batch of courses. It's called by media-service-go
-// upon successful image uplaod.
-//
-// Returns the number of affected courses.
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the courses were found.
-func (c *Client) AddImageBatch(ctx context.Context, req *coursepb.AddImageBatchRequest) (*coursepb.AddImageBatchResponse, error) {
-	return c.client.AddImageBatch(ctx, req)
-}
-
-// DeleteImageBatch calls [CourseServiceServer.DeleteImageBatch] method via client connection
-// to delete an image from a batch of courses. It's called by media-service-go
-// upon successful image deletion.
-//
-// Returns the number of affected courses.
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the courses were found or the image was not found.
-func (c *Client) DeleteImageBatch(ctx context.Context, req *coursepb.DeleteImageBatchRequest) (*coursepb.DeleteImageBatchResponse, error) {
-	return c.client.DeleteImageBatch(ctx, req)
 }
 
 // Close tears down connection to the client and all underlying connections.

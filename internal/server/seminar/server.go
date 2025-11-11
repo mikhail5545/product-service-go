@@ -25,12 +25,11 @@ package seminar
 import (
 	"context"
 
-	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
 	seminarservice "github.com/mikhail5545/product-service-go/internal/services/seminar"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
-	seminarpb "github.com/mikhail5545/proto-go/proto/product_service/seminar/v0"
+	seminarpb "github.com/mikhail5545/proto-go/proto/product_service/seminar/v1"
 	"google.golang.org/grpc"
 )
 
@@ -224,83 +223,6 @@ func (s *Server) Update(ctx context.Context, req *seminarpb.UpdateRequest) (*sem
 		return nil, errors.HandleServiceError(err)
 	}
 	return types.SeminarToProtobufUpdate(&seminarpb.UpdateResponse{Id: req.GetId()}, res), nil
-}
-
-// AddImage adds a new image to a seminar. It's called by media-service-go upon successful image upload.
-// It validates the request, checks the image limit and appends the new information.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
-// Returns `NotFound` gRPC error if the record is not found.
-func (s *Server) AddImage(ctx context.Context, req *seminarpb.AddImageRequest) (*seminarpb.AddImageResponse, error) {
-	addRequest := &imagemodel.AddRequest{
-		OwnerID:        req.GetOwnerId(),
-		MediaServiceID: req.GetMediaServiceId(),
-		URL:            req.GetUrl(),
-		SecureURL:      req.GetSecureUrl(),
-		PublicID:       req.GetPublicId(),
-	}
-	err := s.service.AddImage(ctx, addRequest)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &seminarpb.AddImageResponse{MediaServiceId: req.MediaServiceId, OwnerId: req.OwnerId}, nil
-}
-
-// DeleteImage deletes an image from a seminar. It's called by media-service-go upon successful image deletion.
-// The function validates the request and removes the image information from the seminar.
-// This action is irreversable.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error if any of records is not found.
-func (s *Server) DeleteImage(ctx context.Context, req *seminarpb.DeleteImageRequest) (*seminarpb.DeleteImageResponse, error) {
-	deleteReq := &imagemodel.DeleteRequest{
-		OwnerID:        req.GetOwnerId(),
-		MediaServiceID: req.GetMediaServiceId(),
-	}
-	err := s.service.DeleteImage(ctx, deleteReq)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &seminarpb.DeleteImageResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
-}
-
-// AddImageBatch adds an image for a batch of seminars. It's called by media-service-go
-// upon successful image uplaod.
-//
-// Returns the number of affected seminars.
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the seminars were found.
-func (s *Server) AddImageBatch(ctx context.Context, req *seminarpb.AddImageBatchRequest) (*seminarpb.AddImageBatchResponse, error) {
-	addReq := &imagemodel.AddBatchRequest{
-		MediaServiceID: req.GetMediaServiceId(),
-		URL:            req.GetUrl(),
-		SecureURL:      req.GetUrl(),
-		PublicID:       req.GetPublicId(),
-		OwnerIDs:       req.GetOwnerIds(),
-	}
-	affectedOwners, err := s.service.AddImageBatch(ctx, addReq)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &seminarpb.AddImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
-}
-
-// DeleteImageBatch deletes an image from a batch of seminars. It's called by media-service-go
-// upon successful image deletion.
-//
-// Returns the number of affected seminars.
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the seminars were found or the image was not found.
-func (s *Server) DeleteImageBatch(ctx context.Context, req *seminarpb.DeleteImageBatchRequest) (*seminarpb.DeleteImageBatchResponse, error) {
-	deleteReq := &imagemodel.DeleteBatchRequst{
-		MediaServiceID: req.GetMediaServiceId(),
-		OwnerIDs:       req.GetOwnerIds(),
-	}
-	affectedOwners, err := s.service.DeleteImageBatch(ctx, deleteReq)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &seminarpb.DeleteImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
 }
 
 // Delete performs a soft-delete on a seminar and all of its associated products.

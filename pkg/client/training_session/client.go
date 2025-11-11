@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"log"
 
-	trainingsessionpb "github.com/mikhail5545/proto-go/proto/product_service/training_session/v0"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/product_service/training_session/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -113,37 +113,6 @@ type Service interface {
 	// Returns a `NotFound` gRPC error if any of the records are not found.
 	// Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 	Restore(ctx context.Context, req *trainingsessionpb.RestoreRequest) (*trainingsessionpb.RestoreResponse, error)
-	// AddImage calls [TrainingSessionServiceServer.AddImage] method via client connection
-	// to add a new image to a training session. It's called by media-service-go upon successful image upload.
-	// It validates the request, checks the image limit and appends the new information.
-	//
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
-	// Returns `NotFound` gRPC error if the record is not found.
-	AddImage(ctx context.Context, req *trainingsessionpb.AddImageRequest) (*trainingsessionpb.AddImageResponse, error)
-	// DeleteImage calls [TrainingSessionServiceServer.DeleteImage] method via client connection
-	// to delete an image from a training session. It's called by media-service-go upon successful image deletion.
-	// The function validates the request and removes the image information from the training session.
-	// This action is irreversable.
-	//
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-	// Returns `NotFound` gRPC error if any of records is not found.
-	DeleteImage(ctx context.Context, req *trainingsessionpb.DeleteImageRequest) (*trainingsessionpb.DeleteImageResponse, error)
-	// AddImageBatch calls [TrainingSessionServiceServer.AddImageBatch] method via client connection
-	// to add an image for a batch of training sessions. It's called by media-service-go
-	// upon successful image uplaod.
-	//
-	// Returns the number of affected training sessions.
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-	// Returns `NotFound` gRPC error none of the training sessions were found.
-	AddImageBatch(ctx context.Context, req *trainingsessionpb.AddImageBatchRequest) (*trainingsessionpb.AddImageBatchResponse, error)
-	// DeleteImageBatch calls [TrainingSessionServiceServer.DeleteImageBatch] method via client connection
-	// to delete an image from a batch of training sessions. It's called by media-service-go
-	// upon successful image deletion.
-	//
-	// Returns the number of affected training sessions.
-	// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-	// Returns `NotFound` gRPC error none of the training sessions were found or the image was not found.
-	DeleteImageBatch(ctx context.Context, req *trainingsessionpb.DeleteImageBatchRequest) (*trainingsessionpb.DeleteImageBatchResponse, error)
 
 	// Close tears down connection to the client and all underlying connections.
 	Close() error
@@ -286,49 +255,6 @@ func (c *Client) DeletePermanent(ctx context.Context, req *trainingsessionpb.Del
 // Returns an `InvalidArgument` gRPC error if the provided ID is not a valid UUID.
 func (c *Client) Restore(ctx context.Context, req *trainingsessionpb.RestoreRequest) (*trainingsessionpb.RestoreResponse, error) {
 	return c.client.Restore(ctx, req)
-}
-
-// AddImage calls [TrainingSessionServiceServer.AddImage] method via client connection
-// to add a new image to a training session. It's called by media-service-go upon successful image upload.
-// It validates the request, checks the image limit and appends the new information.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
-// Returns `NotFound` gRPC error if the record is not found.
-func (c *Client) AddImage(ctx context.Context, req *trainingsessionpb.AddImageRequest) (*trainingsessionpb.AddImageResponse, error) {
-	return c.client.AddImage(ctx, req)
-}
-
-// DeleteImage calls [TrainingSessionServiceServer.DeleteImage] method via client connection
-// to delete an image from a training session. It's called by media-service-go upon successful image deletion.
-// The function validates the request and removes the image information from the training session.
-// This action is irreversable.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error if any of records is not found.
-func (c *Client) DeleteImage(ctx context.Context, req *trainingsessionpb.DeleteImageRequest) (*trainingsessionpb.DeleteImageResponse, error) {
-	return c.client.DeleteImage(ctx, req)
-}
-
-// AddImageBatch calls [TrainingSessionServiceServer.AddImageBatch] method via client connection
-// to add an image for a batch of training sessions. It's called by media-service-go
-// upon successful image uplaod.
-//
-// Returns the number of affected training sessions.
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the training sessions were found.
-func (c *Client) AddImageBatch(ctx context.Context, req *trainingsessionpb.AddImageBatchRequest) (*trainingsessionpb.AddImageBatchResponse, error) {
-	return c.client.AddImageBatch(ctx, req)
-}
-
-// DeleteImageBatch calls [TrainingSessionServiceServer.DeleteImageBatch] method via client connection
-// to delete an image from a batch of training sessions. It's called by media-service-go
-// upon successful image deletion.
-//
-// Returns the number of affected training sessions.
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the training sessions were found or the image was not found.
-func (c *Client) DeleteImageBatch(ctx context.Context, req *trainingsessionpb.DeleteImageBatchRequest) (*trainingsessionpb.DeleteImageBatchResponse, error) {
-	return c.client.DeleteImageBatch(ctx, req)
 }
 
 // Close tears down connection to the client and all underlying connections.
