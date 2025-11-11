@@ -29,7 +29,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:generate mockgen -destination=../../test/services/image_mock/service_mock.go -package=image_mock . Service
+//go:generate mockgen -destination=../../test/services/image_manager_mock/service_mock.go -package=image_mock . Service
 
 // Service provides generic business logic for image management.
 type Service interface {

@@ -24,14 +24,11 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
 	trainingsession "github.com/mikhail5545/product-service-go/internal/models/training_session"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"
 	trainingsessionmock "github.com/mikhail5545/product-service-go/internal/test/database/training_session_mock"
 
-	imageservicemock "github.com/mikhail5545/product-service-go/internal/test/services/image_mock"
 	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
@@ -44,9 +41,8 @@ func TestService_Get(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	tsID := uuid.New().String()
 	productID := uuid.New().String()
@@ -130,9 +126,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	tsID := uuid.New().String()
 	productID := uuid.New().String()
@@ -216,9 +211,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	tsID := uuid.New().String()
 	productID := uuid.New().String()
@@ -302,9 +296,8 @@ func TestService_List(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	tsID_1 := uuid.New().String()
 	tsID_2 := uuid.New().String()
@@ -437,9 +430,8 @@ func TestService_ListDeleted(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	tsID_1 := uuid.New().String()
 	tsID_2 := uuid.New().String()
@@ -557,9 +549,8 @@ func TestService_ListUnpublished(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	tsID_1 := uuid.New().String()
 	tsID_2 := uuid.New().String()
@@ -677,9 +668,8 @@ func TestService_Create(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -797,9 +787,8 @@ func TestService_Publish(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -889,9 +878,8 @@ func TestService_Unpublish(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -981,9 +969,8 @@ func TestService_Update(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1189,307 +1176,14 @@ func TestService_Update(t *testing.T) {
 	})
 }
 
-func TestService_AddImage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
-
-	tsID := uuid.New().String()
-
-	addReq := &imagemodel.AddRequest{
-		URL:            "https://google.com",
-		SecureURL:      "https://google.com",
-		PublicID:       "public/id",
-		MediaServiceID: uuid.New().String(),
-		OwnerID:        tsID,
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(nil)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		// Arrange
-		invalidReq := &imagemodel.AddRequest{
-			URL:     "not a url",
-			OwnerID: "invalid-UUID",
-		}
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
-
-		// Act
-		err := testService.AddImage(context.Background(), invalidReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("training session not found", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
-	})
-
-	t.Run("image limit", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrImageLimitExceeded)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrImageLimitExceeded)
-	})
-}
-
-func TestSesrvice_DeleteImage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
-
-	imgID := uuid.New().String()
-
-	tsID := uuid.New().String()
-
-	deleteReq := &imagemodel.DeleteRequest{
-		MediaServiceID: imgID,
-		OwnerID:        tsID,
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(nil)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), deleteReq)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid rquest payload", func(t *testing.T) {
-		// Arrange
-		invalidReq := &imagemodel.DeleteRequest{
-			MediaServiceID: "invalid-UUID",
-			OwnerID:        "invalid-UUID",
-		}
-		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), invalidReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("training session not found", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), deleteReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
-	})
-}
-
-func TestService_AddImageBatch(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
-
-	// Use an in-memory SQLite DB for testing transactions.
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
-		// This prevents GORM from starting a real DB transaction,
-		// allowing the mock repositories to work as expected.
-		SkipDefaultTransaction: true,
-	})
-	if err != nil {
-		t.Fatalf("failed to connect database: %v", err)
-	}
-
-	tsID_1 := uuid.New().String()
-	tsID_2 := uuid.New().String()
-
-	addBatchRequest := &imagemodel.AddBatchRequest{
-		URL:            "some-url",
-		SecureURL:      "some-secure-url",
-		PublicID:       "some-public-id",
-		MediaServiceID: uuid.New().String(),
-		OwnerIDs:       []string{tsID_1, tsID_2},
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-
-		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(2, nil)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		// Arrange
-		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-
-		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("training sessions not found", func(t *testing.T) {
-		// Arrange
-		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-
-		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
-	})
-}
-
-func TestService_DeleteImageBatch(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
-
-	// Use an in-memory SQLite DB for testing transactions.
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
-		// This prevents GORM from starting a real DB transaction,
-		// allowing the mock repositories to work as expected.
-		SkipDefaultTransaction: true,
-	})
-	if err != nil {
-		t.Fatalf("failed to connect database: %v", err)
-	}
-
-	tsID_1 := uuid.New().String()
-	tsID_2 := uuid.New().String()
-
-	deleteBatchRequest := &imagemodel.DeleteBatchRequst{
-		MediaServiceID: uuid.New().String(),
-		OwnerIDs:       []string{tsID_1, tsID_2},
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-
-		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(2, nil)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		// Arrange
-		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-
-		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("training sessions not found", func(t *testing.T) {
-		// Arrange
-		mockTxTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
-
-		mockTrainingSessionRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockTrainingSessionRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxTrainingSessionRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
-	})
-}
-
 func TestService_Delete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1603,9 +1297,8 @@ func TestService_DeletePermanent(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -1715,9 +1408,8 @@ func TestService_Restore(t *testing.T) {
 
 	mockTrainingSessionRepo := trainingsessionmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockTrainingSessionRepo, mockProductRepo, mockImageSvc)
+	testService := New(mockTrainingSessionRepo, mockProductRepo)
 
 	// Use an in-memory SQLite DB for testing transactions.
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{

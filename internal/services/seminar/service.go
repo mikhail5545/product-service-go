@@ -27,10 +27,8 @@ import (
 	"github.com/google/uuid"
 	productrepo "github.com/mikhail5545/product-service-go/internal/database/product"
 	seminarrepo "github.com/mikhail5545/product-service-go/internal/database/seminar"
-	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	"gorm.io/gorm"
 )
 
@@ -131,47 +129,6 @@ type Service interface {
 	// Returns an error if the ID is invalid (ErrInvalidArgument), the records are not found (ErrNotFound),
 	// or a database/internal error occurs.
 	Restore(ctx context.Context, id string) error
-	// AddImage adds a new image to a seminar. It's called by media-service-go upon successful image upload.
-	// It uses seminarOwnerRepoAdapter to call [imageservice.AddImage] and add an image to the seminar.
-	//
-	// Returns an error if:
-	// 	- The request payload is invalid ([imageservice.ErrInvalidArgument]).
-	// 	- The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
-	// 	- The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
-	// 	- A database/internal error occurs.
-	//
-	// Deprecated: use generic [image.Add] instead. It handles add operations for all services.
-	AddImage(ctx context.Context, req *imagemodel.AddRequest) error
-	// DeleteImage removes an image from a seminar. It's called by media-service-go upon successful image deletion.
-	// It uses seminarOwnerRepoAdapter to call [imageservice.DeleteImage] and delete an image from the seminar.
-	//
-	// Returns an error if:
-	//   - The request payload is invalid ([imageservice.ErrInvalidArgument]).
-	//   - The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
-	//   - The image is not found on seminar (owner) ([imageservice.ErrImageNotFoundOnOwner]).
-	//   - A database/internal error occurs.
-	//
-	// Deprecated: use generic [image.Delete] instead. It handles delete operations for all services.
-	DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error
-	// AddImageBatch adds an image for a batch of seminars. It uses seminarOwnerRepoAdapter
-	// to call [imageservice.AddImageBatch] and append images to the seminar. It's called by media-service-go
-	// upon successfull context change.
-	//
-	// It returns the number of affected seminars.
-	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound])
-	// or a database/internal error occurs.
-	//
-	// Deprecated: use generic [image.AddBatch] instead. It handles batch add operations for all services.
-	AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error)
-	// DeleteImageBatch removes an image from a batch of seminars. It uses seminarOwnerRepoAdapter
-	// to call [imageservice.DeleteImageBatch] and append images to the seminar.
-	//
-	// It returns the number of affected seminars.
-	// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound]),
-	// no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
-	//
-	// Deprecated: use generic [image.AddBatch] instead. It handles batch add operations for all services.
-	DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error)
 }
 
 // service provides service-layer business logic for seminar models.
@@ -180,15 +137,13 @@ type Service interface {
 type service struct {
 	SeminarRepo seminarrepo.Repository
 	ProductRepo productrepo.Repository
-	ImageSvc    imageservice.Service
 }
 
 // New creates a new service instance with provided seminar and product repositories.
-func New(sr seminarrepo.Repository, pr productrepo.Repository, is imageservice.Service) Service {
+func New(sr seminarrepo.Repository, pr productrepo.Repository) Service {
 	return &service{
 		SeminarRepo: sr,
 		ProductRepo: pr,
-		ImageSvc:    is,
 	}
 }
 
@@ -881,63 +836,6 @@ func (s *service) Update(ctx context.Context, req *seminarmodel.UpdateRequest) (
 		return nil, err
 	}
 	return allUpdates, nil
-}
-
-// AddImage adds a new image to a seminar. It's called by media-service-go upon successful image upload.
-// It uses seminarOwnerRepoAdapter to call [imageservice.AddImage] and add an image to the seminar.
-//
-// Returns an error if:
-//   - The request payload is invalid ([imageservice.ErrInvalidArgument]).
-//   - The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
-//   - The image limit (5) is exceeded ([imageservice.ErrImageLimitExceeded]).
-//   - A database/internal error occurs.
-//
-// Deprecated: use generic [image.Add] instead. It handles add operations for all services.
-func (s *service) AddImage(ctx context.Context, req *imagemodel.AddRequest) error {
-	ownerRepoAdapter := NewSeminarOwnerRepoAdapter(s.SeminarRepo)
-	return s.ImageSvc.AddImage(ctx, req, ownerRepoAdapter)
-}
-
-// DeleteImage removes an image from a seminar. It's called by media-service-go upon successful image deletion.
-// It uses seminarOwnerRepoAdapter to call [imageservice.DeleteImage] and delete an image from the seminar.
-//
-// Returns an error if:
-//   - The request payload is invalid ([imageservice.ErrInvalidArgument]).
-//   - The seminar (owner) is not found ([imageservice.ErrOwnerNotFound]).
-//   - The image is not found on seminar (owner) ([imageservice.ErrImageNotFoundOnOwner]).
-//   - A database/internal error occurs.
-//
-// Deprecated: use generic [image.Delete] instead. It handles delete operations for all services.
-func (s *service) DeleteImage(ctx context.Context, req *imagemodel.DeleteRequest) error {
-	ownerRepoAdapter := NewSeminarOwnerRepoAdapter(s.SeminarRepo)
-	return s.ImageSvc.DeleteImage(ctx, req, ownerRepoAdapter)
-}
-
-// AddImageBatch adds an image for a batch of seminars. It uses seminarOwnerRepoAdapter
-// to call [imageservice.AddImageBatch] and append images to the seminar. It's called by media-service-go
-// upon successfull context change.
-//
-// It returns the number of affected seminars.
-// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound])
-// or a database/internal error occurs.
-//
-// Deprecated: use generic [image.AddBatch] instead. It handles batch add operations for all services.
-func (s *service) AddImageBatch(ctx context.Context, req *imagemodel.AddBatchRequest) (int, error) {
-	ownerRepoAdapter := NewSeminarOwnerRepoAdapter(s.SeminarRepo)
-	return s.ImageSvc.AddImageBatch(ctx, req, ownerRepoAdapter)
-}
-
-// DeleteImageBatch removes an image from a batch of seminars. It uses seminarOwnerRepoAdapter
-// to call [imageservice.DeleteImageBatch] and append images to the seminar.
-//
-// It returns the number of affected seminars.
-// Returns an error if the request is invalid ([imageservice.ErrInvalidArgument]), no seminars (owners) are not found ([imageservice.ErrOwnersNotFound]),
-// no associations were found ([imageservice.ErrAssociationsNotFound]) or a database/internal error occurs.
-//
-// Deprecated: use generic [image.DeleteBatch] instead. It handles batch delete operations for all services.
-func (s *service) DeleteImageBatch(ctx context.Context, req *imagemodel.DeleteBatchRequst) (int, error) {
-	ownerRepoAdapter := NewSeminarOwnerRepoAdapter(s.SeminarRepo)
-	return s.ImageSvc.DeleteImageBatch(ctx, req, ownerRepoAdapter)
 }
 
 // Delete performs a soft-delete of a seminar and all of its related product records.

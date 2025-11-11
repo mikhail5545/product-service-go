@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Package image provides service-layer business logic for images. It represents a generic
+// entry point for all image operations across all types of services (image owners). It routes
+// image requests through generic [imagemanager.Service] to perform low-level logic.
 package image
 
 import (
@@ -35,6 +38,9 @@ import (
 	imageowner "github.com/mikhail5545/product-service-go/internal/types/image_owner"
 )
 
+// Service provides service-layer logic for images.
+// It acts as the router for image operations to create generic entry point
+// for all types of image owners (services) like 'training session', 'course', etc.
 type Service interface {
 	Add(ctx context.Context, ownerType string, req *imagemodel.AddRequest) error
 	Delete(ctx context.Context, ownerType string, req *imagemodel.DeleteRequest) error
@@ -42,6 +48,9 @@ type Service interface {
 	DeleteBatch(ctx context.Context, ownerType string, req *imagemodel.DeleteBatchRequst) (int, error)
 }
 
+// service holds instances of [courserepo.Repository], [seminarrepo.Repository], [trainingsessionrepo.Repository],
+// [physicalgoodrepo.Repository] to perform database operations for all services and generic [imagemanager.Service] to
+// perform generic image operations.
 type service struct {
 	imageSvc            imagemanager.Service
 	courseRepo          courserepo.Repository
@@ -50,6 +59,7 @@ type service struct {
 	physicalGoodRepo    physicalgoodrepo.Repository
 }
 
+// New creates a new Service instance.
 func New(
 	imgSvc imagemanager.Service,
 	cr courserepo.Repository,
@@ -66,21 +76,25 @@ func New(
 	}
 }
 
+// getOwnerRepoAdapter returns an adapter for service "ownerType". ownerType should be 'course', 'seminar', etc.
+//
+// Returns ErrUnknownOwner if ownerType is invalid.
 func (s *service) getOwnerRepoAdapter(ownerType string) (imageowner.OwnerRepo[imageowner.Owner], error) {
 	switch ownerType {
 	case "course":
 		return course.NewOwnerRepoAdapter(s.courseRepo), nil
 	case "seminar":
-		return seminar.NewSeminarOwnerRepoAdapter(s.seminarRepo), nil
+		return seminar.NewOwnerRepoAdapter(s.seminarRepo), nil
 	case "training_session":
-		return trainingsession.NewTrainingSessionOwnerRepoAdapter(s.trainingSessionRepo), nil
+		return trainingsession.NewOwnerRepoAdapter(s.trainingSessionRepo), nil
 	case "physical_good":
-		return physicalgood.NewPhysicalGoodOwnerRepoAdapter(s.physicalGoodRepo), nil
+		return physicalgood.NewOwnerRepoAdapter(s.physicalGoodRepo), nil
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnknownOwner, ownerType)
 	}
 }
 
+// Add adds an image for owner using [imagemanager.AddImage] for specified owner type.
 func (s *service) Add(ctx context.Context, ownerType string, req *imagemodel.AddRequest) error {
 	adapter, err := s.getOwnerRepoAdapter(ownerType)
 	if err != nil {
@@ -89,6 +103,7 @@ func (s *service) Add(ctx context.Context, ownerType string, req *imagemodel.Add
 	return s.imageSvc.AddImage(ctx, req, adapter)
 }
 
+// Delete deletes an image from owner using [imagemanager.DeleteImage] for specified owner type.
 func (s *service) Delete(ctx context.Context, ownerType string, req *imagemodel.DeleteRequest) error {
 	adapter, err := s.getOwnerRepoAdapter(ownerType)
 	if err != nil {
@@ -97,6 +112,9 @@ func (s *service) Delete(ctx context.Context, ownerType string, req *imagemodel.
 	return s.imageSvc.DeleteImage(ctx, req, adapter)
 }
 
+// AddBatch adds an image for batch of owners using [imagemanager.AddImageBatch] for specified owner type.
+//
+// Returns the number of affected owners.
 func (s *service) AddBatch(ctx context.Context, ownerType string, req *imagemodel.AddBatchRequest) (int, error) {
 	adapter, err := s.getOwnerRepoAdapter(ownerType)
 	if err != nil {
@@ -105,6 +123,9 @@ func (s *service) AddBatch(ctx context.Context, ownerType string, req *imagemode
 	return s.imageSvc.AddImageBatch(ctx, req, adapter)
 }
 
+// DeleteBatch deletes an image from batch of owners using [imagemanager.DeleteImageBatch] for specified owner type.
+//
+// Returns the number of affected owners.
 func (s *service) DeleteBatch(ctx context.Context, ownerType string, req *imagemodel.DeleteBatchRequst) (int, error) {
 	adapter, err := s.getOwnerRepoAdapter(ownerType)
 	if err != nil {

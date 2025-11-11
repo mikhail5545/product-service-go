@@ -28,18 +28,32 @@ import (
 	"gorm.io/gorm"
 )
 
-// trainingSessionOwnerRepoAdapter adapts a trainingsessionrepo.Repository to the generic
+//go:generate mockgen -destination=../../test/services/training_session_mock/adapter_mock.go -package=training_session_mock . OwnerRepoAdapter
+type OwnerRepoAdapter interface {
+	GetWithUnpublished(ctx context.Context, id string) (imageowner.Owner, error)
+	ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]imageowner.Owner, error)
+	AddImage(ctx context.Context, owner imageowner.Owner, image *imagemodel.Image) error
+	DeleteImage(ctx context.Context, owner imageowner.Owner, mediaSvcID string) error
+	AddImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error
+	BatchUpdate(ctx context.Context, owners []imageowner.Owner, opt uint) (int64, error)
+	FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error)
+	DecrementImageCount(ctx context.Context, ownerIDs []string) (int64, error)
+	DB() *gorm.DB
+	WithTx(tx *gorm.DB) imageowner.OwnerRepo[imageowner.Owner]
+}
+
+// ownerRepoAdapter adapts a trainingsessionrepo.Repository to the generic
 // imageowner.OwnerRepo[imageowner.Owner] interface.
-type trainingSessionOwnerRepoAdapter struct {
+type ownerRepoAdapter struct {
 	repo trainingsessionrepo.Repository
 }
 
-// NewTrainingSessionOwnerRepoAdapter creates a new adapter.
-func NewTrainingSessionOwnerRepoAdapter(repo trainingsessionrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
-	return &trainingSessionOwnerRepoAdapter{repo: repo}
+// NewOwnerRepoAdapter creates a new adapter.
+func NewOwnerRepoAdapter(repo trainingsessionrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
+	return &ownerRepoAdapter{repo: repo}
 }
 
-func (a *trainingSessionOwnerRepoAdapter) GetWithUnpublished(ctx context.Context, id string) (imageowner.Owner, error) {
+func (a *ownerRepoAdapter) GetWithUnpublished(ctx context.Context, id string) (imageowner.Owner, error) {
 	ts, err := a.repo.GetWithUnpublished(ctx, id)
 	if err != nil {
 		return nil, err
@@ -48,7 +62,7 @@ func (a *trainingSessionOwnerRepoAdapter) GetWithUnpublished(ctx context.Context
 	return owner, nil
 }
 
-func (a *trainingSessionOwnerRepoAdapter) ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]imageowner.Owner, error) {
+func (a *ownerRepoAdapter) ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]imageowner.Owner, error) {
 	ts, err := a.repo.ListWithUnpublishedByIDs(ctx, ids...)
 	if err != nil {
 		return nil, err
@@ -61,7 +75,7 @@ func (a *trainingSessionOwnerRepoAdapter) ListWithUnpublishedByIDs(ctx context.C
 }
 
 // AddImage adds an image to a single owner by converting it back to a seminar.
-func (a *trainingSessionOwnerRepoAdapter) AddImage(ctx context.Context, owner imageowner.Owner, image *imagemodel.Image) error {
+func (a *ownerRepoAdapter) AddImage(ctx context.Context, owner imageowner.Owner, image *imagemodel.Image) error {
 	if ts, ok := owner.(*trainingsessionmodel.TrainingSession); ok {
 		return a.repo.AddImage(ctx, ts, image)
 	}
@@ -69,7 +83,7 @@ func (a *trainingSessionOwnerRepoAdapter) AddImage(ctx context.Context, owner im
 }
 
 // AddImageBatch adds an image to a batch of owners by converting them back to ts.
-func (a *trainingSessionOwnerRepoAdapter) AddImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
+func (a *ownerRepoAdapter) AddImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
 	ts := make([]trainingsessionmodel.TrainingSession, len(owners))
 	for i, owner := range owners {
 		if t, ok := owner.(*trainingsessionmodel.TrainingSession); ok {
@@ -80,7 +94,7 @@ func (a *trainingSessionOwnerRepoAdapter) AddImageBatch(ctx context.Context, own
 }
 
 // DeleteImage deletes an image from a single owner by converting it back to a training session.
-func (a *trainingSessionOwnerRepoAdapter) DeleteImage(ctx context.Context, owner imageowner.Owner, mediaSvcID string) error {
+func (a *ownerRepoAdapter) DeleteImage(ctx context.Context, owner imageowner.Owner, mediaSvcID string) error {
 	if ts, ok := owner.(*trainingsessionmodel.TrainingSession); ok {
 		return a.repo.DeleteImage(ctx, ts, mediaSvcID)
 	}
@@ -88,7 +102,7 @@ func (a *trainingSessionOwnerRepoAdapter) DeleteImage(ctx context.Context, owner
 }
 
 // DeleteImageBatch deletes an image from a batch of owners by converting them back to ts.
-func (a *trainingSessionOwnerRepoAdapter) DeleteImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
+func (a *ownerRepoAdapter) DeleteImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
 	ts := make([]trainingsessionmodel.TrainingSession, len(owners))
 	for i, owner := range owners {
 		if t, ok := owner.(*trainingsessionmodel.TrainingSession); ok {
@@ -98,7 +112,7 @@ func (a *trainingSessionOwnerRepoAdapter) DeleteImageBatch(ctx context.Context, 
 	return a.repo.DeleteImageBatch(ctx, ts, image)
 }
 
-func (a *trainingSessionOwnerRepoAdapter) BatchUpdate(ctx context.Context, owners []imageowner.Owner, opt uint) (int64, error) {
+func (a *ownerRepoAdapter) BatchUpdate(ctx context.Context, owners []imageowner.Owner, opt uint) (int64, error) {
 	ts := make([]trainingsessionmodel.TrainingSession, len(owners))
 	for i, owner := range owners {
 		if t, ok := owner.(*trainingsessionmodel.TrainingSession); ok {
@@ -108,18 +122,18 @@ func (a *trainingSessionOwnerRepoAdapter) BatchUpdate(ctx context.Context, owner
 	return a.repo.BatchUpdate(ctx, ts, opt)
 }
 
-func (a *trainingSessionOwnerRepoAdapter) FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error) {
+func (a *ownerRepoAdapter) FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error) {
 	return a.repo.FindOwnerIDsByImageID(ctx, mediaSvcID, ownerIDs)
 }
 
-func (a *trainingSessionOwnerRepoAdapter) DecrementImageCount(ctx context.Context, ownerIDs []string) (int64, error) {
+func (a *ownerRepoAdapter) DecrementImageCount(ctx context.Context, ownerIDs []string) (int64, error) {
 	return a.repo.DecrementImageCount(ctx, ownerIDs)
 }
 
-func (a *trainingSessionOwnerRepoAdapter) DB() *gorm.DB {
+func (a *ownerRepoAdapter) DB() *gorm.DB {
 	return a.repo.DB()
 }
 
-func (a *trainingSessionOwnerRepoAdapter) WithTx(tx *gorm.DB) imageowner.OwnerRepo[imageowner.Owner] {
-	return &trainingSessionOwnerRepoAdapter{repo: a.repo.WithTx(tx)}
+func (a *ownerRepoAdapter) WithTx(tx *gorm.DB) imageowner.OwnerRepo[imageowner.Owner] {
+	return &ownerRepoAdapter{repo: a.repo.WithTx(tx)}
 }

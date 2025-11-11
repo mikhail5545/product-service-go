@@ -25,13 +25,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mikhail5545/product-service-go/internal/models/course"
-	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	coursemock "github.com/mikhail5545/product-service-go/internal/test/database/course_mock"
 	coursepartmock "github.com/mikhail5545/product-service-go/internal/test/database/course_part_mock"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"
-	imageservicemock "github.com/mikhail5545/product-service-go/internal/test/services/image_mock"
 	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
@@ -45,9 +42,8 @@ func TestService_Get(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -129,9 +125,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -213,9 +208,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -297,9 +291,8 @@ func TestService_GetReduced(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -381,9 +374,8 @@ func TestService_GetReducedWithDeleted(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -465,9 +457,8 @@ func TestService_List(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	course1ID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 	course2ID := "a1b2c3d4-e5f6-7890-1234-567890abcdef"
@@ -563,9 +554,8 @@ func TestService_ListDeleted(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	course1ID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 	course2ID := "a1b2c3d4-e5f6-7890-1234-567890abcdef"
@@ -661,9 +651,8 @@ func TestService_ListUnpublished(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	course1ID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 	course2ID := "a1b2c3d4-e5f6-7890-1234-567890abcdef"
@@ -729,9 +718,8 @@ func TestService_Create(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	createReq := &course.CreateRequest{
 		Name:             "Course name",
@@ -837,9 +825,8 @@ func TestService_Publish(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -889,9 +876,8 @@ func TestService_Unpublish(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -944,9 +930,8 @@ func TestService_Update(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1116,268 +1101,6 @@ func TestService_Update(t *testing.T) {
 	})
 }
 
-func TestService_AddImage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockCourseRepo := coursemock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
-
-	courseID := uuid.New().String()
-
-	addReq := &imagemodel.AddRequest{
-		URL:            "https://google.com",
-		SecureURL:      "https://google.com",
-		PublicID:       "public/id",
-		MediaServiceID: uuid.New().String(),
-		OwnerID:        courseID,
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(nil)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		// Arrange
-		invalidReq := &imagemodel.AddRequest{
-			URL:     "not a url",
-			OwnerID: "invalid-UUID",
-		}
-
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
-
-		// Act
-		err := testService.AddImage(context.Background(), invalidReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("course not found", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
-	})
-
-	t.Run("image limit", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrImageLimitExceeded)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrImageLimitExceeded)
-	})
-}
-
-func TestSesrvice_DeleteImage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockCourseRepo := coursemock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
-
-	imgID := uuid.New().String()
-	courseID := uuid.New().String()
-
-	deleteReq := &imagemodel.DeleteRequest{
-		MediaServiceID: imgID,
-		OwnerID:        courseID,
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(nil)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), deleteReq)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid rquest payload", func(t *testing.T) {
-		// Arrange
-		invalidReq := &imagemodel.DeleteRequest{
-			MediaServiceID: "invalid-UUID",
-			OwnerID:        "invalid-UUID",
-		}
-		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), invalidReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("course not found", func(t *testing.T) {
-		// Arrange
-		mockImageSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), deleteReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
-	})
-}
-
-func TestService_AddImageBatch(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockCourseRepo := coursemock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
-
-	courseID_1 := uuid.New().String()
-	courseID_2 := uuid.New().String()
-
-	// Use an in-memory SQLite DB for testing transactions.
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
-		// This prevents GORM from starting a real DB transaction,
-		// allowing the mock repositories to work as expected.
-		SkipDefaultTransaction: true,
-	})
-	if err != nil {
-		t.Fatalf("failed to connect database: %v", err)
-	}
-
-	addBatchRequest := &imagemodel.AddBatchRequest{
-		URL:            "some-url",
-		SecureURL:      "some-secure-url",
-		PublicID:       "some-public-id",
-		MediaServiceID: uuid.New().String(),
-		OwnerIDs:       []string{courseID_1, courseID_2},
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockTxCourseRepo := coursemock.NewMockRepository(ctrl)
-
-		mockCourseRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockCourseRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxCourseRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(2, nil)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		// Arrange
-		mockTxCourseRepo := coursemock.NewMockRepository(ctrl)
-
-		mockCourseRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockCourseRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxCourseRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-}
-
-func TestService_DeleteImageBatch(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockCourseRepo := coursemock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
-
-	courseID_1 := uuid.New().String()
-	courseID_2 := uuid.New().String()
-
-	// Use an in-memory SQLite DB for testing transactions.
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
-		// This prevents GORM from starting a real DB transaction,
-		// allowing the mock repositories to work as expected.
-		SkipDefaultTransaction: true,
-	})
-	if err != nil {
-		t.Fatalf("failed to connect database: %v", err)
-	}
-
-	deleteBatchRequest := &imagemodel.DeleteBatchRequst{
-		MediaServiceID: uuid.New().String(),
-		OwnerIDs:       []string{courseID_1, courseID_2},
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockTxCourseRepo := coursemock.NewMockRepository(ctrl)
-
-		mockCourseRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockCourseRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxCourseRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, nil)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		// Arrange
-		mockTxCourseRepo := coursemock.NewMockRepository(ctrl)
-
-		mockCourseRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockCourseRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxCourseRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-}
-
 func TestService_Delete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1385,9 +1108,8 @@ func TestService_Delete(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1485,9 +1207,8 @@ func TestService_DeletePermanent(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -1582,9 +1303,8 @@ func TestService_Restore(t *testing.T) {
 	mockCourseRepo := coursemock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
 	mockPartRepo := coursepartmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo, mockImageSvc)
+	testService := New(mockCourseRepo, mockProductRepo, mockPartRepo)
 
 	courseID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
