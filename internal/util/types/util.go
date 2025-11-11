@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Package types provides utility functions to convert from internal types to gRPC protobuf messages.
 package types
 
 import (
@@ -22,20 +23,35 @@ import (
 
 	coursemodel "github.com/mikhail5545/product-service-go/internal/models/course"
 	coursepartmodel "github.com/mikhail5545/product-service-go/internal/models/course_part"
+	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	productmodel "github.com/mikhail5545/product-service-go/internal/models/product"
 	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
 	trainingsessionmodel "github.com/mikhail5545/product-service-go/internal/models/training_session"
-	coursepb "github.com/mikhail5545/proto-go/proto/product_service/course/v0"
+	coursepb "github.com/mikhail5545/proto-go/proto/product_service/course/v1"
 	coursepartpb "github.com/mikhail5545/proto-go/proto/product_service/course_part/v0"
-	physicalgoodpb "github.com/mikhail5545/proto-go/proto/product_service/physical_good/v0"
+	imagepb "github.com/mikhail5545/proto-go/proto/product_service/image/v0"
+	physicalgoodpb "github.com/mikhail5545/proto-go/proto/product_service/physical_good/v1"
 	productpb "github.com/mikhail5545/proto-go/proto/product_service/product/v0"
-	seminarpb "github.com/mikhail5545/proto-go/proto/product_service/seminar/v0"
-	trainingsessionpb "github.com/mikhail5545/proto-go/proto/product_service/training_session/v0"
+	seminarpb "github.com/mikhail5545/proto-go/proto/product_service/seminar/v1"
+	trainingsessionpb "github.com/mikhail5545/proto-go/proto/product_service/training_session/v1"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// ImageToProtobuf is a helper function to convert from internal model
+// to gRPC protobuf message.
+func ImageToProtobuf(image *imagemodel.Image) *imagepb.Image {
+	return &imagepb.Image{
+		PublicId:       image.PublicID,
+		Url:            image.URL,
+		SecureUrl:      image.SecureURL,
+		MediaServiceId: image.MediaServiceID,
+	}
+}
+
+// CourseDetaisToProtobuf is a helper function to convert from internal model
+// to gRPC protobuf message.
 func CourseDetaisToProtobuf(details *coursemodel.CourseDetails) *coursepb.CourseDetails {
 	pbdetails := &coursepb.CourseDetails{
 		Course: &coursepb.Course{
@@ -61,9 +77,16 @@ func CourseDetaisToProtobuf(details *coursemodel.CourseDetails) *coursepb.Course
 			pbdetails.Course.CourseParts = append(pbdetails.Course.CourseParts, CoursePartToProtobuf(p))
 		}
 	}
+	if len(details.Course.Images) > 0 {
+		for _, img := range details.Course.Images {
+			pbdetails.Course.Images = append(pbdetails.Course.Images, ImageToProtobuf(&img))
+		}
+	}
 	return pbdetails
 }
 
+// CourseToProtobufUpdate is a helper function to convert from internal service response
+// in the map[string]any representation to gRPC protobuf message and populate response.
 func CourseToProtobufUpdate(updates map[string]any) *coursepb.UpdateResponse {
 	resp := &coursepb.UpdateResponse{}
 	resp.Updated = &fieldmaskpb.FieldMask{}
@@ -112,6 +135,8 @@ func CourseToProtobufUpdate(updates map[string]any) *coursepb.UpdateResponse {
 	return resp
 }
 
+// CoursePartToProtobuf is a helper function to convert from internal model
+// to gRPC protobuf message.
 func CoursePartToProtobuf(part *coursepartmodel.CoursePart) *coursepartpb.CoursePart {
 	pbpart := &coursepartpb.CoursePart{
 		Id:               part.ID,
@@ -128,6 +153,8 @@ func CoursePartToProtobuf(part *coursepartmodel.CoursePart) *coursepartpb.Course
 	return pbpart
 }
 
+// CoursePartToProtobufUpdate is a helper function to convert from internal service response
+// in the map[string]any representation to gRPC protobuf message and populate response.
 func CoursePartToProtobufUpdate(resp *coursepartpb.UpdateResponse, updates map[string]any) *coursepartpb.UpdateResponse {
 	resp.Updated = &fieldmaskpb.FieldMask{}
 	for k, v := range updates {
@@ -162,6 +189,8 @@ func CoursePartToProtobufUpdate(resp *coursepartpb.UpdateResponse, updates map[s
 	return resp
 }
 
+// SeminarDetaisToProtobuf is a helper function to convert from internal model
+// to gRPC protobuf message.
 func SeminarDetailsToProtobuf(details *seminarmodel.SeminarDetails) *seminarpb.SeminarDetails {
 	pbdetails := &seminarpb.SeminarDetails{
 		Seminar: &seminarpb.Seminar{
@@ -196,9 +225,16 @@ func SeminarDetailsToProtobuf(details *seminarmodel.SeminarDetails) *seminarpb.S
 	if details.DeletedAt.Valid {
 		pbdetails.Seminar.DeletedAt = timestamppb.New(details.DeletedAt.Time)
 	}
+	if len(details.Seminar.Images) > 0 {
+		for _, img := range details.Seminar.Images {
+			pbdetails.Seminar.Images = append(pbdetails.Seminar.Images, ImageToProtobuf(&img))
+		}
+	}
 	return pbdetails
 }
 
+// SeminarToProtobufUpdate is a helper function to convert from internal service response
+// in the map[string]any representation to gRPC protobuf message and populate response.
 func SeminarToProtobufUpdate(resp *seminarpb.UpdateResponse, updates map[string]any) *seminarpb.UpdateResponse {
 	resp.Updated = &fieldmaskpb.FieldMask{}
 	if seminarUpdates, ok := updates["seminar"].(map[string]any); ok {
@@ -280,6 +316,8 @@ func SeminarToProtobufUpdate(resp *seminarpb.UpdateResponse, updates map[string]
 	return resp
 }
 
+// TrainingSessionDetailsToProtobuf is a helper function to convert from internal model
+// to gRPC protobuf message.
 func TrainingSessionDetailsToProtobuf(details *trainingsessionmodel.TrainingSessionDetails) *trainingsessionpb.TrainingSessionDetails {
 	pbdetails := &trainingsessionpb.TrainingSessionDetails{
 		TrainingSession: &trainingsessionpb.TrainingSession{
@@ -300,9 +338,16 @@ func TrainingSessionDetailsToProtobuf(details *trainingsessionmodel.TrainingSess
 	if details.DeletedAt.Valid {
 		pbdetails.TrainingSession.DeletedAt = timestamppb.New(details.DeletedAt.Time)
 	}
+	if len(details.TrainingSession.Images) > 0 {
+		for _, img := range details.TrainingSession.Images {
+			pbdetails.TrainingSession.Images = append(pbdetails.TrainingSession.Images, ImageToProtobuf(&img))
+		}
+	}
 	return pbdetails
 }
 
+// TrainingSessionToProtobufUpdate is a helper function to convert from internal service response
+// in the map[string]any representation to gRPC protobuf message and populate response.
 func TrainingSessionToProtobufUpdate(resp *trainingsessionpb.UpdateResponse, updates map[string]any) *trainingsessionpb.UpdateResponse {
 	resp.Updated = &fieldmaskpb.FieldMask{}
 	if tsUpdates, ok := updates["training_session"].(map[string]any); ok {
@@ -350,6 +395,8 @@ func TrainingSessionToProtobufUpdate(resp *trainingsessionpb.UpdateResponse, upd
 	return resp
 }
 
+// PhysicalGoodDetailsToProtobuf is a helper function to convert from internal model
+// to gRPC transport message.
 func PhysicalGoodDetailsToProtobuf(details *physicalgoodmodel.PhysicalGoodDetails) *physicalgoodpb.PhysicalGoodDetails {
 	pbdetails := &physicalgoodpb.PhysicalGoodDetails{
 		PhysicalGood: &physicalgoodpb.PhysicalGood{
@@ -370,9 +417,16 @@ func PhysicalGoodDetailsToProtobuf(details *physicalgoodmodel.PhysicalGoodDetail
 	if details.DeletedAt.Valid {
 		pbdetails.PhysicalGood.DeletedAt = timestamppb.New(details.DeletedAt.Time)
 	}
+	if len(details.PhysicalGood.Images) > 0 {
+		for _, img := range details.PhysicalGood.Images {
+			pbdetails.PhysicalGood.Images = append(pbdetails.PhysicalGood.Images, ImageToProtobuf(&img))
+		}
+	}
 	return pbdetails
 }
 
+// PhysicalGoodToProtobufUpdate is a helper function to convert from internal service response
+// in the map[string]any representation to gRPC protobuf message and populate response.
 func PhysicalGoodToProtobufUpdate(resp *physicalgoodpb.UpdateResponse, updates map[string]any) *physicalgoodpb.UpdateResponse {
 	resp.Updated = &fieldmaskpb.FieldMask{}
 	if pgUpdates, ok := updates["physical_good"].(map[string]any); ok {
@@ -420,6 +474,8 @@ func PhysicalGoodToProtobufUpdate(resp *physicalgoodpb.UpdateResponse, updates m
 	return resp
 }
 
+// ProductToProtobuf is a helper function to convert from internal model
+// to gRPC protobuf message.
 func ProductToProtobuf(product *productmodel.Product) *productpb.Product {
 	pbproduct := productpb.Product{
 		Id:          product.ID,

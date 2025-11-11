@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+// Package errors provides utility handlers for internal errors and their convertions to external ones (http, gRPC).
 package errors
 
 import (
@@ -24,6 +25,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mikhail5545/product-service-go/internal/services/course"
 	coursepart "github.com/mikhail5545/product-service-go/internal/services/course_part"
+	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
+	imagemanager "github.com/mikhail5545/product-service-go/internal/services/image_manager"
 	physicalgood "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/services/product"
 	"github.com/mikhail5545/product-service-go/internal/services/seminar"
@@ -76,7 +79,10 @@ func HandleServiceError(err error) error {
 		errors.Is(err, trainingsession.ErrInvalidArgument) ||
 		errors.Is(err, physicalgood.ErrInvalidArgument) ||
 		errors.Is(err, product.ErrInvalidArgument) ||
-		errors.Is(err, coursepart.ErrInvalidArgument) {
+		errors.Is(err, coursepart.ErrInvalidArgument) ||
+		errors.Is(err, imageservice.ErrUnknownOwner) ||
+		errors.Is(err, imagemanager.ErrImageLimitExceeded) ||
+		errors.Is(err, imagemanager.ErrInvalidArgument) {
 		return status.Errorf(codes.InvalidArgument, "Invalid argument: %s", err.Error())
 	}
 	if errors.Is(err, seminar.ErrNotFound) ||
@@ -84,7 +90,10 @@ func HandleServiceError(err error) error {
 		errors.Is(err, trainingsession.ErrNotFound) ||
 		errors.Is(err, physicalgood.ErrNotFound) ||
 		errors.Is(err, product.ErrNotFound) ||
-		errors.Is(err, coursepart.ErrNotFound) {
+		errors.Is(err, coursepart.ErrNotFound) ||
+		errors.Is(err, imagemanager.ErrOwnerNotFound) ||
+		errors.Is(err, imagemanager.ErrOwnersNotFound) ||
+		errors.Is(err, imagemanager.ErrImageNotFoundOnOwner) {
 		return status.Errorf(codes.NotFound, "Not found: %s", err.Error())
 	}
 
