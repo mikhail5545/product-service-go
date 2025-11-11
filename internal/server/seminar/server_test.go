@@ -28,7 +28,7 @@ import (
 	seminarmodel "github.com/mikhail5545/product-service-go/internal/models/seminar"
 	seminarservice "github.com/mikhail5545/product-service-go/internal/services/seminar"
 	seminarmock "github.com/mikhail5545/product-service-go/internal/test/services/seminar_mock"
-	seminarpb "github.com/mikhail5545/proto-go/proto/seminar/v0"
+	seminarpb "github.com/mikhail5545/proto-go/proto/product_service/seminar/v0"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"

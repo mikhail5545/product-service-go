@@ -25,12 +25,11 @@ package physicalgood
 import (
 	"context"
 
-	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	physicalgoodservice "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
-	physicalgoodpb "github.com/mikhail5545/proto-go/proto/physical_good/v0"
+	physicalgoodpb "github.com/mikhail5545/proto-go/proto/product_service/physical_good/v1"
 	"google.golang.org/grpc"
 )
 
@@ -203,81 +202,6 @@ func (s *Server) Update(ctx context.Context, req *physicalgoodpb.UpdateRequest) 
 		return nil, errors.HandleServiceError(err)
 	}
 	return types.PhysicalGoodToProtobufUpdate(&physicalgoodpb.UpdateResponse{Id: req.GetId()}, res), nil
-}
-
-// AddImage adds a new image to a physical good. It's called by media-service-go upon successful image upload.
-// It validates the request, checks the image limit and appends the new information.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid/image limit is exceeded.
-// Returns `NotFound` gRPC error if the record is not found.
-func (s *Server) AddImage(ctx context.Context, req *physicalgoodpb.AddImageRequest) (*physicalgoodpb.AddImageResponse, error) {
-	addRequest := &imagemodel.AddRequest{
-		OwnerID:        req.GetOwnerId(),
-		MediaServiceID: req.GetMediaServiceId(),
-		URL:            req.GetUrl(),
-		SecureURL:      req.GetSecureUrl(),
-		PublicID:       req.GetPublicId(),
-	}
-	err := s.service.AddImage(ctx, addRequest)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &physicalgoodpb.AddImageResponse{MediaServiceId: req.MediaServiceId, OwnerId: req.OwnerId}, nil
-}
-
-// DeleteImage deletes an image from a physical good. It's called by media-service-go upon successful image deletion.
-// The function validates the request and removes the image information from the physical good.
-// This action is irreversable.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error if any of records is not found.
-func (s *Server) DeleteImage(ctx context.Context, req *physicalgoodpb.DeleteImageRequest) (*physicalgoodpb.DeleteImageResponse, error) {
-	deleteReq := &imagemodel.DeleteRequest{
-		OwnerID:        req.GetOwnerId(),
-		MediaServiceID: req.GetMediaServiceId(),
-	}
-	err := s.service.DeleteImage(ctx, deleteReq)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &physicalgoodpb.DeleteImageResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
-}
-
-// AddImageBatch adds an image for a batch of physical goods. It's called by media-service-go
-// upon successful image uplaod.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the physical goods were found.
-func (s *Server) AddImageBatch(ctx context.Context, req *physicalgoodpb.AddImageBatchRequest) (*physicalgoodpb.AddImageBatchResponse, error) {
-	addReq := &imagemodel.AddBatchRequest{
-		MediaServiceID: req.GetMediaServiceId(),
-		URL:            req.GetUrl(),
-		SecureURL:      req.GetUrl(),
-		PublicID:       req.GetPublicId(),
-		OwnerIDs:       req.GetOwnerIds(),
-	}
-	affectedOwners, err := s.service.AddImageBatch(ctx, addReq)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &physicalgoodpb.AddImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
-}
-
-// DeleteImageBatch deletes an image from a batch of physical goods. It's called by media-service-go
-// upon successful image deletion.
-//
-// Returns `InvalidArgument` gRPC error if the request payload is invalid.
-// Returns `NotFound` gRPC error none of the physical goods were found or the image was not found.
-func (s *Server) DeleteImageBatch(ctx context.Context, req *physicalgoodpb.DeleteImageBatchRequest) (*physicalgoodpb.DeleteImageBatchResponse, error) {
-	deleteReq := &imagemodel.DeleteBatchRequst{
-		MediaServiceID: req.GetMediaServiceId(),
-		OwnerIDs:       req.GetOwnerIds(),
-	}
-	affectedOwners, err := s.service.DeleteImageBatch(ctx, deleteReq)
-	if err != nil {
-		return nil, errors.HandleServiceError(err)
-	}
-	return &physicalgoodpb.DeleteImageBatchResponse{OwnersAffected: int32(affectedOwners)}, nil
 }
 
 // Delete performs a soft-delete on a physical good and its associated product.

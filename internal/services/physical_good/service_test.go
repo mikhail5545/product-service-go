@@ -24,14 +24,11 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	imagemodel "github.com/mikhail5545/product-service-go/internal/models/image"
 	physicalgood "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	"github.com/mikhail5545/product-service-go/internal/models/product"
-	imageservice "github.com/mikhail5545/product-service-go/internal/services/image"
 	physicalgoodmock "github.com/mikhail5545/product-service-go/internal/test/database/physical_good_mock"
 	productmock "github.com/mikhail5545/product-service-go/internal/test/database/product_mock"
 
-	imageservicemock "github.com/mikhail5545/product-service-go/internal/test/services/image_mock"
 	"github.com/stretchr/testify/assert"
 	gomock "go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
@@ -44,9 +41,8 @@ func TestService_Get(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	physicalGoodID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -130,9 +126,8 @@ func TestService_GetWithDeleted(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	physicalGoodID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -216,9 +211,8 @@ func TestService_GetWithUnpublished(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	physicalGoodID := "d17081f3-4a56-4d00-b63e-f942537a702f"
 
@@ -302,9 +296,8 @@ func TestService_List(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	phg1ID := "0d9828df-c57b-4629-9729-8c9641598e17"
 	phg2ID := "a33845f2-1c3c-4397-9380-7ecdb1d8c853"
@@ -401,9 +394,8 @@ func TestService_ListDeleted(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	phg1ID := "0d9828df-c57b-4629-9729-8c9641598e17"
 	phg2ID := "a33845f2-1c3c-4397-9380-7ecdb1d8c853"
@@ -500,9 +492,8 @@ func TestService_ListUnpublished(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	phg1ID := "0d9828df-c57b-4629-9729-8c9641598e17"
 	phg2ID := "a33845f2-1c3c-4397-9380-7ecdb1d8c853"
@@ -599,9 +590,8 @@ func TestSesrvice_Create(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	createReq := physicalgood.CreateRequest{
 		Name:             "Physical good name",
@@ -717,9 +707,8 @@ func TestService_Publish(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -816,9 +805,8 @@ func TestService_Unpublish(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -915,9 +903,8 @@ func TestService_Update(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1109,330 +1096,14 @@ func TestService_Update(t *testing.T) {
 	})
 }
 
-func TestService_AddImage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
-
-	goodID := uuid.New().String()
-
-	addReq := &imagemodel.AddRequest{
-		URL:            "https://google.com",
-		SecureURL:      "https://google.com",
-		PublicID:       "public/id",
-		MediaServiceID: uuid.New().String(),
-		OwnerID:        goodID,
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockImgeSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(nil)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		// Arrange
-		invalidReq := &imagemodel.AddRequest{
-			URL:     "not a url",
-			OwnerID: "invalid-UUID",
-		}
-		mockImgeSvc.EXPECT().AddImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
-
-		// Act
-		err := testService.AddImage(context.Background(), invalidReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("physical good not found", func(t *testing.T) {
-		// Arrange
-		mockImgeSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
-	})
-
-	t.Run("image limit", func(t *testing.T) {
-		// Arrange
-		mockImgeSvc.EXPECT().AddImage(gomock.Any(), addReq, gomock.Any()).Return(imageservice.ErrImageLimitExceeded)
-
-		// Act
-		err := testService.AddImage(context.Background(), addReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrImageLimitExceeded)
-	})
-}
-
-func TestSesrvice_DeleteImage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
-
-	imgID := uuid.New().String()
-	goodID := uuid.New().String()
-
-	deleteReq := &imagemodel.DeleteRequest{
-		MediaServiceID: imgID,
-		OwnerID:        goodID,
-	}
-
-	t.Run("success", func(t *testing.T) {
-		// Arrange
-		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(nil)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), deleteReq)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid rquest payload", func(t *testing.T) {
-		// Arrange
-		invalidReq := &imagemodel.DeleteRequest{
-			MediaServiceID: "invalid-UUID",
-			OwnerID:        "invalid-UUID",
-		}
-		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), invalidReq, gomock.Any()).Return(imageservice.ErrInvalidArgument)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), invalidReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("physical good not found", func(t *testing.T) {
-		// Arrange
-		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(imageservice.ErrOwnerNotFound)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), deleteReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnerNotFound)
-	})
-
-	t.Run("associations not found", func(t *testing.T) {
-		// Arrange
-		mockImgeSvc.EXPECT().DeleteImage(gomock.Any(), deleteReq, gomock.Any()).Return(imageservice.ErrAssociationsNotFound)
-
-		// Act
-		err := testService.DeleteImage(context.Background(), deleteReq)
-
-		// Assert
-		assert.Error(t, err)
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrAssociationsNotFound)
-	})
-}
-
-func TestService_AddImageBatch(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImageSvc)
-
-	// Use an in-memory SQLite DB for testing transactions.
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
-		// This prevents GORM from starting a real DB transaction,
-		// allowing the mock repositories to work as expected.
-		SkipDefaultTransaction: true,
-	})
-	if err != nil {
-		t.Fatalf("failed to connect database: %v", err)
-	}
-
-	goodID_1 := uuid.New().String()
-	goodID_2 := uuid.New().String()
-
-	addBatchRequest := &imagemodel.AddBatchRequest{
-		URL:            "some-url",
-		SecureURL:      "some-secure-url",
-		PublicID:       "some-public-id",
-		MediaServiceID: uuid.New().String(),
-		OwnerIDs:       []string{goodID_1, goodID_2},
-	}
-
-	t.Run("success", func(t *testing.T) {
-		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-
-		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(2, nil)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-
-		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("physical goods not found", func(t *testing.T) {
-		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-
-		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
-
-		mockImageSvc.EXPECT().AddImageBatch(gomock.Any(), addBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
-
-		// Act
-		_, err := testService.AddImageBatch(context.Background(), addBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
-	})
-}
-
-func TestService_DeleteImageBatch(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImageSvc := imageservicemock.NewMockService(ctrl)
-
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImageSvc)
-
-	// Use an in-memory SQLite DB for testing transactions.
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
-		// This prevents GORM from starting a real DB transaction,
-		// allowing the mock repositories to work as expected.
-		SkipDefaultTransaction: true,
-	})
-	if err != nil {
-		t.Fatalf("failed to connect database: %v", err)
-	}
-
-	goodID_1 := uuid.New().String()
-	goodID_2 := uuid.New().String()
-
-	deleteBatchRequest := &imagemodel.DeleteBatchRequst{
-		MediaServiceID: uuid.New().String(),
-		OwnerIDs:       []string{goodID_1, goodID_2},
-	}
-
-	t.Run("success", func(t *testing.T) {
-		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-
-		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(2, nil)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.NoError(t, err)
-	})
-
-	t.Run("invalid request payload", func(t *testing.T) {
-		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-
-		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrInvalidArgument)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrInvalidArgument)
-	})
-
-	t.Run("physical goods not found", func(t *testing.T) {
-		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-
-		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrOwnersNotFound)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrOwnersNotFound)
-	})
-
-	t.Run("associations not found", func(t *testing.T) {
-		mockTxPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
-
-		mockPhysicalGoodRepo.EXPECT().DB().Return(db).AnyTimes()
-		mockPhysicalGoodRepo.EXPECT().WithTx(gomock.Any()).Return(mockTxPhysicalGoodRepo)
-
-		mockImageSvc.EXPECT().DeleteImageBatch(gomock.Any(), deleteBatchRequest, gomock.Any()).Return(0, imageservice.ErrAssociationsNotFound)
-
-		// Act
-		_, err := testService.DeleteImageBatch(context.Background(), deleteBatchRequest)
-
-		// Assert
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, imageservice.ErrAssociationsNotFound)
-	})
-}
-
 func TestService_Delete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1528,9 +1199,8 @@ func TestService_DeletePermanent(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 
@@ -1620,9 +1290,8 @@ func TestService_Restore(t *testing.T) {
 
 	mockPhysicalGoodRepo := physicalgoodmock.NewMockRepository(ctrl)
 	mockProductRepo := productmock.NewMockRepository(ctrl)
-	mockImgeSvc := imageservicemock.NewMockService(ctrl)
 
-	testService := New(mockPhysicalGoodRepo, mockProductRepo, mockImgeSvc)
+	testService := New(mockPhysicalGoodRepo, mockProductRepo)
 
 	goodID := "0d9828df-c57b-4629-9729-8c9641598e17"
 

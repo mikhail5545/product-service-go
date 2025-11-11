@@ -28,7 +28,7 @@ import (
 	coursepartmodel "github.com/mikhail5545/product-service-go/internal/models/course_part"
 	coursepartservice "github.com/mikhail5545/product-service-go/internal/services/course_part"
 	coursepartmock "github.com/mikhail5545/product-service-go/internal/test/services/course_part_mock"
-	coursepartpb "github.com/mikhail5545/proto-go/proto/course_part/v0"
+	coursepartpb "github.com/mikhail5545/proto-go/proto/product_service/course_part/v0"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"

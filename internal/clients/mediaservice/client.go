@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"log"
 
-	muxpb "github.com/mikhail5545/proto-go/proto/mux_upload/v0"
+	muxpb "github.com/mikhail5545/proto-go/proto/media_service/mux_upload/v0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

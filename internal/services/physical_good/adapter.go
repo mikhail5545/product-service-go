@@ -28,18 +28,32 @@ import (
 	"gorm.io/gorm"
 )
 
-// physicalGoodOwnerRepoAdapter adapts a physicalgoodrepo.Repository to the generic
+//go:generate mockgen -destination=../../test/services/physical_good_mock/adapter_mock.go -package=physical_good_mock . OwnerRepoAdapter
+type OwnerRepoAdapter interface {
+	GetWithUnpublished(ctx context.Context, id string) (imageowner.Owner, error)
+	ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]imageowner.Owner, error)
+	AddImage(ctx context.Context, owner imageowner.Owner, image *imagemodel.Image) error
+	DeleteImage(ctx context.Context, owner imageowner.Owner, mediaSvcID string) error
+	AddImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error
+	BatchUpdate(ctx context.Context, owners []imageowner.Owner, opt uint) (int64, error)
+	FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error)
+	DecrementImageCount(ctx context.Context, ownerIDs []string) (int64, error)
+	DB() *gorm.DB
+	WithTx(tx *gorm.DB) imageowner.OwnerRepo[imageowner.Owner]
+}
+
+// ownerRepoAdapter adapts a physicalgoodrepo.Repository to the generic
 // imageservice.OwnerRepo[imageservice.Owner] interface.
-type physicalGoodOwnerRepoAdapter struct {
+type ownerRepoAdapter struct {
 	repo physicalgoodrepo.Repository
 }
 
-// newPhysicalGoodOwnerRepoAdapter creates a new adapter.
-func newPhysicalGoodOwnerRepoAdapter(repo physicalgoodrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
-	return &physicalGoodOwnerRepoAdapter{repo: repo}
+// NewOwnerRepoAdapter creates a new adapter.
+func NewOwnerRepoAdapter(repo physicalgoodrepo.Repository) imageowner.OwnerRepo[imageowner.Owner] {
+	return &ownerRepoAdapter{repo: repo}
 }
 
-func (a *physicalGoodOwnerRepoAdapter) GetWithUnpublished(ctx context.Context, id string) (imageowner.Owner, error) {
+func (a *ownerRepoAdapter) GetWithUnpublished(ctx context.Context, id string) (imageowner.Owner, error) {
 	good, err := a.repo.GetWithUnpublished(ctx, id)
 	if err != nil {
 		return nil, err
@@ -48,7 +62,7 @@ func (a *physicalGoodOwnerRepoAdapter) GetWithUnpublished(ctx context.Context, i
 	return owner, nil
 }
 
-func (a *physicalGoodOwnerRepoAdapter) ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]imageowner.Owner, error) {
+func (a *ownerRepoAdapter) ListWithUnpublishedByIDs(ctx context.Context, ids ...string) ([]imageowner.Owner, error) {
 	goods, err := a.repo.ListWithUnpublishedByIDs(ctx, ids...)
 	if err != nil {
 		return nil, err
@@ -61,7 +75,7 @@ func (a *physicalGoodOwnerRepoAdapter) ListWithUnpublishedByIDs(ctx context.Cont
 }
 
 // AddImage adds an image to a single owner by converting it back to a physical good.
-func (a *physicalGoodOwnerRepoAdapter) AddImage(ctx context.Context, owner imageowner.Owner, image *imagemodel.Image) error {
+func (a *ownerRepoAdapter) AddImage(ctx context.Context, owner imageowner.Owner, image *imagemodel.Image) error {
 	if g, ok := owner.(*physicalgoodmodel.PhysicalGood); ok {
 		return a.repo.AddImage(ctx, g, image)
 	}
@@ -69,7 +83,7 @@ func (a *physicalGoodOwnerRepoAdapter) AddImage(ctx context.Context, owner image
 }
 
 // DeleteImage deletes an image from a single owner by converting it back to a course.
-func (a *physicalGoodOwnerRepoAdapter) DeleteImage(ctx context.Context, owner imageowner.Owner, mediaSvcID string) error {
+func (a *ownerRepoAdapter) DeleteImage(ctx context.Context, owner imageowner.Owner, mediaSvcID string) error {
 	if g, ok := owner.(*physicalgoodmodel.PhysicalGood); ok {
 		return a.repo.DeleteImage(ctx, g, mediaSvcID)
 	}
@@ -77,7 +91,7 @@ func (a *physicalGoodOwnerRepoAdapter) DeleteImage(ctx context.Context, owner im
 }
 
 // AddImageBatch adds an image to a batch of owners by converting them back to physical goods.
-func (a *physicalGoodOwnerRepoAdapter) AddImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
+func (a *ownerRepoAdapter) AddImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
 	goods := make([]physicalgoodmodel.PhysicalGood, len(owners))
 	for i, owner := range owners {
 		if g, ok := owner.(*physicalgoodmodel.PhysicalGood); ok {
@@ -88,7 +102,7 @@ func (a *physicalGoodOwnerRepoAdapter) AddImageBatch(ctx context.Context, owners
 }
 
 // DeleteImageBatch deletes an image from a batch of owners by converting them back to physical goods.
-func (a *physicalGoodOwnerRepoAdapter) DeleteImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
+func (a *ownerRepoAdapter) DeleteImageBatch(ctx context.Context, owners []imageowner.Owner, image *imagemodel.Image) error {
 	goods := make([]physicalgoodmodel.PhysicalGood, len(owners))
 	for i, owner := range owners {
 		if g, ok := owner.(*physicalgoodmodel.PhysicalGood); ok {
@@ -98,7 +112,7 @@ func (a *physicalGoodOwnerRepoAdapter) DeleteImageBatch(ctx context.Context, own
 	return a.repo.DeleteImageBatch(ctx, goods, image)
 }
 
-func (a *physicalGoodOwnerRepoAdapter) BatchUpdate(ctx context.Context, owners []imageowner.Owner, opt uint) (int64, error) {
+func (a *ownerRepoAdapter) BatchUpdate(ctx context.Context, owners []imageowner.Owner, opt uint) (int64, error) {
 	goods := make([]physicalgoodmodel.PhysicalGood, len(owners))
 	for i, owner := range owners {
 		if g, ok := owner.(*physicalgoodmodel.PhysicalGood); ok {
@@ -108,18 +122,18 @@ func (a *physicalGoodOwnerRepoAdapter) BatchUpdate(ctx context.Context, owners [
 	return a.repo.BatchUpdate(ctx, goods, opt)
 }
 
-func (a *physicalGoodOwnerRepoAdapter) FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error) {
+func (a *ownerRepoAdapter) FindOwnerIDsByImageID(ctx context.Context, mediaSvcID string, ownerIDs []string) ([]string, error) {
 	return a.repo.FindOwnerIDsByImageID(ctx, mediaSvcID, ownerIDs)
 }
 
-func (a *physicalGoodOwnerRepoAdapter) DecrementImageCount(ctx context.Context, ownerIDs []string) (int64, error) {
+func (a *ownerRepoAdapter) DecrementImageCount(ctx context.Context, ownerIDs []string) (int64, error) {
 	return a.repo.DecrementImageCount(ctx, ownerIDs)
 }
 
-func (a *physicalGoodOwnerRepoAdapter) DB() *gorm.DB {
+func (a *ownerRepoAdapter) DB() *gorm.DB {
 	return a.repo.DB()
 }
 
-func (a *physicalGoodOwnerRepoAdapter) WithTx(tx *gorm.DB) imageowner.OwnerRepo[imageowner.Owner] {
-	return &physicalGoodOwnerRepoAdapter{repo: a.repo.WithTx(tx)}
+func (a *ownerRepoAdapter) WithTx(tx *gorm.DB) imageowner.OwnerRepo[imageowner.Owner] {
+	return &ownerRepoAdapter{repo: a.repo.WithTx(tx)}
 }

@@ -29,7 +29,7 @@ import (
 	coursepart "github.com/mikhail5545/product-service-go/internal/services/course_part"
 	"github.com/mikhail5545/product-service-go/internal/util/errors"
 	"github.com/mikhail5545/product-service-go/internal/util/types"
-	coursepartpb "github.com/mikhail5545/proto-go/proto/course_part/v0"
+	coursepartpb "github.com/mikhail5545/proto-go/proto/product_service/course_part/v0"
 	"google.golang.org/grpc"
 )
 

@@ -28,7 +28,7 @@ import (
 	physicalgoodmodel "github.com/mikhail5545/product-service-go/internal/models/physical_good"
 	physicalgoodservice "github.com/mikhail5545/product-service-go/internal/services/physical_good"
 	physicalgoodmock "github.com/mikhail5545/product-service-go/internal/test/services/physical_good_mock"
-	physicalgoodpb "github.com/mikhail5545/proto-go/proto/physical_good/v0"
+	physicalgoodpb "github.com/mikhail5545/proto-go/proto/product_service/physical_good/v0"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"

@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"log"
 
-	productpb "github.com/mikhail5545/proto-go/proto/product/v0"
+	productpb "github.com/mikhail5545/proto-go/proto/product_service/product/v0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
