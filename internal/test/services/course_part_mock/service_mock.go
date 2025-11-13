@@ -41,21 +41,6 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
-// AddVideo mocks base method.
-func (m *MockService) AddVideo(ctx context.Context, req *coursepart.AddVideoRequest) (map[string]any, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddVideo", ctx, req)
-	ret0, _ := ret[0].(map[string]any)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AddVideo indicates an expected call of AddVideo.
-func (mr *MockServiceMockRecorder) AddVideo(ctx, req any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddVideo", reflect.TypeOf((*MockService)(nil).AddVideo), ctx, req)
-}
-
 // Create mocks base method.
 func (m *MockService) Create(ctx context.Context, req *coursepart.CreateRequest) (*coursepart.CreateResponse, error) {
 	m.ctrl.T.Helper()

@@ -129,14 +129,6 @@ type Service interface {
 	// Returns a `NotFound` gRPC error if the record is not found.
 	// Returns an `InvalidArgument` gRPC error if the request payload is invalid.
 	Update(ctx context.Context, req *coursepartpb.UpdateRequest) (*coursepartpb.UpdateResponse, error)
-	// AddVideo calls [CoursePartServiceServer.Update] method via client connection
-	// to associate course part with specified MUXVideo by setting its
-	// MUXVideoID field.
-	// It will populate/update `MUXVideoID` field only if new value is different from the previous one.
-	//
-	// Returns a `NotFound` gRPC error if the record is not found.
-	// Returns a `InvalidArgument` gRPC error if any of the provided IDs is not a valid UUID.
-	AddVideo(ctx context.Context, req *coursepartpb.AddVideoRequest) (*coursepartpb.AddVideoResponse, error)
 	// Delete calls [CoursePartServiceServer.Delete] method via client connection
 	// to perform a soft-delete on a course part and its associated product.
 	// It also unpublishes them, requiring manual re-publishing after restoration.
@@ -316,17 +308,6 @@ func (c *Client) Unpublish(ctx context.Context, req *coursepartpb.UnpublishReque
 // Returns an `InvalidArgument` gRPC error if the request payload is invalid.
 func (c *Client) Update(ctx context.Context, req *coursepartpb.UpdateRequest) (*coursepartpb.UpdateResponse, error) {
 	return c.client.Update(ctx, req)
-}
-
-// AddVideo calls [CoursePartServiceServer.Update] method via client connection
-// to associate course part with specified MUXVideo by setting its
-// MUXVideoID field.
-// It will populate/update `MUXVideoID` field only if new value is different from the previous one.
-//
-// Returns a `NotFound` gRPC error if the record is not found.
-// Returns a `InvalidArgument` gRPC error if any of the provided IDs is not a valid UUID.
-func (c *Client) AddVideo(ctx context.Context, req *coursepartpb.AddVideoRequest) (*coursepartpb.AddVideoResponse, error) {
-	return c.client.AddVideo(ctx, req)
 }
 
 // Delete calls [CoursePartServiceServer.Delete] method via client connection

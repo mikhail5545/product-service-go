@@ -381,6 +381,20 @@ func (mr *MockRepositoryMockRecorder) Update(ctx, coursePart, updates any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRepository)(nil).Update), ctx, coursePart, updates)
 }
 
+// UpdateVideoID mocks base method.
+func (m *MockRepository) UpdateVideoID(ctx context.Context, id string, videoID *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateVideoID", ctx, id, videoID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateVideoID indicates an expected call of UpdateVideoID.
+func (mr *MockRepositoryMockRecorder) UpdateVideoID(ctx, id, videoID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVideoID", reflect.TypeOf((*MockRepository)(nil).UpdateVideoID), ctx, id, videoID)
+}
+
 // WithTx mocks base method.
 func (m *MockRepository) WithTx(tx *gorm.DB) coursepart.Repository {
 	m.ctrl.T.Helper()

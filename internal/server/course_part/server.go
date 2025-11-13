@@ -246,24 +246,6 @@ func (s *Server) Update(ctx context.Context, req *coursepartpb.UpdateRequest) (*
 	return types.CoursePartToProtobufUpdate(&coursepartpb.UpdateResponse{Id: req.GetId(), CourseId: req.GetCourseId()}, res), nil
 }
 
-// AddVideo associates MUXVideo with the course part record by
-// setting `MUXVideoID` field value in the course part record.
-// It will populate/update `MUXVideoID` field only if new value is different from the previous one.
-//
-// Returns a `NotFound` gRPC error if the record is not found.
-// Returns a `InvalidArgument` gRPC error if any of the provided IDs is not a valid UUID.
-func (s *Server) AddVideo(ctx context.Context, req *coursepartpb.AddVideoRequest) (*coursepartpb.AddVideoResponse, error) {
-	addVideoReq := &coursepartmodel.AddVideoRequest{
-		ID:         req.GetId(),
-		MUXVideoID: req.GetMuxVideoId(),
-	}
-	_, err := s.service.AddVideo(ctx, addVideoReq)
-	if err != nil {
-		return nil, err
-	}
-	return &coursepartpb.AddVideoResponse{MuxVideoId: req.MuxVideoId}, nil
-}
-
 // Delete performs a soft-delete on a course part.
 // It also unpublishes is, requiring manual re-publishing after restoration.
 //
