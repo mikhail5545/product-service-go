@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"log"
 
-	muxpb "github.com/mikhail5545/proto-go/proto/media_service/mux_upload/v0"
+	muxpb "github.com/mikhail5545/proto-go/proto/media_service/mux/asset/v0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -30,7 +30,7 @@ import (
 // Client is a gRPC client for mux service.
 type Client struct {
 	conn   *grpc.ClientConn
-	client muxpb.MuxUploadServiceClient
+	client muxpb.AssetServiceClient
 }
 
 // NewClient creates a new media service client.
@@ -42,7 +42,7 @@ func NewClient(ctx context.Context, addr string) (*Client, error) {
 
 	log.Printf("gRPC connection to mux service at %s established", addr)
 
-	client := muxpb.NewMuxUploadServiceClient(conn)
+	client := muxpb.NewAssetServiceClient(conn)
 	return &Client{
 		conn:   conn,
 		client: client,

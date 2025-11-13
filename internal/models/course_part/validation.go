@@ -105,24 +105,3 @@ func (req UpdateRequest) Validate() error {
 		),
 	)
 }
-
-// Validate validates fields of [coursepart.AddVideoRequest].
-// All request fields are required.
-// Validation rules:
-//
-//   - ID: required, UUID
-//   - MUXVideoID: required, UUID
-func (req AddVideoRequest) Validate() error {
-	return validation.ValidateStruct(&req,
-		validation.Field(
-			&req.ID,
-			validation.Required,
-			is.UUID,
-		),
-		validation.Field(
-			&req.MUXVideoID,
-			validation.Required,
-			is.UUID,
-		),
-	)
-}

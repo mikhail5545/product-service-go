@@ -35,6 +35,9 @@ import (
 // Server implements [imagepb.UnimplementedImageServiceServer] and provides
 // various operations for images. It acts as an adapter between
 // gRPC server and the business service-layer logic from [imageservice.Service].
+// See more details about [underlying protobuf services].
+//
+// [underlying protobuf services]: https://github.com/mikhail5545/proto-go
 type Server struct {
 	imagepb.UnimplementedImageServiceServer
 	service imageservice.Service

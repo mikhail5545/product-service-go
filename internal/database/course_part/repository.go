@@ -68,6 +68,8 @@ type Repository interface {
 	SetPublished(ctx context.Context, id string, published bool) (int64, error)
 	// SetPublishedByCourseID sets a new value for Published field in all course parts with specified courseID.
 	SetPublishedByCourseID(ctx context.Context, courseID string, published bool) (int64, error)
+	// UpdateVideoID sets new value for course part's `VideoID` field.
+	UpdateVideoID(ctx context.Context, id string, videoID *string) error
 	// Update performs partial update of a course part record using updates.
 	Update(ctx context.Context, coursePart *coursepartmodel.CoursePart, updates any) (int64, error)
 	// Delete performs soft-delete of a course part record.
@@ -233,6 +235,11 @@ func (r *gormRepository) SetPublished(ctx context.Context, id string, published 
 func (r *gormRepository) SetPublishedByCourseID(ctx context.Context, courseID string, published bool) (int64, error) {
 	res := r.db.WithContext(ctx).Model(&coursepartmodel.CoursePart{}).Where("course_id = ?", courseID).Update("published", published)
 	return res.RowsAffected, res.Error
+}
+
+// UpdateVideoID sets new value for course part's `VideoID` field.
+func (r *gormRepository) UpdateVideoID(ctx context.Context, id string, videoID *string) error {
+	return r.db.WithContext(ctx).Model(&coursepartmodel.CoursePart{}).Where("id = ?").Update("video_id", videoID).Error
 }
 
 // Update performs partial update of a course part record using updates.

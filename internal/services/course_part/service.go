@@ -128,12 +128,6 @@ type Service interface {
 	// Returns an error if the request payload is invalid (http.StatusBadRequest), the course part is not found (http.StatusNotFound),
 	// the new part number is not unique within the course (http.StatusBadRequest), or a database/internal error occurs (http.StatusInternalServerError).
 	Update(ctx context.Context, req *coursepartmodel.UpdateRequest) (map[string]any, error)
-	// AddVideo populates the MUXVideoID field in the course part record if it is different from the previous one.
-	//
-	// Returns a map representation of the changed field ("mux_video_id": val) if an update occurred.
-	// Returns an error if the request payload is invalid (http.StatusBadRequest), the course part is not found (http.StatusNotFound),
-	// or a database/internal error occurs (http.StatusInternalServerError).
-	AddVideo(ctx context.Context, req *coursepartmodel.AddVideoRequest) (map[string]any, error)
 	// Delete performs a soft-delete for a specific course part.
 	// It also unpublishes the course part, meaning it must be manually published again after restoration.
 	//
@@ -548,44 +542,7 @@ func (s *service) Update(ctx context.Context, req *coursepartmodel.UpdateRequest
 	return updates, nil
 }
 
-// AddVideo populates the MUXVideoID field in the course part record if it is different from the previous one.
-//
-// Returns a map representation of the changed field ("mux_video_id": val) if an update occurred.
-// Returns an error if the request payload is invalid (http.StatusBadRequest), the course part is not found (http.StatusNotFound),
-// or a database/internal error occurs (http.StatusInternalServerError).
-func (s *service) AddVideo(ctx context.Context, req *coursepartmodel.AddVideoRequest) (map[string]any, error) {
-	if err := req.Validate(); err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
-	}
-	updates := make(map[string]any)
-	err := s.partRepo.DB().Transaction(func(tx *gorm.DB) error {
-		txPartRepo := s.partRepo.WithTx(tx)
-
-		part, err := txPartRepo.Select(ctx, req.ID, "id", "course_id", "mux_video_id")
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return fmt.Errorf("%w: %w", ErrNotFound, err)
-			}
-			return fmt.Errorf("failed to retrieve course part: %w", err)
-		}
-
-		// Only update if the new MUXVideoID is different from the existing one
-		if part.MUXVideoID == nil || req.MUXVideoID != *part.MUXVideoID {
-			updates["mux_video_id"] = req.MUXVideoID
-		}
-
-		if len(updates) > 0 { // Only perform update if there are actual changes
-			if _, err := txPartRepo.Update(ctx, part, updates); err != nil {
-				return fmt.Errorf("failed to update course part: %w", err)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return updates, err
-}
+func (s *service) AddVideo(ctx context.Context)
 
 // Delete performs a soft-delete for a specific course part.
 // It also unpublishes the course part, meaning it must be manually published again after restoration.

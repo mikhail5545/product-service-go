@@ -157,7 +157,6 @@ func Setup(
 			adminCourseParts.GET("/unpublished/:id", admincpHandler.GetWithUnpublished)
 			adminCourseParts.POST("/publish/:id", admincpHandler.Publish)
 			adminCourseParts.POST("/unpublish/:id", admincpHandler.Unpublish)
-			adminCourseParts.POST("/video/:id", admincpHandler.AddVideo)
 			adminCourseParts.POST("/restore/:id", admincpHandler.Restore)
 			adminCourseParts.PATCH("/:id", admincpHandler.Update)
 			adminCourseParts.DELETE("/:id", admincpHandler.Delete)

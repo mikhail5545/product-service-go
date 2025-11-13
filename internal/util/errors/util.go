@@ -31,6 +31,8 @@ import (
 	"github.com/mikhail5545/product-service-go/internal/services/product"
 	"github.com/mikhail5545/product-service-go/internal/services/seminar"
 	trainingsession "github.com/mikhail5545/product-service-go/internal/services/training_session"
+	videoservice "github.com/mikhail5545/product-service-go/internal/services/video"
+	videomanager "github.com/mikhail5545/product-service-go/internal/services/video_manager"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -82,7 +84,11 @@ func HandleServiceError(err error) error {
 		errors.Is(err, coursepart.ErrInvalidArgument) ||
 		errors.Is(err, imageservice.ErrUnknownOwner) ||
 		errors.Is(err, imagemanager.ErrImageLimitExceeded) ||
-		errors.Is(err, imagemanager.ErrInvalidArgument) {
+		errors.Is(err, imagemanager.ErrInvalidArgument) ||
+		errors.Is(err, videoservice.ErrUnknownOwner) ||
+		errors.Is(err, videomanager.ErrAlreadyAssociated) ||
+		errors.Is(err, videomanager.ErrInvalidArgument) ||
+		errors.Is(err, videomanager.ErrVideoInUse) {
 		return status.Errorf(codes.InvalidArgument, "Invalid argument: %s", err.Error())
 	}
 	if errors.Is(err, seminar.ErrNotFound) ||
@@ -93,7 +99,9 @@ func HandleServiceError(err error) error {
 		errors.Is(err, coursepart.ErrNotFound) ||
 		errors.Is(err, imagemanager.ErrOwnerNotFound) ||
 		errors.Is(err, imagemanager.ErrOwnersNotFound) ||
-		errors.Is(err, imagemanager.ErrImageNotFoundOnOwner) {
+		errors.Is(err, imagemanager.ErrImageNotFoundOnOwner) ||
+		errors.Is(err, videomanager.ErrOwnerNotFound) ||
+		errors.Is(err, videomanager.ErrVideoNotFound) {
 		return status.Errorf(codes.NotFound, "Not found: %s", err.Error())
 	}
 

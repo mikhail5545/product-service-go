@@ -275,35 +275,6 @@ func (h *Handler) Unpublish(c echo.Context) error {
 	return c.NoContent(http.StatusAccepted)
 }
 
-// AddVideo handles the association of a course_part with
-// the MuxVideo.
-// @Summary Add MuxVideo to the course_part
-// @Description Associates a MuxVideo with an existing course_part by providing the MuxVideoID.
-// @Tags admin-course-parts
-// @Accept json
-// @Param id path string true "Course Part ID"
-// @Param video_request body coursepartmodel.AddVideoRequest true "Add Video Request"
-// @Success 200 "OK" {object} map[string]any{response=coursepartmodel.AddVideoResponse}
-// @Failure 400 {object} map[string]string{error=string} "Invalid request payload or ID"
-// @Router /admin/course-parts/video/{id} [post]
-func (h *Handler) AddVideo(c echo.Context) error {
-	id, err := request.GetIDParam(c, ":id", "Invalid course part ID")
-	if err != nil {
-		return err
-	}
-	var req *coursepartmodel.AddVideoRequest
-	err = c.Bind(&req)
-	if err != nil {
-		return h.ServeError(c, http.StatusBadRequest, "Invalid request JSON payload")
-	}
-	req.ID = id
-	updates, err := h.service.AddVideo(c.Request().Context(), req)
-	if err != nil {
-		return h.HandleServiceError(c, err)
-	}
-	return c.JSON(http.StatusOK, map[string]any{"updates": updates})
-}
-
 // Update handles the partial update of an existing course_part and its product.
 // @Summary Update a course_part
 // @Description Updates a course_part's details. Only the provided fields will be updated.
