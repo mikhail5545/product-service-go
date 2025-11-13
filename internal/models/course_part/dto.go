@@ -43,8 +43,3 @@ type UpdateRequest struct {
 	Number           *int     `json:"number"`
 	Tags             []string `json:"tags"`
 }
-
-type AddVideoRequest struct {
-	ID         string `json:"id"`
-	MUXVideoID string `json:"mux_video_id"`
-}

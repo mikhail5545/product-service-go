@@ -21,7 +21,7 @@ package coursepart
 import (
 	"time"
 
-	muxupload "github.com/mikhail5545/product-service-go/internal/models/mux_upload"
+	video "github.com/mikhail5545/product-service-go/internal/models/video"
 	"gorm.io/gorm"
 )
 
@@ -42,8 +42,22 @@ type CoursePart struct {
 	//
 	// 	- Published = true -> available for the users
 	// 	- Published = false -> not available for the users, archived
-	Published  bool                 `json:"published"`
-	CourseID   string               `gorm:"size:36;index" json:"course_id"`
-	MUXVideoID *string              `gorm:"size:36;index" json:"mux_video_id,omitempty"`
-	MUXVideo   *muxupload.MUXUpload `gorm:"-" json:"mux_video,omitempty"`
+	Published bool   `json:"published"`
+	CourseID  string `gorm:"size:36;index" json:"course_id"`
+	// Unique identifier for the associated Video instance. May be nil. It represents the association with the [media-service-go] MUX Asset.
+	//
+	// [media-service-go]: https://github.com/mikhail5545/media-service-go
+	VideoID *string `gorm:"size:36;index" json:"video_id,omitempty"`
+	// This object represents associated Video. May be nil. It represents the [media-service-go] MUX Asset.
+	//
+	// [media-service-go]: https://github.com/mikhail5545/media-service-go
+	Video *video.Video `gorm:"-" json:"video,omitempty"`
+}
+
+func (p CoursePart) GetVideoID() *string {
+	return p.VideoID
+}
+
+func (p CoursePart) SetVideoID(id *string) {
+	p.VideoID = id
 }

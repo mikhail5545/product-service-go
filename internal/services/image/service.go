@@ -52,7 +52,7 @@ type Service interface {
 // [physicalgoodrepo.Repository] to perform database operations for all services and generic [imagemanager.Service] to
 // perform generic image operations.
 type service struct {
-	imageSvc            imagemanager.Service
+	manager             imagemanager.Service
 	courseRepo          courserepo.Repository
 	seminarRepo         seminarrepo.Repository
 	trainingSessionRepo trainingsessionrepo.Repository
@@ -61,14 +61,14 @@ type service struct {
 
 // New creates a new Service instance.
 func New(
-	imgSvc imagemanager.Service,
+	m imagemanager.Service,
 	cr courserepo.Repository,
 	sr seminarrepo.Repository,
 	tsr trainingsessionrepo.Repository,
 	pgr physicalgoodrepo.Repository,
 ) Service {
 	return &service{
-		imageSvc:            imgSvc,
+		manager:             m,
 		courseRepo:          cr,
 		seminarRepo:         sr,
 		trainingSessionRepo: tsr,
@@ -100,7 +100,7 @@ func (s *service) Add(ctx context.Context, ownerType string, req *imagemodel.Add
 	if err != nil {
 		return err
 	}
-	return s.imageSvc.AddImage(ctx, req, adapter)
+	return s.manager.AddImage(ctx, req, adapter)
 }
 
 // Delete deletes an image from owner using [imagemanager.DeleteImage] for specified owner type.
@@ -109,7 +109,7 @@ func (s *service) Delete(ctx context.Context, ownerType string, req *imagemodel.
 	if err != nil {
 		return err
 	}
-	return s.imageSvc.DeleteImage(ctx, req, adapter)
+	return s.manager.DeleteImage(ctx, req, adapter)
 }
 
 // AddBatch adds an image for batch of owners using [imagemanager.AddImageBatch] for specified owner type.
@@ -120,7 +120,7 @@ func (s *service) AddBatch(ctx context.Context, ownerType string, req *imagemode
 	if err != nil {
 		return 0, err
 	}
-	return s.imageSvc.AddImageBatch(ctx, req, adapter)
+	return s.manager.AddImageBatch(ctx, req, adapter)
 }
 
 // DeleteBatch deletes an image from batch of owners using [imagemanager.DeleteImageBatch] for specified owner type.
@@ -131,5 +131,5 @@ func (s *service) DeleteBatch(ctx context.Context, ownerType string, req *imagem
 	if err != nil {
 		return 0, err
 	}
-	return s.imageSvc.DeleteImageBatch(ctx, req, adapter)
+	return s.manager.DeleteImageBatch(ctx, req, adapter)
 }
