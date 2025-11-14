@@ -28,6 +28,7 @@ import (
 
 // Owner defines the interface for any model that can own a video.
 type Owner interface {
+	GetID() string
 	GetVideoID() *string
 	SetVideoID(videoID *string)
 }

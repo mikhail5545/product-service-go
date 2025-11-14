@@ -54,6 +54,10 @@ type CoursePart struct {
 	Video *video.Video `gorm:"-" json:"video,omitempty"`
 }
 
+func (p CoursePart) GetID() string {
+	return p.ID
+}
+
 func (p CoursePart) GetVideoID() *string {
 	return p.VideoID
 }

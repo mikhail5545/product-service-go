@@ -26,3 +26,8 @@ type RemoveRequest struct {
 	OwnerID        string `json:"owner_id"`
 	MediaServiceID string `json:"media_service_id"`
 }
+
+type Owner struct {
+	ID      string  `json:"id"`
+	VideoID *string `json:"video_id"`
+}
