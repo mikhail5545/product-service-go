@@ -87,3 +87,21 @@ func (s *Server) Remove(ctx context.Context, req *videopb.RemoveRequest) (*video
 	}
 	return &videopb.RemoveResponse{OwnerId: req.GetOwnerId(), MediaServiceId: req.GetMediaServiceId()}, nil
 }
+
+// GetOwner retrieves a single owner information including unpublished ones.
+// Returns minimal necessary owner information. If more owner information is needed,
+// specific owner gRPC service's Get method should be called.
+//
+// Returns an `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns a `NotFound` gRPC error if owner is not found.
+func (s *Server) GetOwner(ctx context.Context, req *videopb.GetOwnerRequest) (*videopb.GetOwnerResponse, error) {
+	owner, err := s.service.GetOwner(ctx, req.GetOwnerType(), req.GetOwnerId())
+	if err != nil {
+		return nil, errors.HandleServiceError(err)
+	}
+	pbOwner := &videopb.Owner{
+		Id:      owner.ID,
+		VideoId: owner.VideoID,
+	}
+	return &videopb.GetOwnerResponse{Owner: pbOwner}, nil
+}

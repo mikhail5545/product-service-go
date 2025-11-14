@@ -55,6 +55,14 @@ type Service interface {
 	// Returns an `InvalidArgument` gRPC error if the request payload is invalid.
 	// Returns a `NotFound` gRPC error if any of the video is not found or the owner is not found.
 	Remove(ctx context.Context, req *videopb.RemoveRequest) (*videopb.RemoveResponse, error)
+	// GetOwner calls [VideoServiceServer.GetOwner] via client connection
+	// to retrieve a single owner information including unpublished ones.
+	// Returns minimal necessary owner information. If more owner information is needed,
+	// specific owner gRPC service's Get method should be called.
+	//
+	// Returns an `InvalidArgument` gRPC error if the request payload is invalid.
+	// Returns a `NotFound` gRPC error if owner is not found.
+	GetOwner(ctx context.Context, req *videopb.GetOwnerRequest) (*videopb.GetOwnerResponse, error)
 	// Close tears down connection to the client and all underlying connections.
 	Close() error
 }
@@ -102,6 +110,17 @@ func (c *Client) Add(ctx context.Context, req *videopb.AddRequest) (*videopb.Add
 // Returns a `NotFound` gRPC error if any of the video is not found or the owner is not found.
 func (c *Client) Remove(ctx context.Context, req *videopb.RemoveRequest) (*videopb.RemoveResponse, error) {
 	return c.client.Remove(ctx, req)
+}
+
+// GetOwner calls [VideoServiceServer.GetOwner] via client connection
+// to retrieve a single owner information including unpublished ones.
+// Returns minimal necessary owner information. If more owner information is needed,
+// specific owner gRPC service's Get method should be called.
+//
+// Returns an `InvalidArgument` gRPC error if the request payload is invalid.
+// Returns a `NotFound` gRPC error if owner is not found.
+func (c *Client) GetOwner(ctx context.Context, req *videopb.GetOwnerRequest) (*videopb.GetOwnerResponse, error) {
+	return c.client.GetOwner(ctx, req)
 }
 
 // Close tears down connection to the client and all underlying connections.

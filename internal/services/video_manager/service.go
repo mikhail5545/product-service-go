@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	mediaservice "github.com/mikhail5545/product-service-go/internal/clients/mediaservice"
 	videomodel "github.com/mikhail5545/product-service-go/internal/models/video"
 	videoowner "github.com/mikhail5545/product-service-go/internal/types/video_owner"
@@ -47,6 +48,12 @@ type Service interface {
 	// It returns an error if owner/video are not found (ErrOwnerNotFound/ErrVideoNotFound),
 	// the request payload is invalid (ErrInvalidArgument) or a database/internal error occurres.
 	Remove(ctx context.Context, req *videomodel.RemoveRequest, ownerRepo videoowner.OwnerRepo[videoowner.Owner]) error
+	// GetOwner retrieves a single owner including unpublished ownes. It returns generic [videoowner.Owner]
+	// which should be converted to the desired type later.
+	//
+	// It returns an error if the ownerID is not a valid UUID (ErrInvalidArgument), owner is not found (ErrOwnerNotFound)
+	// or a database/internal error occures.
+	GetOwner(ctx context.Context, ownerID string, ownerRepo videoowner.OwnerRepo[videoowner.Owner]) (videoowner.Owner, error)
 }
 
 // service holds a media service client to interact with video data.
@@ -123,4 +130,24 @@ func (s *service) Remove(ctx context.Context, req *videomodel.RemoveRequest, own
 		}
 		return nil
 	})
+}
+
+// GetOwner retrieves a single owner including unpublished ownes. It returns generic [videoowner.Owner]
+// which should be converted to the desired type later.
+//
+// It returns an error if the ownerID is not a valid UUID (ErrInvalidArgument), owner is not found (ErrOwnerNotFound)
+// or a database/internal error occures.
+func (s *service) GetOwner(ctx context.Context, ownerID string, ownerRepo videoowner.OwnerRepo[videoowner.Owner]) (videoowner.Owner, error) {
+	if _, err := uuid.Parse(ownerID); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidArgument, err)
+	}
+
+	owner, err := ownerRepo.GetWithUnpublished(ctx, ownerID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("%w: %w", ErrOwnerNotFound, err)
+		}
+		return nil, fmt.Errorf("failed to retrieve owner: %w", err)
+	}
+	return owner, nil
 }

@@ -52,6 +52,10 @@ type Service interface {
 	// It returns an error if owner/video are not found (videomanager.ErrOwnerNotFound/videomanager.ErrVideoNotFound),
 	// the request payload is invalid (videomanager.ErrInvalidArgument) or a database/internal error occurres.
 	Remove(ctx context.Context, ownerType string, req *videomodel.RemoveRequest) error
+	// GetOwner retrieves a single owner by it's ID including unpublished ones using [videomanager.GetOwner] for specified owner type.
+	// It returns generic [videomodel.Owner] struct type, featuring minimal necessary owner information.
+	// It can be used if service needs to check if the owner is already associated with a video and to check it's and it's video id.
+	GetOwner(ctx context.Context, ownerType string, ownerID string) (*videomodel.Owner, error)
 }
 
 // service holds an instance of [coursepartrepo.Repository] to perform database operations for all
@@ -100,4 +104,22 @@ func (s *service) Remove(ctx context.Context, ownerType string, req *videomodel.
 		return err
 	}
 	return s.manager.Remove(ctx, req, adapter)
+}
+
+// GetOwner retrieves a single owner by it's ID including unpublished ones using [videomanager.GetOwner] for specified owner type.
+// It returns generic [videomodel.Owner] struct type, featuring minimal necessary owner information.
+// It can be used if service needs to check if the owner is already associated with a video and to check it's and it's video id.
+func (s *service) GetOwner(ctx context.Context, ownerType string, ownerID string) (*videomodel.Owner, error) {
+	adapter, err := s.getOwnerRepoAdapter(ownerType)
+	if err != nil {
+		return nil, err
+	}
+	owner, err := s.manager.GetOwner(ctx, ownerID, adapter)
+	if err != nil {
+		return nil, err
+	}
+	return &videomodel.Owner{
+		ID:      owner.GetID(),
+		VideoID: owner.GetVideoID(),
+	}, nil
 }
